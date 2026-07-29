@@ -1,37 +1,43 @@
+/**
+ * IMPORTS
+ */
+
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
+
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { HashService } from 'src/shared/utils/hash.service';
 import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
 
+// utils
+import { HashService } from 'src/shared/utils/hash.service';
+import { formatarCep } from 'src/shared/utils/format-zip-code';
+
+// typings
+import { FullClientClienteDto, FullClientEnderecoDto, FullClientUsuarioClienteDto } from '../dto/create-full-client.dto';
 /**
- * Espelha o CreateClientWithUserAndAddressService: cria o cliente principal,
- * o endereço e os usuários subordinados (incluindo o subordinado padrão
- * "Letscom Comercial") em uma única transação.
+ * Faz a criação de um cliente completo, incluindo:
+ * - cria o cliente principal,
+ * - cria o endereço,
+ * - cria os usuários subordinados (incluindo o subordinado padrão "Letscom Comercial"),
+ * - em uma única transação.
  */
 @Injectable()
 export class CreateFullClientService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly hash: HashService,
+    private readonly hashPassword: HashService,
     private readonly config: ConfigService,
   ) {}
 
-  private formatarCep(cep: string): string {
-    const digits = (cep ?? '').replace(/\D/g, '');
-    if (digits.length === 8) {
-      return `${digits.slice(0, 5)}-${digits.slice(5, 8)}`;
-    }
-    return cep;
-  }
 
   async executar(data: {
-    cliente: Record<string, any>;
-    endereco: Record<string, any>;
-    usuarios_cliente?: Record<string, any>[];
+    cliente: FullClientClienteDto;
+    endereco: FullClientEnderecoDto;
+    usuarios_cliente?: FullClientUsuarioClienteDto[];
   }) {
     const clientePayload = data.cliente;
-    const senhaHash = await this.hash.make(clientePayload.senha);
+    const senhaHash = await this.hashPassword.make(clientePayload.senha);
 
     return this.prisma.$transaction(async (tx) => {
       // 1) cliente principal
@@ -74,8 +80,8 @@ export class CreateFullClientService {
           bairro: end.bairro,
           cidade: end.cidade,
           estado: end.estado,
-          cep: this.formatarCep(String(end.cep ?? '')),
-          tipoEndereco: end.tipo_endereco,
+          cep: formatarCep(String(end.cep ?? '')),
+          tipoEndereco: end.tipo_endereco as any,
           nomeResponsavel: end.nome_responsavel,
           email: end.email,
           setor: end.setor,
@@ -91,7 +97,7 @@ export class CreateFullClientService {
             clienteId: user.id,
             nome: sub.nome,
             email: sub.email,
-            senha: await this.hash.make(sub.senha),
+            senha: await this.hashPassword.make(sub.senha),
             documento: sub.documento ?? null,
             ativo: sub.ativo !== undefined ? Boolean(sub.ativo) : true,
           },
@@ -112,7 +118,7 @@ export class CreateFullClientService {
           clienteId: user.id,
           nome: 'Letscom Comercial',
           email: `comercial${user.id}@letscom.com.br`,
-          senha: await this.hash.make(senhaDefault),
+          senha: await this.hashPassword.make(senhaDefault),
           documento: null,
           ativo: true,
         },

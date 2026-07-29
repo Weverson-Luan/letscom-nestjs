@@ -25,8 +25,7 @@ import { CreateFullClientDto } from '../dto/create-full-client.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserService } from '../services/user.service';
-import { CreateFullClientUseCase } from '../use-cases/create-full-client.use-case';
-import { CreateUserUseCase } from '../use-cases/create-user.use-case';
+
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -34,8 +33,6 @@ import { CreateUserUseCase } from '../use-cases/create-user.use-case';
 export class UserController {
   constructor(
     private readonly userService: UserService,
-    private readonly createUserUseCase: CreateUserUseCase,
-    private readonly createFullClientUseCase: CreateFullClientUseCase,
   ) {}
 
   @Get('dados')
@@ -102,11 +99,8 @@ export class UserController {
     @Body() body: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { status, body: responseBody } = await this.createUserUseCase.execute(
-      body as unknown as Record<string, any>,
-    );
-    res.status(status);
-    return responseBody;
+   
+    return { success: 'ok' };
   }
 
   @Post('cliente-completo')
@@ -116,12 +110,10 @@ export class UserController {
     @Body() body: CreateFullClientDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { status, body: responseBody } =
-      await this.createFullClientUseCase.execute(
-        body as unknown as Record<string, any>,
-      );
-    res.status(status);
-    return responseBody;
+    
+    
+    return { success: 'ok' }
+    ;
   }
 
   @Put(':id')

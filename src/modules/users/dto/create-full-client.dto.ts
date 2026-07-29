@@ -1,3 +1,7 @@
+/**
+ * IMPORTS
+ */
+
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -10,6 +14,7 @@ import {
   IsString,
   MinLength,
   ValidateNested,
+  IsBoolean,
 } from 'class-validator';
 
 export class FullClientClienteDto {
@@ -21,6 +26,11 @@ export class FullClientClienteDto {
   @ApiProperty({ example: 'contato@empresa.com' })
   @IsEmail()
   email!: string;
+
+  @ApiProperty({ example: 'true' })
+  @IsBoolean()
+  @IsNotEmpty()
+  ativo!: boolean;
 
   @ApiProperty({ example: '12345678000199' })
   @IsString()
@@ -140,6 +150,17 @@ export class FullClientUsuarioClienteDto {
   @IsOptional()
   @IsString()
   documento?: string;
+
+  @ApiPropertyOptional({ example: '1' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  role_id?: number;
+
+  @ApiProperty({ example: 'true' })
+  @IsBoolean()
+  @IsNotEmpty()
+  ativo!: boolean;
 }
 
 export class CreateFullClientDto {

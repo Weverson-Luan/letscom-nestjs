@@ -7,8 +7,7 @@ import { UserFeatureFlagRepository } from './repositories/user-feature-flag.repo
 import { CreateFullClientService } from './services/create-full-client.service';
 import { UserFeatureFlagService } from './services/user-feature-flag.service';
 import { UserService } from './services/user.service';
-import { CreateFullClientUseCase } from './use-cases/create-full-client.use-case';
-import { CreateUserUseCase } from './use-cases/create-user.use-case';
+
 
 @Module({
   // A ordem importa: o controller com rotas literais ('dados/feature-flags')
@@ -21,8 +20,6 @@ import { CreateUserUseCase } from './use-cases/create-user.use-case';
     UserRepository,
     UserFeatureFlagRepository,
     UsersResponseMapper,
-    CreateUserUseCase,
-    CreateFullClientUseCase,
   ],
   exports: [UserService],
 })
