@@ -1,0 +1,634 @@
+// Prisma schema — migração fiel do banco Laravel (letscom)
+// Fonte de verdade: database/migrations/*.php do projeto Laravel.
+// Convenção: models em PascalCase, colunas mapeadas para snake_case via @map/@@map.
+// IDs e FKs = BIGINT UNSIGNED (equivalente ao $table->id() do Laravel).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================
+// ENUMS (colunas ENUM do MySQL)
+// =====================================================================
+
+enum TipoPessoa {
+  F
+  J
+}
+
+enum TipoEntregaValor {
+  balcao
+  correios
+  motoboy_letscom
+  transportadora
+  outros
+}
+
+enum Posicionamento {
+  horizontal
+  vertical
+}
+
+enum TipoFuro {
+  ovoide
+  redondo
+}
+
+enum TipoEndereco {
+  residencial
+  entrega
+  cobranca
+  outro
+}
+
+// Valores com espaços são mapeados para nomes válidos de enum via @map.
+enum RemessaSituacao {
+  solicitado
+  pendente
+  pedido_liberado
+  em_producao
+  em_aprovacao
+  pronto_para_imprimir @map("pronto para imprimir")
+  concluida
+  cancelada
+  concluido
+  conferido
+  error
+  duplicidade
+  a_fazer              @map("a fazer")
+  a_aprovar            @map("a aprovar")
+  enviar_pdf           @map("enviar pdf")
+}
+
+enum RemessaPosicao {
+  H
+  V
+}
+
+enum VendaCreditoStatus {
+  pendente
+  confirmado
+  cancelada
+  cancelado
+}
+
+enum VendaCreditoTipoTransacao {
+  entrada
+  saida
+}
+
+enum RemessaStatusEtapa {
+  envio_de_dados
+  em_producao
+  conferido
+  pedido_liberado
+  concluido
+}
+
+// =====================================================================
+// USUÁRIOS / RBAC
+// =====================================================================
+
+model User {
+  id         BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  nome       String
+  email      String     @unique
+  senha      String
+  documento  String?    @unique
+  ativo      Boolean    @default(true)
+  tipoPessoa TipoPessoa @map("tipo_pessoa")
+  telefone   String     @unique
+  createdAt  DateTime?  @default(now()) @map("created_at")
+  updatedAt  DateTime?  @updatedAt @map("updated_at")
+  deletedAt  DateTime?  @map("deleted_at")
+
+  // Relacionamentos
+  rolePivots               RoleUser[]                          @relation("UserRolePivot")
+  clienteConsultores       ClienteConsultor[]                  @relation("ClienteConsultorCliente")
+  consultorClientes        ClienteConsultor[]                  @relation("ClienteConsultorConsultor")
+  produtosVinculados       ProdutoUsuario[]
+  tiposEntregaUser         TipoEntregaUser[]
+  enderecos                Endereco[]
+  modelosTecnicos          ModeloTecnico[]
+  featureFlags             UserFeatureFlag[]
+  usersCliente             UserCliente[]                       @relation("UserClientePrincipal")
+  remessasCliente          Remessa[]                           @relation("RemessaCliente")
+  remessasConsultor        Remessa[]                           @relation("RemessaConsultor")
+  remessasSolicitante      Remessa[]                           @relation("RemessaSolicitante")
+  remessasExecutor         Remessa[]                           @relation("RemessaExecutor")
+  remessaFotos             RemessaFoto[]
+  remessaPlanilhas         RemessaPlanilha[]
+  vendasCliente            CreditSale[]                        @relation("VendaCliente")
+  vendasExecutor           CreditSale[]                        @relation("VendaExecutor")
+  liberacoesBalcao         RemessaLiberadaBalcao[]
+  liberacoesCliente        RemessaLiberadaCliente[]
+  remessaResponsabilidades RemessaResponsabilidade[]
+  extratoCliente           ExtratoMovimentacaoCreditoCliente[] @relation("ExtratoCliente")
+  extratoResponsavel       ExtratoMovimentacaoCreditoCliente[] @relation("ExtratoResponsavel")
+
+  @@index([createdAt], map: "users_created_at_index")
+  @@map("users")
+}
+
+model UserCliente {
+  id        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId BigInt    @map("cliente_id") @db.UnsignedBigInt
+  email     String    @unique
+  nome      String?
+  senha     String
+  documento String?
+  ativo     Boolean   @default(true)
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  clientePrincipal    User       @relation("UserClientePrincipal", fields: [clienteId], references: [id], onDelete: Cascade)
+  rolePivots          RoleUser[] @relation("UserClienteRolePivot")
+  remessasSolicitante Remessa[]  @relation("RemessaSolicitanteSubordinado")
+
+  @@map("users_cliente")
+}
+
+model Role {
+  id        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  nome      String    @unique
+  descricao String?
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  userPivots RoleUser[]
+
+  @@map("roles")
+}
+
+// Pivot triplo (user OU user_cliente -> role). No Laravel a tabela não tinha
+// id nem timestamps; adicionamos um id sintético (correção documentada) para
+// que o Prisma possa identificar linhas.
+model RoleUser {
+  id          BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  userId      BigInt? @map("user_id") @db.UnsignedBigInt
+  clientSubId BigInt? @map("client_sub_id") @db.UnsignedBigInt
+  roleId      BigInt  @map("role_id") @db.UnsignedBigInt
+  ativo       Boolean @default(true)
+
+  user        User?        @relation("UserRolePivot", fields: [userId], references: [id], onDelete: Cascade)
+  userCliente UserCliente? @relation("UserClienteRolePivot", fields: [clientSubId], references: [id], onDelete: Cascade)
+  role        Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@map("role_user")
+}
+
+model ClienteConsultor {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId   BigInt    @map("cliente_id") @db.UnsignedBigInt
+  consultorId BigInt    @map("consultor_id") @db.UnsignedBigInt
+  createdAt   DateTime? @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  cliente   User @relation("ClienteConsultorCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  consultor User @relation("ClienteConsultorConsultor", fields: [consultorId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, consultorId])
+  @@map("cliente_consultor")
+}
+
+// =====================================================================
+// CATÁLOGO (tecnologias, produtos, modelos técnicos)
+// =====================================================================
+
+model Tecnologia {
+  id        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  nome      String    @unique
+  descricao String?
+  ativo     Boolean   @default(true)
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  modelosTecnicos ModeloTecnico[]
+  remessas        Remessa[]
+
+  @@map("tecnologias")
+}
+
+model Product {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  nome          String
+  valor         Decimal   @db.Decimal(10, 2)
+  valorCreditos Decimal   @map("valor_creditos") @db.Decimal(10, 2)
+  estoqueMinimo Int       @map("estoque_minimo")
+  estoqueMaximo Int       @map("estoque_maximo")
+  estoqueAtual  Int       @map("estoque_atual")
+  ativo         Boolean   @default(true)
+  createdAt     DateTime? @default(now()) @map("created_at")
+  updatedAt     DateTime? @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  usuariosVinculados ProdutoUsuario[]
+  modelosTecnicos    ModeloTecnico[]
+  vendas             CreditSale[]
+  extrato            ExtratoMovimentacaoCreditoCliente[]
+
+  @@map("produtos")
+}
+
+model ProdutoUsuario {
+  id        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId BigInt    @map("cliente_id") @db.UnsignedBigInt
+  produtoId BigInt    @map("produto_id") @db.UnsignedBigInt
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  cliente User    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  produto Product @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, produtoId])
+  @@map("produtos_vinculados_usuarios")
+}
+
+model ModeloTecnico {
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId         BigInt          @map("cliente_id") @db.UnsignedBigInt
+  produtoId         BigInt          @map("produto_id") @db.UnsignedBigInt
+  tecnologiaId      BigInt          @map("tecnologia_id") @db.UnsignedBigInt
+  nomeModelo        String?         @map("nome_modelo") @db.VarChar(100)
+  posicionamento    Posicionamento?
+  temFuro           Boolean         @default(false) @map("tem_furo")
+  temCargaFoto      Boolean         @default(false) @map("tem_carga_foto")
+  temDadosVariaveis Boolean         @default(false) @map("tem_dados_variaveis")
+  isProvisorio      Boolean?        @map("is_provisorio")
+  ativo             Boolean         @default(true)
+  tipoFuro          TipoFuro?       @map("tipo_furo")
+  campoChave        String?         @map("campo_chave") @db.VarChar(50)
+  fotoFrentePath    String?         @map("foto_frente_path") @db.VarChar(255)
+  fotoVersoPath     String?         @map("foto_verso_path") @db.VarChar(255)
+  observacoes       String?         @db.Text
+  createdAt         DateTime?       @default(now()) @map("created_at")
+  updatedAt         DateTime?       @updatedAt @map("updated_at")
+
+  cliente         User                         @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  produto         Product                      @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  tecnologia      Tecnologia                   @relation(fields: [tecnologiaId], references: [id], onDelete: Cascade)
+  camposVariaveis ModeloTecnicoCampoVariavel[]
+  remessas        Remessa[]
+
+  @@map("modelos_tecnicos")
+}
+
+model ModeloTecnicoCampoVariavel {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  modeloTecnicoId BigInt    @map("modelo_tecnico_id") @db.UnsignedBigInt
+  nome            String    @db.VarChar(100)
+  obrigatorio     Boolean   @default(false)
+  ordem           Int       @default(0)
+  createdAt       DateTime? @default(now()) @map("created_at")
+  updatedAt       DateTime? @updatedAt @map("updated_at")
+
+  modeloTecnico ModeloTecnico @relation(fields: [modeloTecnicoId], references: [id], onDelete: Cascade)
+
+  @@map("modelos_tecnicos_campos_variaveis")
+}
+
+// =====================================================================
+// ENDEREÇOS E ENTREGAS
+// =====================================================================
+
+model Endereco {
+  id              BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  userId          BigInt       @map("user_id") @db.UnsignedBigInt
+  logradouro      String?
+  numero          String
+  complemento     String?
+  bairro          String
+  cidade          String
+  estado          String
+  cep             String
+  ativo           Boolean      @default(true)
+  tipoEndereco    TipoEndereco @default(residencial) @map("tipo_endereco")
+  nomeResponsavel String       @map("nome_responsavel")
+  email           String
+  setor           String
+  telefone        String
+  createdAt       DateTime?    @default(now()) @map("created_at")
+  updatedAt       DateTime?    @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("enderecos")
+}
+
+model TipoEntrega {
+  id        BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  tipo      TipoEntregaValor? @default(motoboy_letscom)
+  ativo     Boolean           @default(true)
+  createdAt DateTime?         @default(now()) @map("created_at")
+  updatedAt DateTime?         @updatedAt @map("updated_at")
+
+  usuarios          TipoEntregaUser[]
+  liberacoesBalcao  RemessaLiberadaBalcao[]
+  liberacoesCliente RemessaLiberadaCliente[]
+
+  @@map("tipos_entrega")
+}
+
+model TipoEntregaUser {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId     BigInt    @map("cliente_id") @db.UnsignedBigInt
+  tipoEntregaId BigInt    @map("tipo_entrega_id") @db.UnsignedBigInt
+  createdAt     DateTime? @default(now()) @map("created_at")
+  updatedAt     DateTime? @updatedAt @map("updated_at")
+
+  cliente     User        @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tipoEntrega TipoEntrega @relation(fields: [tipoEntregaId], references: [id], onDelete: Cascade)
+
+  @@map("tipo_entrega_user")
+}
+
+// =====================================================================
+// REMESSAS
+// =====================================================================
+
+model Remessa {
+  id                            BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId                     BigInt          @map("cliente_id") @db.UnsignedBigInt
+  userIdSolicitanteRemessa      BigInt?         @map("user_id_solicitante_remessa") @db.UnsignedBigInt
+  userIdExecutor                BigInt?         @map("user_id_executor") @db.UnsignedBigInt
+  consultorId                   BigInt?         @map("consultor_id") @db.UnsignedBigInt
+  modeloTecnicoId               BigInt          @map("modelo_tecnico_id") @db.UnsignedBigInt
+  tecnologiaId                  BigInt          @map("tecnologia_id") @db.UnsignedBigInt
+  totalSolicitacoes             Int             @default(0) @map("total_solicitacoes")
+  situacao                      RemessaSituacao @default(solicitado)
+  status                        String          @default("solicitado")
+  ativo                         Boolean         @default(true)
+  observacao                    String?
+  numeroRemessa                 BigInt          @unique @map("numero_remessa") @db.UnsignedBigInt
+  dataInicioProducao            DateTime?       @map("data_inicio_producao")
+  dataFimProducao               DateTime?       @map("data_fim_producao")
+  posicao                       RemessaPosicao?
+  usersSolicitanteSubordinadoId BigInt?         @map("users_solicitante_subordinado_id") @db.UnsignedBigInt
+  createdAt                     DateTime?       @default(now()) @map("created_at")
+  updatedAt                     DateTime?       @updatedAt @map("updated_at")
+  deletedAt                     DateTime?       @map("deleted_at")
+
+  cliente                User                                @relation("RemessaCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  consultor              User?                               @relation("RemessaConsultor", fields: [consultorId], references: [id], onDelete: Cascade)
+  solicitante            User?                               @relation("RemessaSolicitante", fields: [userIdSolicitanteRemessa], references: [id], onDelete: Cascade)
+  executor               User?                               @relation("RemessaExecutor", fields: [userIdExecutor], references: [id], onDelete: Cascade)
+  solicitanteSubordinado UserCliente?                        @relation("RemessaSolicitanteSubordinado", fields: [usersSolicitanteSubordinadoId], references: [id], onDelete: Cascade)
+  modeloTecnico          ModeloTecnico                       @relation(fields: [modeloTecnicoId], references: [id], onDelete: Cascade)
+  tecnologia             Tecnologia                          @relation(fields: [tecnologiaId], references: [id], onDelete: Cascade)
+  fotos                  RemessaFoto[]
+  planilhas              RemessaPlanilha[]
+  statusLogs             RemessaStatus[]
+  liberacoesBalcao       RemessaLiberadaBalcao[]
+  liberacoesCliente      RemessaLiberadaCliente[]
+  extrato                ExtratoMovimentacaoCreditoCliente[]
+
+  @@index([status], map: "remessas_status_index")
+  @@index([userIdExecutor], map: "remessas_user_id_executor_index")
+  @@index([situacao], map: "remessas_situacao_index")
+  @@index([status, userIdExecutor], map: "remessas_status_executor_index")
+  @@index([createdAt], map: "remessas_created_at_index")
+  @@index([clienteId, createdAt], map: "remessas_cliente_created_index")
+  @@map("remessas")
+}
+
+model RemessaFoto {
+  id        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  remessaId BigInt    @map("remessa_id") @db.UnsignedBigInt
+  clienteId BigInt    @map("cliente_id") @db.UnsignedBigInt
+  filePath  String    @map("file_path")
+  nome      String?
+  matricula String?
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  remessa Remessa @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  cliente User    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("remessa_fotos")
+}
+
+model RemessaPlanilha {
+  id        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  remessaId BigInt    @map("remessa_id") @db.UnsignedBigInt
+  clienteId BigInt    @map("cliente_id") @db.UnsignedBigInt
+  filePath  String    @map("file_path")
+  tipo      String?
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  remessa Remessa @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  cliente User    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("remessa_planilhas")
+}
+
+model RemessaStatus {
+  id         BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  remessaId  BigInt             @map("remessa_id") @db.UnsignedBigInt
+  status     RemessaStatusEtapa
+  dataStatus DateTime           @default(now()) @map("data_status")
+  createdAt  DateTime?          @default(now()) @map("created_at")
+  updatedAt  DateTime?          @updatedAt @map("updated_at")
+
+  remessa Remessa @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+
+  @@map("remessas_status")
+}
+
+model RemessaLiberadaBalcao {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  remessaId      BigInt    @map("remessa_id") @db.UnsignedBigInt
+  userIdExecutor BigInt    @map("user_id_executor") @db.UnsignedBigInt
+  tipoEntregaId  BigInt    @map("tipo_entrega_id") @db.UnsignedBigInt
+  dataEntrega    DateTime  @default(now()) @map("data_entrega")
+  observacao     String?   @db.Text
+  outros         String?   @db.Text
+  createdAt      DateTime? @default(now()) @map("created_at")
+  updatedAt      DateTime? @updatedAt @map("updated_at")
+
+  remessa     Remessa     @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  executor    User        @relation(fields: [userIdExecutor], references: [id], onDelete: Cascade)
+  tipoEntrega TipoEntrega @relation(fields: [tipoEntregaId], references: [id], onDelete: Cascade)
+
+  @@map("remessa_liberada_balcao")
+}
+
+model RemessaLiberadaCliente {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  remessaId      BigInt    @map("remessa_id") @db.UnsignedBigInt
+  userIdExecutor BigInt    @map("user_id_executor") @db.UnsignedBigInt
+  tipoEntregaId  BigInt    @map("tipo_entrega_id") @db.UnsignedBigInt
+  filePath       String?   @map("file_path")
+  dataEntrega    DateTime  @default(now()) @map("data_entrega")
+  observacao     String?   @db.Text
+  outros         String?   @db.Text
+  createdAt      DateTime? @default(now()) @map("created_at")
+  updatedAt      DateTime? @updatedAt @map("updated_at")
+
+  remessa     Remessa     @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  executor    User        @relation(fields: [userIdExecutor], references: [id], onDelete: Cascade)
+  tipoEntrega TipoEntrega @relation(fields: [tipoEntregaId], references: [id], onDelete: Cascade)
+
+  @@map("remessa_liberada_cliente")
+}
+
+model RemessaResponsabilidade {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId   BigInt    @map("cliente_id") @db.UnsignedBigInt
+  nome        String
+  ativo       Boolean   @default(true)
+  documento   String    @db.VarChar(20)
+  dataCiencia DateTime  @default(now()) @map("data_ciencia")
+  createdAt   DateTime? @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  cliente User @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("remessa_responsabilidade")
+}
+
+// =====================================================================
+// CRÉDITOS
+// =====================================================================
+
+model CreditSale {
+  id                 BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId          BigInt                     @map("cliente_id") @db.UnsignedBigInt
+  userIdExecutor     BigInt                     @map("user_id_executor") @db.UnsignedBigInt
+  produtoId          BigInt                     @map("produto_id") @db.UnsignedBigInt
+  valor              Decimal                    @db.Decimal(10, 2)
+  quantidadeCreditos Decimal                    @map("quantidade_creditos") @db.Decimal(10, 2)
+  status             VendaCreditoStatus         @default(pendente)
+  dataVenda          DateTime                   @map("data_venda")
+  tipoTransacao      VendaCreditoTipoTransacao? @default(saida) @map("tipo_transacao")
+  valorTotal         Decimal                    @map("valor_total") @db.Decimal(10, 2)
+  observacao         String?                    @db.Text
+  createdAt          DateTime?                  @default(now()) @map("created_at")
+  updatedAt          DateTime?                  @updatedAt @map("updated_at")
+  deletedAt          DateTime?                  @map("deleted_at")
+
+  cliente  User                                @relation("VendaCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  executor User                                @relation("VendaExecutor", fields: [userIdExecutor], references: [id], onDelete: Cascade)
+  produto  Product                             @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  extrato  ExtratoMovimentacaoCreditoCliente[]
+
+  @@index([clienteId, status], map: "vendas_creditos_cliente_status_index")
+  @@map("vendas_creditos")
+}
+
+model ExtratoMovimentacaoCreditoCliente {
+  id                                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId                         BigInt    @map("cliente_id") @db.UnsignedBigInt
+  produtoId                         BigInt    @map("produto_id") @db.UnsignedBigInt
+  tipoOperacao                      String    @map("tipo_operacao") @db.VarChar(64)
+  direcaoMovimento                  String    @map("direcao_movimento") @db.VarChar(16)
+  quantidadeCreditos                Decimal   @map("quantidade_creditos") @db.Decimal(10, 2)
+  saldoCreditosProdutoAposMovimento BigInt    @map("saldo_creditos_produto_apos_movimento") @db.UnsignedBigInt
+  remessaId                         BigInt?   @map("remessa_id") @db.UnsignedBigInt
+  vendaCreditoId                    BigInt?   @map("venda_credito_id") @db.UnsignedBigInt
+  userIdResponsavel                 BigInt?   @map("user_id_responsavel") @db.UnsignedBigInt
+  observacaoNegocio                 String?   @map("observacao_negocio") @db.Text
+  detalhesOperacao                  Json?     @map("detalhes_operacao")
+  createdAt                         DateTime? @default(now()) @map("created_at")
+  updatedAt                         DateTime? @updatedAt @map("updated_at")
+
+  cliente      User        @relation("ExtratoCliente", fields: [clienteId], references: [id], onDelete: Restrict, map: "emcc_fk_cliente")
+  produto      Product     @relation(fields: [produtoId], references: [id], onDelete: Restrict, map: "emcc_fk_produto")
+  remessa      Remessa?    @relation(fields: [remessaId], references: [id], onDelete: Restrict, map: "emcc_fk_remessa")
+  vendaCredito CreditSale? @relation(fields: [vendaCreditoId], references: [id], onDelete: Restrict, map: "emcc_fk_venda_cred")
+  responsavel  User?       @relation("ExtratoResponsavel", fields: [userIdResponsavel], references: [id], onDelete: Restrict, map: "emcc_fk_user_resp")
+
+  @@index([clienteId, createdAt], map: "emcc_idx_cli_criado")
+  @@index([clienteId, produtoId, createdAt], map: "emcc_idx_cli_prod_criado")
+  @@map("extrato_movimentacoes_creditos_cliente")
+}
+
+// =====================================================================
+// FEATURE FLAGS
+// =====================================================================
+
+model FeatureFlag {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  key         String    @unique
+  nome        String
+  descricao   String?   @db.Text
+  tipoUsuario String?   @map("tipo_usuario")
+  ativo       Boolean   @default(false)
+  createdAt   DateTime? @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  users UserFeatureFlag[]
+
+  @@index([tipoUsuario])
+  @@map("feature_flags")
+}
+
+model UserFeatureFlag {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  userId        BigInt    @map("user_id") @db.UnsignedBigInt
+  featureFlagId BigInt    @map("feature_flag_id") @db.UnsignedBigInt
+  ativo         Boolean   @default(true)
+  createdAt     DateTime? @default(now()) @map("created_at")
+  updatedAt     DateTime? @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  featureFlag FeatureFlag @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, featureFlagId])
+  @@map("user_feature_flags")
+}
+
+// =====================================================================
+// AUTH: refresh tokens (polimórfico) + reset de senha
+// =====================================================================
+
+model RefreshToken {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tokenableType String    @map("tokenable_type")
+  tokenableId   BigInt    @map("tokenable_id") @db.UnsignedBigInt
+  tokenHash     String    @unique @map("token_hash") @db.VarChar(64)
+  expiresAt     DateTime  @map("expires_at")
+  revokedAt     DateTime? @map("revoked_at")
+  createdAt     DateTime? @default(now()) @map("created_at")
+  updatedAt     DateTime? @updatedAt @map("updated_at")
+
+  @@index([tokenableType, tokenableId], map: "refresh_tokens_tokenable_type_tokenable_id_index")
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  email     String    @id
+  token     String
+  createdAt DateTime? @map("created_at")
+
+  @@map("password_reset_tokens")
+}
+
+// =====================================================================
+// AUDITORIA
+// =====================================================================
+
+model ActivityLog {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  userId     BigInt?  @map("user_id") @db.UnsignedBigInt
+  userTipo   String?  @map("user_tipo")
+  userNome   String?  @map("user_nome")
+  evento     String
+  metodo     String?
+  rota       String?  @db.Text
+  statusCode Int?     @map("status_code") @db.UnsignedSmallInt
+  ip         String?  @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  payload    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([evento])
+  @@index([createdAt])
+  @@map("activity_logs")
+}

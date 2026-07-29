@@ -1,0 +1,129 @@
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { HashService } from 'src/shared/utils/hash.service';
+import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
+
+/**
+ * Espelha o CreateClientWithUserAndAddressService: cria o cliente principal,
+ * o endereço e os usuários subordinados (incluindo o subordinado padrão
+ * "Letscom Comercial") em uma única transação.
+ */
+@Injectable()
+export class CreateFullClientService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly hash: HashService,
+    private readonly config: ConfigService,
+  ) {}
+
+  private formatarCep(cep: string): string {
+    const digits = (cep ?? '').replace(/\D/g, '');
+    if (digits.length === 8) {
+      return `${digits.slice(0, 5)}-${digits.slice(5, 8)}`;
+    }
+    return cep;
+  }
+
+  async executar(data: {
+    cliente: Record<string, any>;
+    endereco: Record<string, any>;
+    usuarios_cliente?: Record<string, any>[];
+  }) {
+    const clientePayload = data.cliente;
+    const senhaHash = await this.hash.make(clientePayload.senha);
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1) cliente principal
+      const user = await tx.user.create({
+        data: {
+          nome: clientePayload.nome,
+          email: clientePayload.email,
+          senha: senhaHash,
+          documento: clientePayload.documento ?? null,
+          telefone: clientePayload.telefone,
+          tipoPessoa: clientePayload.tipo_pessoa,
+          ativo: clientePayload.ativo ?? true,
+        },
+      });
+
+      if (clientePayload.roles) {
+        await tx.roleUser.create({
+          data: { userId: user.id, roleId: BigInt(clientePayload.roles), ativo: true },
+        });
+      }
+      if (clientePayload.consultor_id) {
+        await tx.clienteConsultor.create({
+          data: { clienteId: user.id, consultorId: BigInt(clientePayload.consultor_id) },
+        });
+      }
+      if (clientePayload.tipo_entrega_id) {
+        await tx.tipoEntregaUser.create({
+          data: { clienteId: user.id, tipoEntregaId: BigInt(clientePayload.tipo_entrega_id) },
+        });
+      }
+
+      // 2) endereço
+      const end = data.endereco;
+      const endereco = await tx.endereco.create({
+        data: {
+          userId: user.id,
+          logradouro: end.logradouro ?? null,
+          numero: end.numero,
+          complemento: end.complemento ?? null,
+          bairro: end.bairro,
+          cidade: end.cidade,
+          estado: end.estado,
+          cep: this.formatarCep(String(end.cep ?? '')),
+          tipoEndereco: end.tipo_endereco,
+          nomeResponsavel: end.nome_responsavel,
+          email: end.email,
+          setor: end.setor,
+          telefone: end.telefone,
+        },
+      });
+
+      // 3) subordinados informados
+      const usuariosCliente: any[] = [];
+      for (const sub of data.usuarios_cliente ?? []) {
+        const created = await tx.userCliente.create({
+          data: {
+            clienteId: user.id,
+            nome: sub.nome,
+            email: sub.email,
+            senha: await this.hash.make(sub.senha),
+            documento: sub.documento ?? null,
+            ativo: sub.ativo !== undefined ? Boolean(sub.ativo) : true,
+          },
+        });
+        if (sub.role_id) {
+          await tx.roleUser.create({
+            data: { clientSubId: created.id, roleId: BigInt(sub.role_id), ativo: true },
+          });
+        }
+        usuariosCliente.push(created);
+      }
+
+      // 4) subordinado padrão "Letscom Comercial"
+      const senhaDefault =
+        this.config.get<string>('business.senhaUsuarioSubordinadoDefault') ?? 'letscom';
+      const padrao = await tx.userCliente.create({
+        data: {
+          clienteId: user.id,
+          nome: 'Letscom Comercial',
+          email: `comercial${user.id}@letscom.com.br`,
+          senha: await this.hash.make(senhaDefault),
+          documento: null,
+          ativo: true,
+        },
+      });
+      usuariosCliente.push(padrao);
+
+      return {
+        user: serializeUser(user),
+        endereco,
+        usuarios_cliente: usuariosCliente.map((u) => serializeUser(u)),
+      };
+    });
+  }
+}
