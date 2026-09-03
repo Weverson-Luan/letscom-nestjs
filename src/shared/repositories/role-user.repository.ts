@@ -1,3 +1,7 @@
+/**
+ * IMPORTS
+ */
+
 import { Injectable } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,6 +16,11 @@ type DbClient = PrismaService | Prisma.TransactionClient;
 export class RoleUserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Encontra o papel primário de um usuário
+   * @param userId - O ID do usuário
+   * @returns O papel primário
+   */
   async findPrimaryRoleForUser(userId: bigint): Promise<Role | null> {
     const rows = await this.prisma.$queryRaw<Role[]>`
       SELECT r.id, r.nome, r.descricao, r.created_at AS createdAt, r.updated_at AS updatedAt
@@ -23,6 +32,11 @@ export class RoleUserRepository {
     return rows[0] ?? null;
   }
 
+  /**
+   * Encontra o papel primário de um usuário cliente
+   * @param clientSubId - O ID do cliente
+   * @returns O papel primário
+   */
   async findPrimaryRoleForUserCliente(clientSubId: bigint): Promise<Role | null> {
     const rows = await this.prisma.$queryRaw<Role[]>`
       SELECT r.id, r.nome, r.descricao, r.created_at AS createdAt, r.updated_at AS updatedAt
@@ -34,6 +48,11 @@ export class RoleUserRepository {
     return rows[0] ?? null;
   }
 
+  /**
+   * Encontra os nomes dos papéis de um usuário
+   * @param userId - O ID do usuário
+   * @returns Os nomes dos papéis
+   */
   async findRoleNamesForUser(userId: bigint): Promise<string[]> {
     const rows = await this.prisma.$queryRaw<{ nome: string }[]>`
       SELECT r.nome
@@ -44,6 +63,11 @@ export class RoleUserRepository {
     return rows.map((row) => row.nome.toLowerCase());
   }
 
+  /**
+   * Encontra os nomes dos papéis de um usuário cliente
+   * @param clientSubId - O ID do cliente
+   * @returns Os nomes dos papéis
+   */
   async findRoleNamesForUserCliente(clientSubId: bigint): Promise<string[]> {
     const rows = await this.prisma.$queryRaw<{ nome: string }[]>`
       SELECT r.nome
@@ -54,6 +78,13 @@ export class RoleUserRepository {
     return rows.map((row) => row.nome.toLowerCase());
   }
 
+  /**
+   * Atribui um papel a um usuário
+   * @param db - O cliente do Prisma
+   * @param userId - O ID do usuário
+   * @param roleId - O ID do papel
+   * @param ativo - Se o papel está ativo
+   */
   attachToUser(
     db: DbClient,
     userId: bigint,
@@ -66,6 +97,13 @@ export class RoleUserRepository {
     `;
   }
 
+  /**
+   * Atribui um papel a um usuário cliente
+   * @param db - O cliente do Prisma
+   * @param clientSubId - O ID do cliente
+   * @param roleId - O ID do papel
+   * @param ativo - Se o papel está ativo
+   */
   attachToUserCliente(
     db: DbClient,
     clientSubId: bigint,
@@ -78,6 +116,12 @@ export class RoleUserRepository {
     `;
   }
 
+  /**
+   * Conta o número de usuários com um papel
+   * @param roleName - O nome do papel
+   * @param onlyActiveUsers - Se apenas usuários ativos devem ser contados
+   * @returns O número de usuários com um papel
+   */
   countUsersWithRole(roleName: string, onlyActiveUsers = true) {
     return this.prisma.$queryRaw<[{ total: bigint }]>`
       SELECT COUNT(DISTINCT u.id) AS total
@@ -90,6 +134,11 @@ export class RoleUserRepository {
     `.then((rows) => Number(rows[0]?.total ?? 0));
   }
 
+  /**
+   * Encontra os IDs dos usuários clientes recentes
+   * @param limit - O limite de usuários a serem encontrados
+   * @returns Os IDs dos usuários clientes recentes
+   */
   async findRecentClientUserIds(limit: number): Promise<bigint[]> {
     const rows = await this.prisma.$queryRaw<{ id: bigint }[]>`
       SELECT u.id

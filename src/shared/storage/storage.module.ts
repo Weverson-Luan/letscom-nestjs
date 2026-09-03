@@ -1,3 +1,7 @@
+/**
+ * IMPORTS
+ */
+
 import { Global, Module } from '@nestjs/common';
 import { StorageService } from './storage.service';
 
@@ -6,4 +10,8 @@ import { StorageService } from './storage.service';
   providers: [StorageService],
   exports: [StorageService],
 })
+
+/**
+ * EXPORT
+ */
 export class StorageModule {}
