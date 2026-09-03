@@ -3,11 +3,11 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Post,
   Put,
   Query,
-  Res,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -15,7 +15,6 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'express';
 import { Role } from 'src/shared/constants/roles';
 import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -24,8 +23,9 @@ import { ApiResponse } from 'src/shared/utils/api-response';
 import { CreateFullClientDto } from '../dto/create-full-client.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { CreateFullClientService } from '../services/create-full-client.service';
 import { UserService } from '../services/user.service';
-
+import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -33,6 +33,7 @@ import { UserService } from '../services/user.service';
 export class UserController {
   constructor(
     private readonly userService: UserService,
+    private readonly createFullClientService: CreateFullClientService,
   ) {}
 
   @Get('dados')
@@ -94,26 +95,31 @@ export class UserController {
 
   @Post()
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
+  @HttpCode(201)
   @ApiOperation({ summary: 'Cria um usuário' })
-  async criarUsuario(
-    @Body() body: CreateUserDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-   
-    return { success: 'ok' };
+  async criarUsuario(@Body() body: CreateUserDto) {
+    const user = await this.userService.create(body as unknown as Record<string, any>);
+    return {
+      message: 'Usuário criado com sucesso!',
+      data: serializeUser(user),
+    };
   }
 
   @Post('cliente-completo')
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
+  @HttpCode(201)
   @ApiOperation({ summary: 'Cria cliente + endereço + subordinados (transacional)' })
-  async criarClienteCompleto(
-    @Body() body: CreateFullClientDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    
-    
-    return { success: 'ok' }
-    ;
+  async criarClienteCompleto(@Body() body: CreateFullClientDto) {
+    const result = await this.createFullClientService.executar(body);
+    return {
+      status: 201,
+      message: 'Cliente, endereço e usuários criados com sucesso!',
+      data: {
+        user: result.user,
+        endereco: result.endereco,
+        usuarios_cliente: result.usuarios_cliente,
+      },
+    };
   }
 
   @Put(':id')

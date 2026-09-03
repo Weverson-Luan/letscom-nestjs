@@ -71,6 +71,22 @@ export class CamposVariaveisController {
     return ApiResponse.success('Campos variáveis criados com sucesso!', data);
   }
 
+  @Post('reorganizar/:modeloTecnicoId')
+  @ApiParam({ name: 'modeloTecnicoId', description: 'ID do modelo técnico' })
+  @ApiOperation({ summary: 'Reorganiza ordem dos campos variáveis' })
+  async reorganizar(@Param('modeloTecnicoId') modeloTecnicoId: string) {
+    const data = await this.service.reorganizar(BigInt(modeloTecnicoId));
+    return ApiResponse.success('Ordem reorganizada com sucesso.', data);
+  }
+
+  @Get(':id')
+  @ApiParam({ name: 'id', description: 'ID do campo variável' })
+  @ApiOperation({ summary: 'Detalha um campo variável' })
+  async show(@Param('id') id: string) {
+    const data = await this.service.buscar(BigInt(id));
+    return ApiResponse.success('Campo variável carregado com sucesso!', data);
+  }
+
   @Put(':id')
   @ApiOperation({ summary: 'Atualiza um campo variável' })
   async update(@Param('id') id: string, @Body() body: UpdateCampoVariavelDto) {

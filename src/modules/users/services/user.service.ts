@@ -8,6 +8,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { UserRepository } from '../repositories/user.repository';
 import { UsersResponseMapper } from '../mappers/users-response.mapper';
 import { UserFeatureFlagService } from './user-feature-flag.service';
+import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
 
 @Injectable()
 export class UserService {
@@ -17,6 +18,7 @@ export class UserService {
     private readonly mapper: UsersResponseMapper,
     private readonly hash: HashService,
     private readonly featureFlagService: UserFeatureFlagService,
+    private readonly roleUserRepo: RoleUserRepository,
   ) {}
 
   async list(query: Record<string, unknown>) {
@@ -103,9 +105,7 @@ export class UserService {
       });
 
       if (roleId) {
-        await tx.roleUser.create({
-          data: { userId: user.id, roleId: BigInt(roleId), ativo: true },
-        });
+        await this.roleUserRepo.attachToUser(tx, user.id, BigInt(roleId), true);
       }
       if (consultorId) {
         await tx.clienteConsultor.create({

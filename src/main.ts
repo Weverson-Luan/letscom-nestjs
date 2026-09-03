@@ -40,7 +40,7 @@ async function bootstrap() {
   app.useBodyParser('json', { limit: maxUpload });
   app.useBodyParser('urlencoded', { limit: maxUpload, extended: true });
 
-  app.enableCors({ origin: true, credentials: true });
+  app.enableCors({ origin: true, credentials: true, });
 
   app.useGlobalPipes(
     new ValidationPipe({

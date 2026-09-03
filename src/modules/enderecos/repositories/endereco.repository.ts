@@ -34,18 +34,23 @@ export class EnderecoRepository {
     order?: 'asc' | 'desc';
     skip: number;
     take: number;
+    tipoEndereco?: TipoEndereco;
   }) {
     const sortField = SORT_MAP[params.sortBy ?? 'created_at'] ?? 'createdAt';
     const orderBy = { [sortField]: params.order ?? 'desc' };
+    const where = params.tipoEndereco
+      ? { tipoEndereco: params.tipoEndereco }
+      : undefined;
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.endereco.findMany({
+        where,
         include: { user: true },
         orderBy,
         skip: params.skip,
         take: params.take,
       }),
-      this.prisma.endereco.count(),
+      this.prisma.endereco.count({ where }),
     ]);
 
     return { data, total };

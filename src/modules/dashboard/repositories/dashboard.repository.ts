@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
 
 const STATUS_CONCLUIDOS = ['concluida', 'concluído', 'concluido'];
 
@@ -12,16 +13,13 @@ type AtividadeRecente = {
 /** Espelha DashboardRepository — métricas do overview. */
 @Injectable()
 export class DashboardRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly roleUserRepo: RoleUserRepository,
+  ) {}
 
   contarClientesAtivos() {
-    return this.prisma.user.count({
-      where: {
-        ativo: true,
-        deletedAt: null,
-        rolePivots: { some: { role: { nome: 'cliente' }, ativo: true } },
-      },
-    });
+    return this.roleUserRepo.countUsersWithRole('cliente', true);
   }
 
   contarUsuariosClienteAtivos() {
@@ -110,15 +108,14 @@ export class DashboardRepository {
       });
     }
 
-    const clientes = await this.prisma.user.findMany({
-      where: {
-        ativo: true,
-        deletedAt: null,
-        rolePivots: { some: { role: { nome: 'cliente' } } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
+    const clienteIds = await this.roleUserRepo.findRecentClientUserIds(limit);
+    const clientes =
+      clienteIds.length === 0
+        ? []
+        : await this.prisma.user.findMany({
+            where: { id: { in: clienteIds } },
+            orderBy: { createdAt: 'desc' },
+          });
     for (const cliente of clientes) {
       atividades.push({
         tipo: 'cliente_cadastrado',

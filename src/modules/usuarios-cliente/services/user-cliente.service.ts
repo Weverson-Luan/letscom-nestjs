@@ -5,6 +5,7 @@ import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { buildPagination } from 'src/shared/utils/api-response';
 import { HashService } from 'src/shared/utils/hash.service';
+import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
 import { mapUserCliente } from '../mappers/user-cliente.mapper';
 import { UserClienteRepository } from '../repositories/user-cliente.repository';
 
@@ -15,6 +16,7 @@ export class UserClienteService {
     private readonly prisma: PrismaService,
     private readonly repository: UserClienteRepository,
     private readonly hash: HashService,
+    private readonly roleUserRepo: RoleUserRepository,
   ) {}
 
   listarTodos() {
@@ -105,9 +107,7 @@ export class UserClienteService {
         roleId = rolePadrao.id;
       }
 
-      await tx.roleUser.create({
-        data: { clientSubId: user.id, roleId, ativo: true },
-      });
+      await this.roleUserRepo.attachToUserCliente(tx, user.id, roleId, true);
 
       return user;
     });

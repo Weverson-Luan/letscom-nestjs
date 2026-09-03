@@ -167,6 +167,27 @@ export class CamposVariaveisService {
     return true;
   }
 
+  async buscar(id: bigint) {
+    const campo = await this.repository.findById(id);
+    if (!campo) throw new NotFoundException('Campo variável não encontrado.');
+    return mapCampoVariavel(campo);
+  }
+
+  async reorganizar(modeloTecnicoId: bigint) {
+    const modelo = await this.prisma.modeloTecnico.findUnique({
+      where: { id: modeloTecnicoId },
+    });
+    if (!modelo) {
+      throw new BusinessException(
+        'Modelo técnico não encontrado.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    await this.reorganizarOrdem(modeloTecnicoId);
+    const campos = await this.repository.listByModelo(modeloTecnicoId);
+    return campos.map(mapCampoVariavel);
+  }
+
   private async reorganizarOrdem(modeloTecnicoId: bigint) {
     const campos = await this.repository.listByModelo(modeloTecnicoId);
     for (let i = 0; i < campos.length; i++) {

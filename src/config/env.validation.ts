@@ -137,6 +137,18 @@ export class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  BLOQUEIO_LOGIN_CLIENTE_SUBORDINADO: string;
+
+  @IsOptional()
+  @IsString()
+  TUTORIAL_VIDEO_PATH: string;
+
+  @IsOptional()
+  @IsString()
+  AUTH_MENSAGEM_INSTABILIDADE: string;
+
+  @IsOptional()
+  @IsString()
   LOG_LEVEL = 'debug';
 
   @IsOptional()

@@ -1,55 +1,76 @@
 services:
-  app:
+
+  app_letscom:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: letscom_nest_app
     restart: unless-stopped
+
     ports:
       - '3000:3000'
+
     depends_on:
-      db:
+      letscom_db:
         condition: service_healthy
-      redis:
+      letscom_redis:
         condition: service_started
+
     environment:
       APP_PORT: 3000
       APP_CONTEXT: apiparcelas
-      DATABASE_URL: 'mysql://root:letscom2026%40@db:3306/letscom'
-      REDIS_HOST: redis
+
+      DATABASE_URL: 'mysql://root:letscom2026%40@letscom_db:3306/letscom'
+
+      REDIS_HOST: letscom_redis
       REDIS_PORT: 6379
+
     env_file:
       - .env
+
     networks:
       - letscom-net
 
-  db:
+  letscom_db:
     image: mariadb:11
+
     container_name: letscom_nest_db
+
     restart: always
+
     ports:
       - '3306:3306'
+
     environment:
-      MYSQL_ROOT_PASSWORD: letscom2026@
+      MYSQL_ROOT_PASSWORD: 'letscom2026@'
       MYSQL_DATABASE: letscom
+
     volumes:
       - letscom_nest_db_data:/var/lib/mysql
+
     healthcheck:
-      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      test: [ 'CMD', 'healthcheck.sh', '--connect', '--innodb_initialized' ]
       interval: 10s
       timeout: 5s
       retries: 10
+
     networks:
       - letscom-net
 
-  redis:
+  letscom_redis:
     image: redis:7-alpine
+
     container_name: letscom_nest_redis
+
     restart: always
+
     ports:
       - '6379:6379'
+
     volumes:
       - letscom_nest_redis_data:/data
+
     networks:
       - letscom-net
 

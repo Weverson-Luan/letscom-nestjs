@@ -12,6 +12,7 @@ import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
 // utils
 import { HashService } from 'src/shared/utils/hash.service';
 import { formatarCep } from 'src/shared/utils/format-zip-code';
+import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
 
 // typings
 import { FullClientClienteDto, FullClientEnderecoDto, FullClientUsuarioClienteDto } from '../dto/create-full-client.dto';
@@ -28,6 +29,7 @@ export class CreateFullClientService {
     private readonly prisma: PrismaService,
     private readonly hashPassword: HashService,
     private readonly config: ConfigService,
+    private readonly roleUserRepo: RoleUserRepository,
   ) {}
 
 
@@ -54,9 +56,12 @@ export class CreateFullClientService {
       });
 
       if (clientePayload.roles) {
-        await tx.roleUser.create({
-          data: { userId: user.id, roleId: BigInt(clientePayload.roles), ativo: true },
-        });
+        await this.roleUserRepo.attachToUser(
+          tx,
+          user.id,
+          BigInt(clientePayload.roles),
+          true,
+        );
       }
       if (clientePayload.consultor_id) {
         await tx.clienteConsultor.create({
@@ -103,9 +108,12 @@ export class CreateFullClientService {
           },
         });
         if (sub.role_id) {
-          await tx.roleUser.create({
-            data: { clientSubId: created.id, roleId: BigInt(sub.role_id), ativo: true },
-          });
+          await this.roleUserRepo.attachToUserCliente(
+            tx,
+            created.id,
+            BigInt(sub.role_id),
+            true,
+          );
         }
         usuariosCliente.push(created);
       }

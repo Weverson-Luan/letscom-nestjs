@@ -58,25 +58,46 @@ export class UserRepository {
     skip: number;
     take: number;
   }) {
-    const where: Prisma.UserWhereInput = {
-      rolePivots: {
-        some: {
-          role: { OR: [{ nome: { contains: 'Consultor' } }, { nome: 'admin' }] },
-        },
-      },
-    };
-    if (params.search) {
-      where.nome = { contains: params.search };
-    }
+    const orderByField = params.sortBy === 'created_at' ? 'createdAt' : (params.sortBy ?? 'createdAt');
+    const order = params.order ?? 'desc';
+    const search = params.search ? `%${params.search}%` : null;
 
-    const orderBy = { [params.sortBy ?? 'createdAt']: params.order ?? 'desc' };
+    const rows = await this.prisma.$queryRaw<{ id: bigint }[]>`
+      SELECT DISTINCT u.id
+      FROM users u
+      INNER JOIN role_user ru ON ru.user_id = u.id AND ru.ativo = 1
+      INNER JOIN roles r ON r.id = ru.role_id
+      WHERE (
+        LOWER(r.nome) LIKE '%consultor%'
+        OR LOWER(r.nome) = 'admin'
+      )
+      ${search ? Prisma.sql`AND u.nome LIKE ${search}` : Prisma.empty}
+      ORDER BY u.created_at ${Prisma.raw(order === 'asc' ? 'ASC' : 'DESC')}
+      LIMIT ${params.take} OFFSET ${params.skip}
+    `;
 
-    const [data, total] = await this.prisma.$transaction([
-      this.prisma.user.findMany({ where, orderBy, skip: params.skip, take: params.take }),
-      this.prisma.user.count({ where }),
-    ]);
+    const countRows = await this.prisma.$queryRaw<[{ total: bigint }]>`
+      SELECT COUNT(DISTINCT u.id) AS total
+      FROM users u
+      INNER JOIN role_user ru ON ru.user_id = u.id AND ru.ativo = 1
+      INNER JOIN roles r ON r.id = ru.role_id
+      WHERE (
+        LOWER(r.nome) LIKE '%consultor%'
+        OR LOWER(r.nome) = 'admin'
+      )
+      ${search ? Prisma.sql`AND u.nome LIKE ${search}` : Prisma.empty}
+    `;
 
-    return { data, total };
+    const ids = rows.map((row) => row.id);
+    const data =
+      ids.length === 0
+        ? []
+        : await this.prisma.user.findMany({
+            where: { id: { in: ids } },
+            orderBy: { [orderByField]: order },
+          });
+
+    return { data, total: Number(countRows[0]?.total ?? 0) };
   }
 
   findByIdWithTipoEntrega(id: bigint) {

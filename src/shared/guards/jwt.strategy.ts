@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthUser } from '../decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { RoleUserRepository } from '../repositories/role-user.repository';
 
 export interface JwtPayload {
   sub: number | string;
@@ -24,6 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly roleUserRepo: RoleUserRepository,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -39,12 +41,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (payload.tipo_login === 'subordinado') {
       const userCliente = await this.prisma.userCliente.findUnique({
         where: { id: sub },
-        include: { rolePivots: { include: { role: true } } },
       });
 
       if (!userCliente) {
         throw new UnauthorizedException('Subordinado não encontrado');
       }
+
+      const roles = await this.roleUserRepo.findRoleNamesForUserCliente(
+        userCliente.id,
+      );
 
       return {
         id: userCliente.id,
@@ -53,18 +58,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         ativo: userCliente.ativo,
         tipoLogin: 'subordinado',
         clienteId: userCliente.clienteId,
-        roles: userCliente.rolePivots.map((p) => p.role.nome),
+        roles,
       };
     }
 
     const user = await this.prisma.user.findUnique({
       where: { id: sub },
-      include: { rolePivots: { include: { role: true } } },
     });
 
     if (!user) {
       throw new UnauthorizedException('Usuário não encontrado');
     }
+
+    const roles = await this.roleUserRepo.findRoleNamesForUser(user.id);
 
     return {
       id: user.id,
@@ -73,7 +79,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ativo: user.ativo,
       tipoLogin: 'user',
       clienteId: null,
-      roles: user.rolePivots.map((p) => p.role.nome),
+      roles,
     };
   }
 }

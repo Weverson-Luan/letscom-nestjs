@@ -34,10 +34,12 @@ src/
 | Fase | Item | Status |
 |------|------|--------|
 | 0 | Fundação (Prisma schema, shared/, auth global, Docker, Swagger) | ✅ |
-| 1 | Módulo **Auth** (login dual User/UserCliente, refresh com rotação, logout, reset de senha) | ✅ |
-| 1 | Módulo **Users** (listagem com créditos, consultores, dados do usuário, CRUD, cliente-completo, feature-flags) | ✅ |
-| 1 | Módulo **Remessas** (solicitação com planilha+ZIP+consumo de créditos, tarefas com cache versionado, status, downloads ZIP/planilha, responsabilidade, uploads) | ✅ |
-| 2+ | Demais módulos (credit-sales, liberações, modelos-técnicos, endereços, entregas, dashboard, activity-log, roles, tecnologias, products, usuarios-cliente, atendimentos) | ⏳ |
+| 1 | Módulo **Auth** (login dual User/UserCliente, refresh com rotação, logout, reset de senha, bloqueio cliente/subordinado) | ✅ |
+| 1 | Módulo **Users** (listagem, consultores, dados, CRUD incl. cliente-completo, feature-flags) | ✅ |
+| 1 | Módulo **Remessas** (solicitação, tarefas, status, downloads, responsabilidade, uploads) | ✅ |
+| 2 | **credit-sales**, **liberações**, **modelos-técnicos**, **endereços**, **entregas-cliente**, **tipos-entrega**, **enderecos-entrega** | ✅ |
+| 2 | **dashboard**, **roles**, **tecnologias**, **products**, **usuarios-cliente**, **users-atendimentos**, **videos-tutorias** | ✅ |
+| — | **Backup** (dashboard/backups, cron) | Fora de escopo |
 
 ## Setup
 

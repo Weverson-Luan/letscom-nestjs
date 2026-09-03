@@ -70,6 +70,44 @@ export class ModeloTecnicoService {
     return modelo;
   }
 
+  async obterUrlImagem(id: bigint, lado: string) {
+    const campo =
+      lado === 'frente'
+        ? 'fotoFrentePath'
+        : lado === 'verso'
+          ? 'fotoVersoPath'
+          : null;
+
+    if (!campo) {
+      throw new BadRequestException('Lado da imagem inválido.');
+    }
+
+    const modelo = await this.prisma.modeloTecnico.findUnique({
+      where: { id },
+      select: { id: true, fotoFrentePath: true, fotoVersoPath: true },
+    });
+
+    if (!modelo) {
+      throw new NotFoundException('Modelo técnico não encontrado.');
+    }
+
+    const path = modelo[campo];
+    if (!path) {
+      throw new NotFoundException('Imagem do modelo não encontrada.');
+    }
+
+    const url = await this.storage.getSignedUrl(path);
+    return {
+      status: 'success',
+      data: {
+        modelo_id: modelo.id,
+        lado,
+        nome: path.split('/').pop(),
+        url,
+      },
+    };
+  }
+
   async criar(
     dto: CreateModeloTecnicoDto,
     fotoFrente?: UploadFile,

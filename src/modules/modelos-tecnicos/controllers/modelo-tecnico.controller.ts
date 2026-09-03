@@ -101,6 +101,15 @@ export class ModeloTecnicoController {
     return ApiResponse.success('Modelo técnico encontrado com sucesso.', data);
   }
 
+  @Get(':id/imagem/:lado')
+  @Roles(...ROLES_LISTA_COM_EXPEDICAO)
+  @ApiParam({ name: 'id', description: 'ID do modelo' })
+  @ApiParam({ name: 'lado', description: 'frente ou verso' })
+  @ApiOperation({ summary: 'Retorna URL assinada da imagem do modelo' })
+  async imagem(@Param('id') id: string, @Param('lado') lado: string) {
+    return this.service.obterUrlImagem(BigInt(id), lado);
+  }
+
   @Post()
   @Roles(...ROLES_ESCRITA)
   @HttpCode(201)

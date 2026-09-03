@@ -1,5 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
 import { HashService } from 'src/shared/utils/hash.service';
 import { LoginDto } from '../dto/login.dto';
 import { serializeUser } from '../mappers/auth-response.mapper';
@@ -18,18 +20,28 @@ export class LoginUseCase {
     private readonly hash: HashService,
     private readonly jwtTokenService: JwtTokenService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly config: ConfigService,
+    private readonly roleUserRepo: RoleUserRepository,
   ) {}
 
   async execute(dto: LoginDto) {
     // 1) Tenta como usuário interno (users)
     const user = await this.prisma.user.findFirst({
       where: { email: dto.email },
-      include: { rolePivots: { include: { role: true } } },
     });
 
     if (user && (await this.hash.check(dto.senha, user.senha))) {
       if (!user.ativo) {
         throw this.usuarioDesativado();
+      }
+
+      const role = await this.roleUserRepo.findPrimaryRoleForUser(user.id);
+      const roleName = role?.nome?.toLowerCase() ?? '';
+      if (
+        this.config.get<boolean>('auth.bloqueioLoginClienteSubordinado') &&
+        roleName === 'cliente'
+      ) {
+        throw this.respostaInstabilidade();
       }
 
       const token = this.jwtTokenService.createToken({
@@ -45,7 +57,6 @@ export class LoginUseCase {
       });
 
       const consultor = await this.buscarConsultorDoCliente(user.id);
-      const role = user.rolePivots[0]?.role ?? null;
 
       return {
         code: 200,
@@ -68,15 +79,16 @@ export class LoginUseCase {
     // 2) Tenta como subordinado (users_cliente)
     const clienteUser = await this.prisma.userCliente.findFirst({
       where: { email: dto.email },
-      include: {
-        rolePivots: { include: { role: true } },
-        clientePrincipal: true,
-      },
+      include: { clientePrincipal: true },
     });
 
     if (clienteUser && (await this.hash.check(dto.senha, clienteUser.senha))) {
       if (!clienteUser.ativo) {
         throw this.usuarioDesativado();
+      }
+
+      if (this.config.get<boolean>('auth.bloqueioLoginClienteSubordinado')) {
+        throw this.respostaInstabilidade();
       }
 
       const clientePrincipal = clienteUser.clientePrincipal;
@@ -98,7 +110,9 @@ export class LoginUseCase {
         clienteId: clienteUser.clienteId,
       });
 
-      const role = clienteUser.rolePivots[0]?.role ?? null;
+      const role = await this.roleUserRepo.findPrimaryRoleForUserCliente(
+        clienteUser.id,
+      );
 
       return {
         code: 200,
@@ -148,6 +162,21 @@ export class LoginUseCase {
         errors: {
           ativo: 'Este usuário está desativado e não pode acessar o sistema!',
         },
+      },
+      HttpStatus.UNPROCESSABLE_ENTITY,
+    );
+  }
+
+  private respostaInstabilidade() {
+    const msg =
+      this.config.get<string>('auth.mensagemInstabilidade') ??
+      'Estamos enfrentando uma instabilidade temporária em nosso sistema.';
+
+    return new HttpException(
+      {
+        code: 422,
+        message: msg,
+        errors: { sistema: msg },
       },
       HttpStatus.UNPROCESSABLE_ENTITY,
     );

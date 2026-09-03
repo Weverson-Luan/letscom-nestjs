@@ -8,6 +8,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CreditSalesModule } from './modules/credit-sales/credit-sales.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { EnderecosModule } from './modules/enderecos/enderecos.module';
+import { EnderecosEntregaModule } from './modules/enderecos-entrega/enderecos-entrega.module';
+import { EntregasClienteModule } from './modules/entregas-cliente/entregas-cliente.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { HealthModule } from './modules/health/health.module';
 import { ModelosTecnicosModule } from './modules/modelos-tecnicos/modelos-tecnicos.module';
@@ -16,7 +18,10 @@ import { RemessaLiberacaoModule } from './modules/remessa-liberacao/remessa-libe
 import { RemessasModule } from './modules/remessas/remessas.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { TecnologiasModule } from './modules/tecnologias/tecnologias.module';
+import { TiposEntregaModule } from './modules/tipos-entrega/tipos-entrega.module';
+import { TutorialsModule } from './modules/tutorials/tutorials.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { UsersAtendimentosModule } from './modules/users-atendimentos/users-atendimentos.module';
 import { UsersModule } from './modules/users/users.module';
 import { UsuariosClienteModule } from './modules/usuarios-cliente/usuarios-cliente.module';
 import { CacheModule } from './shared/cache/cache.module';
@@ -58,6 +63,11 @@ import { UtilsModule } from './shared/utils/utils.module';
     CreditSalesModule,
     ModelosTecnicosModule,
     EnderecosModule,
+    EnderecosEntregaModule,
+    EntregasClienteModule,
+    TiposEntregaModule,
+    TutorialsModule,
+    UsersAtendimentosModule,
     UsuariosClienteModule,
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: LoggingInterceptor }],

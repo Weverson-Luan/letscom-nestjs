@@ -171,13 +171,16 @@ async function seedUsersAndRoles() {
       },
     });
 
-    const existing = await prisma.roleUser.findFirst({
-      where: { userId: user.id, roleId: role.id },
-    });
-    if (!existing) {
-      await prisma.roleUser.create({
-        data: { userId: user.id, roleId: role.id, ativo: true },
-      });
+    const existing = await prisma.$queryRaw<{ user_id: bigint }[]>`
+      SELECT user_id FROM role_user
+      WHERE user_id = ${user.id} AND role_id = ${role.id}
+      LIMIT 1
+    `;
+    if (existing.length === 0) {
+      await prisma.$executeRaw`
+        INSERT INTO role_user (user_id, role_id, ativo)
+        VALUES (${user.id}, ${role.id}, true)
+      `;
     }
   }
 }
@@ -305,11 +308,23 @@ async function seedTiposEntrega() {
 }
 
 async function seedTipoEntregaUser() {
-  let clientes = await prisma.user.findMany({
-    where: { rolePivots: { some: { role: { nome: 'cliente' } } } },
-    orderBy: { id: 'asc' },
-    take: 2,
-  });
+  const clienteRows = await prisma.$queryRaw<{ id: bigint }[]>`
+    SELECT u.id
+    FROM users u
+    INNER JOIN role_user ru ON ru.user_id = u.id AND ru.ativo = 1
+    INNER JOIN roles r ON r.id = ru.role_id
+    WHERE LOWER(r.nome) = 'cliente'
+    ORDER BY u.id ASC
+    LIMIT 2
+  `;
+
+  let clientes =
+    clienteRows.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: clienteRows.map((row) => row.id) } },
+          orderBy: { id: 'asc' },
+        })
+      : [];
 
   if (clientes.length < 2) {
     clientes = await prisma.user.findMany({ orderBy: { id: 'asc' }, take: 2 });
@@ -721,10 +736,21 @@ async function seedCreditSales() {
 }
 
 async function seedRemessaResponsabilidade() {
-  const clientes = await prisma.user.findMany({
-    where: { rolePivots: { some: { role: { nome: 'cliente' } } } },
-    orderBy: { id: 'asc' },
-  });
+  const clienteRows = await prisma.$queryRaw<{ id: bigint }[]>`
+    SELECT u.id
+    FROM users u
+    INNER JOIN role_user ru ON ru.user_id = u.id AND ru.ativo = 1
+    INNER JOIN roles r ON r.id = ru.role_id
+    WHERE LOWER(r.nome) = 'cliente'
+    ORDER BY u.id ASC
+  `;
+  const clientes =
+    clienteRows.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: clienteRows.map((row) => row.id) } },
+          orderBy: { id: 'asc' },
+        })
+      : [];
 
   if (clientes.length === 0) {
     console.warn('Nenhum cliente encontrado. Execute o UserSeeder primeiro.');

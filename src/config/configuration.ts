@@ -51,6 +51,18 @@ export default () => ({
       process.env.SENHA_USUARIO_SUBORDINADO_LETSCOM_DEFAULT,
     userIdExecutorAdmin: process.env.USER_ID_EXECUTOR_ADMIN,
   },
+  auth: {
+    bloqueioLoginClienteSubordinado:
+      process.env.BLOQUEIO_LOGIN_CLIENTE_SUBORDINADO === 'true',
+    mensagemInstabilidade:
+      process.env.AUTH_MENSAGEM_INSTABILIDADE ??
+      'Estamos enfrentando uma instabilidade temporária em nosso sistema. Nossa equipe já está trabalhando para normalizar o funcionamento o mais breve possível. Pedimos desculpas pelo transtorno e agradecemos a compreensão.',
+  },
+  tutorials: {
+    videoPath:
+      process.env.TUTORIAL_VIDEO_PATH ??
+      'videos-tutorias/video-tutotial-pequeno.mp4',
+  },
   log: {
     level: process.env.LOG_LEVEL ?? 'debug',
   },
