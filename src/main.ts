@@ -1,11 +1,21 @@
+/**
+ * IMPORTS
+ */
+
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
 import { WinstonModule } from 'nest-winston';
 import { join } from 'path';
+
+// modules
 import { AppModule } from './app.module';
+
+// shared / filters
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { createWinstonOptions } from './shared/utils/logger';
 
@@ -23,20 +33,29 @@ async function bootstrap() {
   });
 
   const config = app.get(ConfigService);
+
   const context = config.get<string>('app.context') ?? 'apiparcelas';
+
   const port = config.get<number>('app.port') ?? 3000;
+
   const maxUpload = config.get<number>('app.maxUploadSize') ?? 209715200;
 
+  // ================================
   // Prefixo global de rota (compatibilidade com o APP_CONTEXT do Laravel)
+  // ================================
   app.setGlobalPrefix(context);
 
-  // Espelha o symlink public/storage do Laravel: arquivos em storage/app
-  // ficam acessíveis em /storage/<path> (fora do APP_CONTEXT).
+
+  // ================================
+  // arquivos em storage/app ficam acessíveis em /storage/<path> (fora do APP_CONTEXT).
+  // ================================
   app.useStaticAssets(join(process.cwd(), 'storage', 'app'), {
     prefix: '/storage/',
   });
 
+  // ================================
   // Limite de body/upload (200MB, igual ao PHP upload_max_filesize)
+  // ================================
   app.useBodyParser('json', { limit: maxUpload });
   app.useBodyParser('urlencoded', { limit: maxUpload, extended: true });
 
