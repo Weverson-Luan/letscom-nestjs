@@ -1,3 +1,7 @@
+/**
+ * IMPORTS
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
@@ -31,6 +35,12 @@ export class MailService {
     });
   }
 
+  /**
+   * Renderiza um template Handlebars
+   * @param template - O nome do template
+   * @param context - O contexto do template
+   * @returns O template renderizado
+   */
   render(template: string, context: Record<string, unknown>): string {
     let compiled = this.templateCache.get(template);
     if (!compiled) {
@@ -42,6 +52,10 @@ export class MailService {
     return compiled(context);
   }
 
+  /**
+   * Envia um e-mail
+   * @param options - As opções do e-mail
+   */
   async send(options: SendMailOptions): Promise<void> {
     const fromAddress = this.config.get<string>('mail.fromAddress') ?? '';
     const fromName = this.config.get<string>('mail.fromName') ?? 'Letscom';
