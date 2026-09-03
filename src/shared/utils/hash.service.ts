@@ -1,14 +1,19 @@
+/**
+ * IMPORTS
+ */
+
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
+
 import * as bcrypt from 'bcrypt';
 
 /**
- * Hashing de senha com bcrypt (equivalente ao Hash::make / Hash::check do
- * Laravel). Suporta hashes PHP (`$2y$`) e legado MD5 do banco antigo.
+ * Hashing de senha com bcrypt
+ * 
  */
 @Injectable()
-export class HashService {
+ class HashService {
   private readonly rounds: number;
 
   constructor(config: ConfigService) {
@@ -27,7 +32,7 @@ export class HashService {
       return bcrypt.compare(plain, normalized);
     }
 
-    // Legado: MD5 puro (alguns registros antigos no Laravel).
+    // Legado: MD5 puro
     if (/^[a-f0-9]{32}$/i.test(hashed)) {
       return createHash('md5').update(plain).digest('hex') === hashed.toLowerCase();
     }
@@ -35,3 +40,8 @@ export class HashService {
     return bcrypt.compare(plain, hashed);
   }
 }
+
+/**
+ * EXPORT
+ */
+export { HashService };
