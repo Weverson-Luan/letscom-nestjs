@@ -10,16 +10,16 @@ import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 export class ResetPasswordDto {
   @ApiProperty({ example: 'abc123token', description: 'Token recebido por e-mail' })
   @IsNotEmpty({ message: 'O token é obrigatório.' })
-  token: string;
+  token!: string;
 
   @ApiProperty({ example: 'senhaAtual123', minLength: 6 })
   @IsString()
   @IsNotEmpty({ message: 'A senha antiga é obrigatória.' })
   @MinLength(6, { message: 'A senha deve ter pelo menos 6 caracteres.' })
-  senha: string;
+  senha!: string;
 
   @ApiProperty({ example: 'senhaAtual123', description: 'Deve ser igual a `senha`' })
   @IsString()
   @IsNotEmpty({ message: 'A nova senha é obrigatória.' })
-  nova_senha: string;
+  nova_senha!: string;
 }

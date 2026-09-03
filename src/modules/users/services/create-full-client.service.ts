@@ -16,6 +16,7 @@ import { RoleUserRepository } from 'src/shared/repositories/role-user.repository
 
 // typings
 import { FullClientClienteDto, FullClientEnderecoDto, FullClientUsuarioClienteDto } from '../dto/create-full-client.dto';
+
 /**
  * Faz a criação de um cliente completo, incluindo:
  * - cria o cliente principal,

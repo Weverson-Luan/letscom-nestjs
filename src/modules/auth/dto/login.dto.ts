@@ -6,10 +6,10 @@ export class LoginDto {
   @ApiProperty({ example: 'usuario@empresa.com' })
   @IsEmail({}, { message: 'Informe um e-mail válido.' })
   @IsNotEmpty({ message: 'O e-mail é obrigatório.' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'senha123' })
   @IsString()
   @IsNotEmpty({ message: 'A senha é obrigatória.' })
-  senha: string;
+  senha!: string;
 }

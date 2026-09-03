@@ -1,28 +1,35 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2021",
+    "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "incremental": true,
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "skipLibCheck": true,
-    "strictNullChecks": true,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
-    "esModuleInterop": true,
+    "strict": true,
     "resolveJsonModule": true,
     "paths": {
       "src/*": ["./src/*"]
-    }
+    },
+    "types": [
+      "node",
+      "jest",
+      "express",
+      "bcrypt",
+      "jsonwebtoken",
+      "passport-jwt",
+      "uuid",
+      "adm-zip",
+      "unzipper"
+    ]
   },
+  "include": ["src"],
   "exclude": ["node_modules", "dist", "prisma"]
 }

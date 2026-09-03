@@ -5,11 +5,11 @@ import { IsArray, IsBoolean, IsInt, ValidateNested } from 'class-validator';
 export class FeatureFlagItemDto {
   @ApiProperty()
   @IsInt()
-  feature_flag_id: number;
+  feature_flag_id!: number;
 
   @ApiProperty()
   @IsBoolean()
-  ativo: boolean;
+  ativo!: boolean;
 }
 
 /** Espelha o SyncUserFeatureFlagsRequest do Laravel. */
@@ -18,5 +18,5 @@ export class SyncFeatureFlagsDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => FeatureFlagItemDto)
-  flags: FeatureFlagItemDto[];
+  flags!: FeatureFlagItemDto[];
 }

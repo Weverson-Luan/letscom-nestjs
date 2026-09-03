@@ -28,21 +28,21 @@ export class EnvironmentVariables {
   APP_PORT = 3000;
 
   @IsString()
-  APP_CONTEXT: string;
+  APP_CONTEXT!: string;
 
   @IsOptional()
   @IsString()
-  APP_URL: string;
+  APP_URL?: string;
 
   @IsOptional()
   @IsString()
-  FRONTEND_URL: string;
+  FRONTEND_URL?: string;
 
   @IsString()
-  DATABASE_URL: string;
+  DATABASE_URL!: string;
 
   @IsString()
-  JWT_SECRET: string;
+  JWT_SECRET!: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -74,7 +74,7 @@ export class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
-  REDIS_PASSWORD: string;
+  REDIS_PASSWORD?: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -87,23 +87,23 @@ export class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
-  CLOUDFLARE_R2_ACCOUNT_ID: string;
+  CLOUDFLARE_R2_ACCOUNT_ID?: string;
 
   @IsOptional()
   @IsString()
-  CLOUDFLARE_R2_ACCESS_KEY_ID: string;
+  CLOUDFLARE_R2_ACCESS_KEY_ID?: string;
 
   @IsOptional()
   @IsString()
-  CLOUDFLARE_R2_SECRET_ACCESS_KEY: string;
+  CLOUDFLARE_R2_SECRET_ACCESS_KEY?: string;
 
   @IsOptional()
   @IsString()
-  CLOUDFLARE_R2_BUCKET: string;
+  CLOUDFLARE_R2_BUCKET?: string;
 
   @IsOptional()
   @IsString()
-  CLOUDFLARE_R2_ENDPOINT: string;
+  CLOUDFLARE_R2_ENDPOINT?: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -112,15 +112,15 @@ export class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
-  MAIL_FROM_ADDRESS: string;
+  MAIL_FROM_ADDRESS?: string;
 
   @IsOptional()
   @IsString()
-  MAIL_FROM_NAME: string;
+  MAIL_FROM_NAME?: string;
 
   @IsOptional()
   @IsString()
-  MAILERSEND_API_KEY: string;
+  MAILERSEND_API_KEY?: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -129,23 +129,23 @@ export class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
-  SENHA_USUARIO_SUBORDINADO_LETSCOM_DEFAULT: string;
+  SENHA_USUARIO_SUBORDINADO_LETSCOM_DEFAULT?: string;
 
   @IsOptional()
   @IsString()
-  USER_ID_EXECUTOR_ADMIN: string;
+  USER_ID_EXECUTOR_ADMIN?: string;
 
   @IsOptional()
   @IsString()
-  BLOQUEIO_LOGIN_CLIENTE_SUBORDINADO: string;
+  BLOQUEIO_LOGIN_CLIENTE_SUBORDINADO?: string;
 
   @IsOptional()
   @IsString()
-  TUTORIAL_VIDEO_PATH: string;
+  TUTORIAL_VIDEO_PATH?: string;
 
   @IsOptional()
   @IsString()
-  AUTH_MENSAGEM_INSTABILIDADE: string;
+  AUTH_MENSAGEM_INSTABILIDADE?: string;
 
   @IsOptional()
   @IsString()
