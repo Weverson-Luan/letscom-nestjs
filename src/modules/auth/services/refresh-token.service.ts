@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes, createHash } from 'crypto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
@@ -8,6 +8,7 @@ import {
   TOKENABLE_USER,
 } from '../repositories/refresh-token.repository';
 import { JwtTokenService } from './jwt-token.service';
+import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 
 export type Tokenable =
   | { kind: 'user'; id: bigint; email: string; ativo: boolean }
@@ -33,6 +34,48 @@ export class RefreshTokenService {
   private tokenableType(kind: 'user' | 'subordinado'): string {
     return kind === 'subordinado' ? TOKENABLE_SUBORDINADO : TOKENABLE_USER;
   }
+
+
+  async execute(user: AuthUser | undefined) {
+    if (user) {
+      await this.revokeAll(
+        user.tipoLogin === 'subordinado'
+          ? {
+              kind: 'subordinado',
+              id: user.id,
+              email: user.email,
+              ativo: user.ativo,
+              clienteId: user.clienteId ?? BigInt(0),
+            }
+          : { kind: 'user', id: user.id, email: user.email, ativo: user.ativo },
+      );
+    }
+
+    return {
+      code: 200,
+      status: 'success',
+      message: 'Logout realizado com sucesso!',
+      data: [],
+      pagination: null,
+    };
+  }
+
+
+  async executeRefreshToken(refreshToken: string) {
+    try {
+      const result = await this.rotate(refreshToken);
+      return {
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+      };
+    } catch {
+      throw new HttpException(
+        { code: 401, error: 'Refresh token inválido ou expirado' },
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+  }
+
 
   /** Emite um refresh token opaco e persiste o hash. Retorna o token em claro. */
   async issue(tokenable: Tokenable): Promise<string> {

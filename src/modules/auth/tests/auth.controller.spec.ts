@@ -1,7 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthController } from '../controllers/auth.controller';
-import { LoginUseCase } from '../use-cases/login.use-case';
+import { LoginUseCase } from '../services/auth-client-user.service';
 import { RefreshTokenUseCase } from '../use-cases/refresh-token.use-case';
 import { LogoutUseCase } from '../use-cases/logout.use-case';
 

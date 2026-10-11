@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { HttpException } from '@nestjs/common';
-import { LoginUseCase } from '../use-cases/login.use-case';
+import { LoginUseCase } from '../services/auth-client-user.service';
 import { JwtTokenService } from '../services/jwt-token.service';
 import { RefreshTokenService } from '../services/refresh-token.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';

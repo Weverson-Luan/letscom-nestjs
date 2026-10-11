@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ResetPasswordUseCase } from '../use-cases/reset-password.use-case';
-import { PasswordResetService } from '../services/password-reset.service';
+import { PasswordResetService } from '../services/auth-reset-password.service';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 
 describe('ResetPasswordUseCase', () => {

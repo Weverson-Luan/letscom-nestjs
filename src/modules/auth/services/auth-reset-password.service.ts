@@ -1,17 +1,38 @@
+/**
+ * IMPORTS
+ */
+
+
 import { Injectable } from '@nestjs/common';
+
+// services
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// repositories / password
+import { PasswordResetRepository } from '../repositories/password-reset.repository';
+
+// shared / exceptions
 import { BusinessException } from 'src/shared/exceptions/business.exception';
-import { PasswordResetService } from '../services/password-reset.service';
+
+// mappers 
+import { resetPassword } from './helpers/reset-password';
+import { validateResetPasswordBody } from './helpers/validade.';
+
 
 /**
  * Espelha PasswordResetController::resetPassword (validação: token,
  * senha min:6, nova_senha same:senha). Erros retornam HTTP 200 com `code`.
  */
 @Injectable()
-export class ResetPasswordUseCase {
-  constructor(private readonly service: PasswordResetService) {}
+export class AuthResetPasswordService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly repository: PasswordResetRepository,
+  ) {}
 
   async execute(body: Record<string, any>): Promise<{ status: number; body: any }> {
-    const errors = this.validate(body);
+    const errors = validateResetPasswordBody(body);
+
     if (Object.keys(errors).length > 0) {
       return {
         status: 200,
@@ -24,7 +45,8 @@ export class ResetPasswordUseCase {
     }
 
     try {
-      await this.service.resetPassword(body.token, body.nova_senha);
+      await resetPassword(this.repository, this.prisma,body.token, body.nova_senha )
+
       return { status: 200, body: { code: 200, message: 'Senha alterada com sucesso!' } };
     } catch (error) {
       if (error instanceof BusinessException) {
@@ -48,21 +70,5 @@ export class ResetPasswordUseCase {
     }
   }
 
-  private validate(body: Record<string, any>): Record<string, string[]> {
-    const errors: Record<string, string[]> = {};
-    if (!body?.token) {
-      errors.token = ['O token é obrigatório.'];
-    }
-    if (!body?.senha) {
-      errors.senha = ['A senha antiga é obrigatória.'];
-    } else if (String(body.senha).length < 6) {
-      errors.senha = ['A senha deve ter pelo menos 6 caracteres.'];
-    }
-    if (!body?.nova_senha) {
-      errors.nova_senha = ['A nova senha é obrigatória.'];
-    } else if (body.nova_senha !== body.senha) {
-      errors.nova_senha = ['As senhas não coincidem.'];
-    }
-    return errors;
-  }
+
 }
