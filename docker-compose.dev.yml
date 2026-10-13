@@ -3,15 +3,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: dev
-    container_name: letscom_dev
+      target: development
+    container_name: letscom-api-dev
     restart: unless-stopped
     env_file:
       - .env
     ports:
       - "${PORT:-3005}:${PORT:-3005}"
     environment:
-      NODE_ENV: dev
+      NODE_ENV: development
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
@@ -30,7 +30,7 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: letscom_db
+    container_name: letscom-bd-dev
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
