@@ -30,7 +30,7 @@ export class ModeloTecnicoService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async listar(query: Record<string, unknown>, clienteId?: bigint) {
+  async listar(query: Record<string, unknown>, clienteId?: bigint, incluirInativos = false) {
     const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
     const defaultSort = clienteId ? 'nome_modelo' : 'created_at';
     const defaultOrder = clienteId ? 'asc' : 'desc';
@@ -41,6 +41,7 @@ export class ModeloTecnicoService {
 
     const { data, total } = await this.repository.paginate({
       clienteId,
+      incluirInativos,
       search: query.search as string | undefined,
       sortBy: (query.sort_by as string) ?? defaultSort,
       order,
@@ -216,10 +217,20 @@ export class ModeloTecnicoService {
     }
   }
 
-  async excluir(id: bigint) {
+  /**
+   * Inativa um Modelo Técnico (soft disable) em vez de excluí-lo, preservando o
+   * histórico de remessas vinculadas. Modelos inativos deixam de aparecer nas
+   * listagens e não podem receber novas remessas.
+   */
+  async inativar(id: bigint) {
     await this.buscar(id);
-    // Espelha Laravel: hard delete sem limpar storage.
-    await this.repository.delete(id);
+    await this.repository.setAtivo(id, false);
+  }
+
+  /** Reativa um Modelo Técnico, voltando a exibi-lo e liberando novas remessas. */
+  async reativar(id: bigint) {
+    await this.buscar(id);
+    await this.repository.setAtivo(id, true);
   }
 
   private async armazenarFoto(file: UploadFile, pasta: 'frente' | 'verso') {

@@ -1,24 +1,24 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthController } from '../controllers/auth.controller';
-import { LoginUseCase } from '../services/auth-client-user.service';
-import { RefreshTokenUseCase } from '../use-cases/refresh-token.use-case';
-import { LogoutUseCase } from '../use-cases/logout.use-case';
+import { AuthClientUserService } from '../services/auth-client-user.service';
+import { AuthSubordinateUserService } from '../services/auth-subordinate-user.service';
+import { RefreshTokenService } from '../services/refresh-token.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
 
   const loginUseCase = { execute: jest.fn() };
-  const refreshTokenUseCase = { execute: jest.fn() };
-  const logoutUseCase = { execute: jest.fn() };
+  const loginSubordinadoUseCase = { execute: jest.fn() };
+  const refreshTokenService = { executeRefreshToken: jest.fn(), execute: jest.fn() };
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
-        { provide: LoginUseCase, useValue: loginUseCase },
-        { provide: RefreshTokenUseCase, useValue: refreshTokenUseCase },
-        { provide: LogoutUseCase, useValue: logoutUseCase },
+        { provide: AuthClientUserService, useValue: loginUseCase },
+        { provide: AuthSubordinateUserService, useValue: loginSubordinadoUseCase },
+        { provide: RefreshTokenService, useValue: refreshTokenService },
       ],
     })
       .overrideGuard(ThrottlerGuard)
@@ -57,7 +57,7 @@ describe('AuthController', () => {
   });
 
   it('refresh renova tokens', async () => {
-    refreshTokenUseCase.execute.mockResolvedValue({
+    refreshTokenService.executeRefreshToken.mockResolvedValue({
       access_token: 'new-access',
       refresh_token: 'new-refresh',
     });
@@ -68,11 +68,11 @@ describe('AuthController', () => {
       access_token: 'new-access',
       refresh_token: 'new-refresh',
     });
-    expect(refreshTokenUseCase.execute).toHaveBeenCalledWith('old-refresh');
+    expect(refreshTokenService.executeRefreshToken).toHaveBeenCalledWith('old-refresh');
   });
 
   it('logout revoga sessão do usuário autenticado', async () => {
-    logoutUseCase.execute.mockResolvedValue({
+    refreshTokenService.execute.mockResolvedValue({
       code: 200,
       status: 'success',
       message: 'Logout realizado com sucesso!',
@@ -92,6 +92,6 @@ describe('AuthController', () => {
     const result = await controller.logout(user);
 
     expect(result.message).toBe('Logout realizado com sucesso!');
-    expect(logoutUseCase.execute).toHaveBeenCalledWith(user);
+    expect(refreshTokenService.execute).toHaveBeenCalledWith(user);
   });
 });

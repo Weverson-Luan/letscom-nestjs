@@ -27,6 +27,7 @@ export class ProductRepository {
 
   async paginate(params: {
     search?: string;
+    ativo?: boolean;
     sortBy?: string;
     order?: 'asc' | 'desc';
     skip: number;
@@ -36,9 +37,12 @@ export class ProductRepository {
     if (params.search) {
       where.nome = { contains: params.search };
     }
+    if (params.ativo !== undefined) {
+      where.ativo = params.ativo;
+    }
 
-    const sortField = SORT_MAP[params.sortBy ?? 'created_at'] ?? 'createdAt';
-    const orderBy = { [sortField]: params.order ?? 'desc' };
+    const sortField = SORT_MAP[params.sortBy ?? 'nome'] ?? 'nome';
+    const orderBy = { [sortField]: params.order ?? 'asc' };
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.product.findMany({
@@ -59,12 +63,5 @@ export class ProductRepository {
 
   update(id: bigint, data: Prisma.ProductUpdateInput) {
     return this.prisma.product.update({ where: { id }, data });
-  }
-
-  softDelete(id: bigint) {
-    return this.prisma.product.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
   }
 }

@@ -5,6 +5,8 @@ import { Roles } from 'src/shared/decorators/roles.decorator';
 import { ApiResponse } from 'src/shared/utils/api-response';
 import { CreateRoleDto } from '../dto/create-role.dto';
 import { RoleService } from '../services/role.service';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 @ApiTags('roles')
 @ApiBearerAuth()
@@ -13,6 +15,11 @@ export class RoleController {
   constructor(private readonly service: RoleService) {}
 
   @Get()
+  @RequireFeatures(
+    Feature.CRIAR_CLIENTE,
+    Feature.CRIAR_USUARIO_CLIENTE,
+    Feature.ACESSAR_FEATURE_FLAGS,
+  )
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR, Role.CLIENTE)
   @ApiOperation({ summary: 'Lista todas as roles' })
   async index() {
@@ -21,6 +28,7 @@ export class RoleController {
   }
 
   @Post()
+  @RequireFeatures(Feature.ACESSAR_FEATURE_FLAGS)
   @Roles(Role.ADMIN)
   @HttpCode(201)
   @ApiOperation({ summary: 'Cria uma role' })

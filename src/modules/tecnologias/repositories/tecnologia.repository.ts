@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 
-/** Mapeia sort_by (snake) para campos do Prisma; default createdAt. */
+/** Mapeia sort_by (snake) para campos do Prisma; default nome. */
 const SORT_MAP: Record<string, string> = {
   created_at: 'createdAt',
   updated_at: 'updatedAt',
@@ -26,6 +26,7 @@ export class TecnologiaRepository {
 
   async paginate(params: {
     search?: string;
+    ativo?: boolean;
     sortBy?: string;
     order?: 'asc' | 'desc';
     skip: number;
@@ -35,9 +36,12 @@ export class TecnologiaRepository {
     if (params.search) {
       where.nome = { contains: params.search };
     }
+    if (params.ativo !== undefined) {
+      where.ativo = params.ativo;
+    }
 
-    const sortField = SORT_MAP[params.sortBy ?? 'created_at'] ?? 'createdAt';
-    const orderBy = { [sortField]: params.order ?? 'desc' };
+    const sortField = SORT_MAP[params.sortBy ?? 'nome'] ?? 'nome';
+    const orderBy = { [sortField]: params.order ?? 'asc' };
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.tecnologia.findMany({
@@ -58,9 +62,5 @@ export class TecnologiaRepository {
 
   update(id: bigint, data: Prisma.TecnologiaUpdateInput) {
     return this.prisma.tecnologia.update({ where: { id }, data });
-  }
-
-  delete(id: bigint) {
-    return this.prisma.tecnologia.delete({ where: { id } });
   }
 }

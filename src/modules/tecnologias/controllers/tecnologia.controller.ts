@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   Param,
@@ -10,14 +9,16 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { ALL_ROLES, Role } from 'src/shared/constants/roles';
+import { ALL_ROLES } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
-import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
+import { ActiveFilterQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { ApiResponse } from 'src/shared/utils/api-response';
 import { CreateTecnologiaDto } from '../dto/create-tecnologia.dto';
 import { UpdateTecnologiaDto } from '../dto/update-tecnologia.dto';
 import { mapTecnologia } from '../mappers/tecnologia.mapper';
 import { TecnologiaService } from '../services/tecnologia.service';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 @ApiTags('tecnologias')
 @ApiBearerAuth()
@@ -26,9 +27,14 @@ export class TecnologiaController {
   constructor(private readonly service: TecnologiaService) {}
 
   @Get()
+  @RequireFeatures(
+    Feature.ACESSAR_TECNOLOGIAS,
+    Feature.CRIAR_MODELOS_TECNICOS,
+    Feature.EDITAR_MODELOS_TECNICOS,
+  )
   @Roles(...ALL_ROLES)
-  @ApiOperation({ summary: 'Lista as tecnologias (paginado)' })
-  async index(@Query() query: PaginationQueryDto) {
+  @ApiOperation({ summary: 'Lista as tecnologias (paginado, filtro opcional `ativo`)' })
+  async index(@Query() query: ActiveFilterQueryDto) {
     const { data, pagination } = await this.service.listar(
       query as unknown as Record<string, unknown>,
     );
@@ -40,6 +46,11 @@ export class TecnologiaController {
   }
 
   @Get(':id')
+  @RequireFeatures(
+    Feature.ACESSAR_TECNOLOGIAS,
+    Feature.CRIAR_MODELOS_TECNICOS,
+    Feature.EDITAR_MODELOS_TECNICOS,
+  )
   @Roles(...ALL_ROLES)
   @ApiParam({ name: 'id', description: 'ID da tecnologia' })
   @ApiOperation({ summary: 'Detalha uma tecnologia' })
@@ -52,6 +63,7 @@ export class TecnologiaController {
   }
 
   @Post()
+  @RequireFeatures(Feature.ACESSAR_TECNOLOGIAS)
   @Roles(...ALL_ROLES)
   @HttpCode(201)
   @ApiOperation({ summary: 'Cria uma tecnologia' })
@@ -66,6 +78,7 @@ export class TecnologiaController {
   }
 
   @Put(':id')
+  @RequireFeatures(Feature.ACESSAR_TECNOLOGIAS)
   @Roles(...ALL_ROLES)
   @ApiParam({ name: 'id', description: 'ID da tecnologia' })
   @ApiOperation({ summary: 'Atualiza uma tecnologia' })
@@ -75,14 +88,5 @@ export class TecnologiaController {
       'Tecnologia atualizada com sucesso!',
       mapTecnologia(tecnologia),
     );
-  }
-
-  @Delete(':id')
-  @Roles(Role.ADMIN, Role.CONSULTOR)
-  @ApiParam({ name: 'id', description: 'ID da tecnologia' })
-  @ApiOperation({ summary: 'Exclui uma tecnologia' })
-  async destroy(@Param('id') id: string) {
-    await this.service.excluir(BigInt(id));
-    return ApiResponse.success('Tecnologia removida com sucesso', []);
   }
 }

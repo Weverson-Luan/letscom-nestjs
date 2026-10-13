@@ -40,8 +40,9 @@ export class LiberacaoRemessaBalcaoEmailService {
     tipoEntregaId: bigint,
     observacao: string,
     filePath?: string | null,
+    assunto?: string | null,
   ): Promise<void> {
-    await this.enviarInterno(remessa, liberador, tipoEntregaId, observacao, filePath, true);
+    await this.enviarInterno(remessa, liberador, tipoEntregaId, observacao, filePath, true, assunto);
   }
 
   async enviarSemExcecao(
@@ -50,6 +51,7 @@ export class LiberacaoRemessaBalcaoEmailService {
     tipoEntregaId: bigint,
     observacao: string,
     filePath?: string | null,
+    assunto?: string | null,
   ): Promise<void> {
     try {
       await this.enviarInterno(
@@ -59,6 +61,7 @@ export class LiberacaoRemessaBalcaoEmailService {
         observacao,
         filePath,
         false,
+        assunto,
       );
     } catch (error) {
       this.logger.error(
@@ -99,6 +102,7 @@ export class LiberacaoRemessaBalcaoEmailService {
     observacao: string,
     filePath: string | null | undefined,
     lancarExcecao: boolean,
+    assunto?: string | null,
   ): Promise<void> {
     try {
       const destinatario = this.resolverDestinatario(remessa);
@@ -118,7 +122,7 @@ export class LiberacaoRemessaBalcaoEmailService {
       await this.mail.send({
         to: destinatario.email,
         toName: destinatario.nome,
-        subject: `Atualização da sua remessa Nº ${remessa.numeroRemessa}`,
+        subject: assunto ?? `Atualização da sua remessa Nº ${remessa.numeroRemessa}`,
         html,
         text: `Olá ${destinatario.nome}, sua remessa Nº ${remessa.numeroRemessa} foi liberada com sucesso. Acesse o sistema para acompanhar os detalhes.`,
         attachments,

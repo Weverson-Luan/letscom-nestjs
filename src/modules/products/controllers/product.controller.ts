@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   Param,
@@ -10,7 +9,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
+import { ActiveFilterQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { ApiResponse } from 'src/shared/utils/api-response';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
@@ -19,7 +20,8 @@ import { ProductService } from '../services/product.service';
 
 /**
  * CRUD de produtos — espelha ProductController.
- * JWT only (sem role middleware no Laravel).
+ * Sem role middleware no Laravel: acesso controlado por feature flag.
+ * Produtos não são excluídos (apenas inativados via `ativo`).
  */
 @ApiTags('products')
 @ApiBearerAuth()
@@ -28,8 +30,15 @@ export class ProductController {
   constructor(private readonly service: ProductService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lista os produtos (paginado)' })
-  async index(@Query() query: PaginationQueryDto) {
+  @RequireFeatures(
+    Feature.ACESSAR_PRODUTOS,
+    Feature.CRIAR_MODELOS_TECNICOS,
+    Feature.EDITAR_MODELOS_TECNICOS,
+    Feature.CRIAR_CREDITO,
+    Feature.GERENCIAR_CREDITOS_CLIENTE,
+  )
+  @ApiOperation({ summary: 'Lista os produtos (paginado, filtro opcional `ativo`)' })
+  async index(@Query() query: ActiveFilterQueryDto) {
     const { data, pagination } = await this.service.listar(
       query as unknown as Record<string, unknown>,
     );
@@ -41,6 +50,11 @@ export class ProductController {
   }
 
   @Get(':id')
+  @RequireFeatures(
+    Feature.ACESSAR_PRODUTOS,
+    Feature.CRIAR_MODELOS_TECNICOS,
+    Feature.EDITAR_MODELOS_TECNICOS,
+  )
   @ApiParam({ name: 'id', description: 'ID do produto' })
   @ApiOperation({ summary: 'Detalha um produto' })
   async show(@Param('id') id: string) {
@@ -52,6 +66,7 @@ export class ProductController {
   }
 
   @Post()
+  @RequireFeatures(Feature.ACESSAR_PRODUTOS)
   @HttpCode(201)
   @ApiOperation({ summary: 'Cria um produto' })
   async store(@Body() body: CreateProductDto) {
@@ -65,6 +80,7 @@ export class ProductController {
   }
 
   @Put(':id')
+  @RequireFeatures(Feature.ACESSAR_PRODUTOS)
   @ApiParam({ name: 'id', description: 'ID do produto' })
   @ApiOperation({ summary: 'Atualiza um produto' })
   async update(@Param('id') id: string, @Body() body: UpdateProductDto) {
@@ -73,13 +89,5 @@ export class ProductController {
       'Produto atualizado com sucesso!',
       mapProduct(product),
     );
-  }
-
-  @Delete(':id')
-  @ApiParam({ name: 'id', description: 'ID do produto' })
-  @ApiOperation({ summary: 'Exclui (soft delete) um produto' })
-  async destroy(@Param('id') id: string) {
-    await this.service.excluir(BigInt(id));
-    return ApiResponse.success('Produto removido com sucesso!', []);
   }
 }

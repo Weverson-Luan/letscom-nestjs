@@ -7,6 +7,8 @@ import {
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Role } from 'src/shared/constants/roles';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { CreateRemessaResponsabilidadeDto } from '../dto/create-remessa-responsabilidade.dto';
@@ -15,6 +17,7 @@ import { RemessaResponsabilidadeService } from '../services/remessa-responsabili
 
 @ApiTags('remessa-responsabilidade')
 @ApiBearerAuth()
+@RequireFeatures(Feature.SOLICITAR_REMESSAS)
 @Controller('remessa-responsabilidade')
 export class RemessaResponsabilidadeController {
   constructor(
@@ -74,7 +77,7 @@ export class RemessaResponsabilidadeController {
   }
 
   @Put(':id')
-  @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
+  @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR, Role.CLIENTE)
   @ApiParam({ name: 'id', description: 'ID da ciência' })
   @ApiOperation({ summary: 'Atualiza uma ciência' })
   update(@Param('id') id: string, @Body() body: UpdateRemessaResponsabilidadeDto) {
@@ -85,7 +88,7 @@ export class RemessaResponsabilidadeController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR, Role.CLIENTE)
   @ApiParam({ name: 'id', description: 'ID da ciência' })
   @ApiOperation({ summary: 'Remove uma ciência' })
   destroy(@Param('id') id: string) {

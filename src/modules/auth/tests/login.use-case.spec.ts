@@ -1,15 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { HttpException } from '@nestjs/common';
-import { LoginUseCase } from '../services/auth-client-user.service';
+import { AuthClientUserService } from '../services/auth-client-user.service';
+import { AuthSubordinateUserService } from '../services/auth-subordinate-user.service';
 import { JwtTokenService } from '../services/jwt-token.service';
 import { RefreshTokenService } from '../services/refresh-token.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { HashService } from 'src/shared/utils/hash.service';
 import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
+import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
 
-describe('LoginUseCase', () => {
-  let useCase: LoginUseCase;
+describe('AuthClientUserService (login)', () => {
+  let useCase: AuthClientUserService;
 
   const prisma = {
     user: { findFirst: jest.fn() },
@@ -22,6 +24,11 @@ describe('LoginUseCase', () => {
   const roleUserRepo = {
     findPrimaryRoleForUser: jest.fn(),
     findPrimaryRoleForUserCliente: jest.fn(),
+    findRoleNamesForUser: jest.fn().mockResolvedValue(['admin']),
+    findRoleNamesForUserCliente: jest.fn().mockResolvedValue(['subordinado']),
+  };
+  const featureGate = {
+    listarKeysHabilitadas: jest.fn().mockResolvedValue(['pesquisar_remessas']),
   };
   const configGet = jest.fn();
 
@@ -35,7 +42,9 @@ describe('LoginUseCase', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        LoginUseCase,
+        AuthClientUserService,
+        AuthSubordinateUserService,
+        { provide: FeatureGateService, useValue: featureGate },
         { provide: PrismaService, useValue: prisma },
         { provide: HashService, useValue: hash },
         { provide: JwtTokenService, useValue: jwtTokenService },
@@ -45,7 +54,7 @@ describe('LoginUseCase', () => {
       ],
     }).compile();
 
-    useCase = module.get(LoginUseCase);
+    useCase = module.get(AuthClientUserService);
   });
 
   it('retorna 401 quando credenciais são inválidas', async () => {
@@ -79,6 +88,12 @@ describe('LoginUseCase', () => {
     expect(result.data.tipo_login).toBe('user');
     expect(result.access_token).toBe('access-token');
     expect(result.refresh_token).toBe('refresh-token');
+    expect(result.data.features).toEqual(['pesquisar_remessas']);
+    expect(featureGate.listarKeysHabilitadas).toHaveBeenCalledWith({
+      id: user.id,
+      tipoLogin: 'user',
+      roles: ['admin'],
+    });
     expect(jwtTokenService.createToken).toHaveBeenCalledWith(
       expect.objectContaining({ sub: user.id, tipo_login: 'user' }),
     );
@@ -142,7 +157,13 @@ describe('LoginUseCase', () => {
     expect(result.code).toBe(200);
     expect(result.message).toBe('Usuário subordinado logado com sucesso!');
     expect(result.data.tipo_login).toBe('subordinado');
-    expect(result.data.cliente_principal).not.toHaveProperty('senha');
+    expect((result.data as Record<string, unknown>).cliente_principal).not.toHaveProperty('senha');
+    expect(result.data.features).toEqual(['pesquisar_remessas']);
+    expect(featureGate.listarKeysHabilitadas).toHaveBeenCalledWith({
+      id: BigInt(10),
+      tipoLogin: 'subordinado',
+      roles: ['subordinado'],
+    });
   });
 
   it('bloqueia login de subordinado quando flag está ativa', async () => {
@@ -159,5 +180,8 @@ describe('LoginUseCase', () => {
     await expect(
       useCase.execute({ email: 'sub@letscom.com', senha: 'Senha123' }),
     ).rejects.toBeInstanceOf(HttpException);
+    await expect(
+      useCase.execute({ email: 'sub@letscom.com', senha: 'Senha123' }),
+    ).rejects.toMatchObject({ status: 422 });
   });
 });

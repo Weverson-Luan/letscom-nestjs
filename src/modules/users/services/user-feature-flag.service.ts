@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { FeatureGateService, FeatureSubject } from 'src/shared/auth/feature-gate.service';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { UserFeatureFlagRepository } from '../repositories/user-feature-flag.repository';
@@ -8,6 +9,7 @@ export class UserFeatureFlagService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly repository: UserFeatureFlagRepository,
+    private readonly featureGate: FeatureGateService,
   ) {}
 
   async listarPorUsuario(userId: bigint) {
@@ -25,10 +27,9 @@ export class UserFeatureFlagService {
     return this.repository.listarPorUsuario(userId);
   }
 
-  /** Keys habilitadas do usuário autenticado (subordinado não possui flags). */
-  async listarHabilitadasDoUsuarioAutenticado(userId: bigint, tipoLogin: string): Promise<string[]> {
-    if (tipoLogin === 'subordinado') return [];
-    return this.repository.listarKeysHabilitadas(userId);
+  /** Keys habilitadas do usuário autenticado (vínculo direto ou role em `tipo_usuario`). */
+  listarHabilitadasDoUsuarioAutenticado(user: FeatureSubject): Promise<string[]> {
+    return this.featureGate.featuresDo(user);
   }
 
   private async validarFlags(flags: { feature_flag_id: number; ativo: boolean }[]) {

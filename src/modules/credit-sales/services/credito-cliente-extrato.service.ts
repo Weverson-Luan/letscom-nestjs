@@ -116,7 +116,7 @@ export class CreditoClienteExtratoService {
       dataFim: query.data_fim as string | undefined,
     };
 
-    const [{ data, total }, totais] = await Promise.all([
+    const [{ data, total }, totais, totaisPorProduto] = await Promise.all([
       this.extratoRepo.paginateCobranca({
         clienteId,
         ...filtros,
@@ -126,12 +126,14 @@ export class CreditoClienteExtratoService {
         take,
       }),
       this.extratoRepo.totaisCobranca(clienteId, filtros),
+      this.extratoRepo.totaisCobrancaPorProduto(clienteId, filtros),
     ]);
 
     return {
       data: data.map(mapCobrancaLinha),
       pagination: buildPagination(total, page, perPage),
       totais,
+      totais_por_produto: totaisPorProduto,
     };
   }
 }

@@ -1,22 +1,22 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { LogoutUseCase } from '../use-cases/logout.use-case';
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { RefreshTokenRepository } from '../repositories/refresh-token.repository';
+import { JwtTokenService } from '../services/jwt-token.service';
 import { RefreshTokenService } from '../services/refresh-token.service';
 
-describe('LogoutUseCase', () => {
-  let useCase: LogoutUseCase;
-  const refreshTokenService = { revokeAll: jest.fn() };
+describe('RefreshTokenService (logout)', () => {
+  let service: RefreshTokenService;
+  let revokeAll: jest.SpyInstance;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        LogoutUseCase,
-        { provide: RefreshTokenService, useValue: refreshTokenService },
-      ],
-    }).compile();
-
-    useCase = module.get(LogoutUseCase);
-    jest.clearAllMocks();
+  beforeEach(() => {
+    service = new RefreshTokenService(
+      {} as PrismaService,
+      {} as RefreshTokenRepository,
+      {} as JwtTokenService,
+      { get: jest.fn() } as unknown as ConfigService,
+    );
+    revokeAll = jest.spyOn(service, 'revokeAll').mockResolvedValue(undefined);
   });
 
   it('revoga refresh tokens de usuário interno', async () => {
@@ -29,9 +29,9 @@ describe('LogoutUseCase', () => {
       roles: ['admin'],
     };
 
-    const result = await useCase.execute(user);
+    const result = await service.execute(user);
 
-    expect(refreshTokenService.revokeAll).toHaveBeenCalledWith({
+    expect(revokeAll).toHaveBeenCalledWith({
       kind: 'user',
       id: user.id,
       email: user.email,
@@ -49,12 +49,12 @@ describe('LogoutUseCase', () => {
       tipoLogin: 'subordinado',
       ativo: true,
       clienteId: BigInt(5),
-      roles: ['operador'],
+      roles: ['subordinado'],
     };
 
-    await useCase.execute(user);
+    await service.execute(user);
 
-    expect(refreshTokenService.revokeAll).toHaveBeenCalledWith({
+    expect(revokeAll).toHaveBeenCalledWith({
       kind: 'subordinado',
       id: user.id,
       email: user.email,
@@ -64,9 +64,9 @@ describe('LogoutUseCase', () => {
   });
 
   it('retorna sucesso mesmo sem usuário autenticado', async () => {
-    const result = await useCase.execute(undefined);
+    const result = await service.execute(undefined);
 
-    expect(refreshTokenService.revokeAll).not.toHaveBeenCalled();
+    expect(revokeAll).not.toHaveBeenCalled();
     expect(result.code).toBe(200);
   });
 });

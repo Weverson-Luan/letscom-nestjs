@@ -1,9 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
+import { normalizarBooleano } from 'src/shared/utils/boolean-filter';
 import {
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   MaxLength,
   Min,
@@ -46,4 +49,10 @@ export class CreateProductDto {
   @IsInt({ message: 'O estoque atual deve ser um inteiro' })
   @Min(0, { message: 'O estoque atual deve ser maior ou igual a zero' })
   estoque_atual!: number;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @Transform(({ value }) => normalizarBooleano(value))
+  @IsBoolean({ message: 'O campo ativo deve ser verdadeiro ou falso' })
+  ativo?: boolean;
 }

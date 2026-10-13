@@ -7,30 +7,38 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
+import { ActiveFilterQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { ApiResponse } from 'src/shared/utils/api-response';
 import { CreateFeatureFlagDto } from '../dto/create-feature-flag.dto';
 import { UpdateFeatureFlagDto } from '../dto/update-feature-flag.dto';
 import { mapFeatureFlag } from '../mappers/feature-flag.mapper';
 import { FeatureFlagService } from '../services/feature-flag.service';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 @ApiTags('feature-flags')
 @ApiBearerAuth()
 @Roles(Role.ADMIN)
+@RequireFeatures(Feature.ACESSAR_FEATURE_FLAGS)
 @Controller('feature-flags')
 export class FeatureFlagController {
   constructor(private readonly service: FeatureFlagService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lista as feature flags' })
-  async index() {
-    const flags = await this.service.listar();
+  @ApiOperation({ summary: 'Lista as feature flags (paginado, busca e filtro `ativo`)' })
+  async index(@Query() query: ActiveFilterQueryDto) {
+    const { data, pagination } = await this.service.listarPaginado(
+      query as unknown as Record<string, unknown>,
+    );
     return ApiResponse.success(
       'Feature flags carregadas com sucesso!',
-      flags.map(mapFeatureFlag),
+      data.map(mapFeatureFlag),
+      pagination,
     );
   }
 

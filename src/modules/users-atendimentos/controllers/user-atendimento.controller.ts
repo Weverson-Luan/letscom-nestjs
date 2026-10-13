@@ -15,10 +15,13 @@ import {
 } from '../dto/user-atendimento.dto';
 import { mapUserAtendimento } from '../mappers/user-atendimento.mapper';
 import { UserAtendimentoService } from '../services/user-atendimento.service';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 @ApiTags('users-atendimentos')
 @ApiBearerAuth()
 @Controller('users-atendimentos')
+@RequireFeatures(Feature.ACESSAR_ADMIN)
 export class UserAtendimentoController {
   constructor(private readonly service: UserAtendimentoService) {}
 

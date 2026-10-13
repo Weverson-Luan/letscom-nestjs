@@ -127,6 +127,12 @@ export class EnvironmentVariables {
   @IsNumber()
   MAILERSEND_TIMEOUT = 30;
 
+  /** Atraso (ms) entre envios em lote, para evitar rate limiting do MailerSend. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  EMAIL_SEND_DELAY = 500;
+
   @IsOptional()
   @IsString()
   SENHA_USUARIO_SUBORDINADO_LETSCOM_DEFAULT?: string;

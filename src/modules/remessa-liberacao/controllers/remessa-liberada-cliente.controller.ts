@@ -29,11 +29,14 @@ import { LiberarRemessasLoteDto } from '../dto/liberar-remessas-lote.dto';
 import { UpdateRemessaLiberadaClienteDto } from '../dto/update-remessa-liberada-cliente.dto';
 import { LiberarRemessasLoteClienteService } from '../services/liberar-remessas-lote-cliente.service';
 import { RemessaLiberadaClienteService } from '../services/remessa-liberada-cliente.service';
+import { Feature, FEATURES_LIBERACAO_RECEPCAO } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 type MulterFile = { buffer: Buffer; originalname: string; mimetype?: string };
 
 const ROLES_LEITURA = [Role.ADMIN, Role.PRODUCAO, Role.RECEPCAO] as const;
 const ROLES_UPDATE = [Role.ADMIN, Role.PRODUCAO] as const;
+const ROLES_LIBERACAO = [Role.ADMIN, Role.RECEPCAO] as const;
 
 /**
  * Liberação de remessa para o cliente (recepção).
@@ -49,7 +52,8 @@ export class RemessaLiberadaClienteController {
   ) {}
 
   @Post('lote')
-  @Roles(...ROLES_LEITURA)
+  @RequireFeatures(Feature.LIBERACAO_MULTIPLAS_REMESSAS_RECEPCAO)
+  @Roles(...ROLES_LIBERACAO)
   @ApiOperation({
     summary: 'Libera remessas em lote para o cliente (status → concluido)',
   })
@@ -62,6 +66,7 @@ export class RemessaLiberadaClienteController {
   }
 
   @Get()
+  @RequireFeatures(...FEATURES_LIBERACAO_RECEPCAO)
   @Roles(...ROLES_LEITURA)
   @ApiOperation({ summary: 'Lista liberações para cliente (paginado)' })
   async listar(@Query() query: PaginationQueryDto) {
@@ -77,6 +82,7 @@ export class RemessaLiberadaClienteController {
   }
 
   @Get(':id')
+  @RequireFeatures(...FEATURES_LIBERACAO_RECEPCAO)
   @Roles(...ROLES_LEITURA)
   @ApiParam({ name: 'id', description: 'ID da liberação' })
   @ApiOperation({ summary: 'Busca liberação para cliente por id' })
@@ -86,7 +92,8 @@ export class RemessaLiberadaClienteController {
   }
 
   @Post()
-  @Roles(...ROLES_LEITURA)
+  @RequireFeatures(Feature.LIBERACAO_REMESSAS_RECEPCAO)
+  @Roles(...ROLES_LIBERACAO)
   @ApiConsumes('multipart/form-data', 'application/json')
   @UseInterceptors(FileInterceptor('file_path'))
   @ApiOperation({
@@ -111,6 +118,7 @@ export class RemessaLiberadaClienteController {
   }
 
   @Put(':id')
+  @RequireFeatures(...FEATURES_LIBERACAO_RECEPCAO)
   @Roles(...ROLES_UPDATE)
   @ApiOperation({ summary: 'Atualiza liberação para cliente' })
   async atualizar(
@@ -122,6 +130,7 @@ export class RemessaLiberadaClienteController {
   }
 
   @Delete(':id')
+  @RequireFeatures(Feature.EXCLUIR_REMESSAS)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Exclui liberação para cliente' })
   async excluir(@Param('id') id: string) {

@@ -18,10 +18,13 @@ import {
   UpdateEnderecoEntregaDto,
 } from '../dto/endereco-entrega.dto';
 import { EnderecoEntregaService } from '../services/endereco-entrega.service';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 @ApiTags('enderecos-entrega')
 @ApiBearerAuth()
 @Controller('enderecos-entrega')
+@RequireFeatures(Feature.EDITAR_CLIENTE)
 export class EnderecoEntregaController {
   constructor(private readonly service: EnderecoEntregaService) {}
 

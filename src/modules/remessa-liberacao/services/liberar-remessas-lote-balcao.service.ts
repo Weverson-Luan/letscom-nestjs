@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { setTimeout as sleep } from 'timers/promises';
 import { Remessa, RemessaSituacao, User, UserCliente } from '@prisma/client';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
@@ -31,13 +33,16 @@ export class LiberarRemessasLoteBalcaoService {
     private readonly repository: RemessaLiberadaBalcaoRepository,
     private readonly emailService: LiberacaoRemessaBalcaoEmailService,
     private readonly mensagemHelper: LiberacaoRemessaMensagemHelper,
+    private readonly config: ConfigService,
   ) {}
 
   async liberarEmLote(dto: LiberarRemessasLoteDto, user: AuthUser) {
     const remessaIds = [...new Set(dto.remessa_ids.map((id) => BigInt(id)))];
     const continuarApenasValidas = Boolean(dto.continuar_apenas_validas);
+    // tipo_entrega_id informado sobrepõe o tipo cadastrado de cada cliente
+    const tipoEntregaOverride = dto.tipo_entrega_id ? BigInt(dto.tipo_entrega_id) : null;
 
-    const validacao = await this.validarRemessas(remessaIds);
+    const validacao = await this.validarRemessas(remessaIds, tipoEntregaOverride);
 
     if (validacao.invalidas.length > 0 && !continuarApenasValidas) {
       throw new LoteValidacaoException(validacao.invalidas, validacao.validas);
@@ -72,7 +77,7 @@ export class LiberarRemessasLoteBalcaoService {
       });
     });
 
-    await this.dispararEmailsPorRemessa(
+    await this.dispararEmailsPorCliente(
       validacao.remessasValidas,
       {
         id: liberador.id,
@@ -80,6 +85,7 @@ export class LiberarRemessasLoteBalcaoService {
         roles: user.roles.map((nome) => ({ nome })),
       },
       validacao.tiposPorRemessa,
+      dto.observacao ?? null,
     );
 
     return {
@@ -94,7 +100,7 @@ export class LiberarRemessasLoteBalcaoService {
     };
   }
 
-  private async validarRemessas(remessaIds: bigint[]) {
+  private async validarRemessas(remessaIds: bigint[], tipoEntregaOverride: bigint | null = null) {
     const remessas = await this.prisma.remessa.findMany({
       where: { id: { in: remessaIds }, deletedAt: null },
       include: {
@@ -168,7 +174,8 @@ export class LiberarRemessasLoteBalcaoService {
         continue;
       }
 
-      const tipoEntregaId = tiposPorCliente.get(remessa.clienteId.toString());
+      const tipoEntregaId =
+        tipoEntregaOverride ?? tiposPorCliente.get(remessa.clienteId.toString());
       if (!tipoEntregaId) {
         invalidas.push({
           id: remessa.id,
@@ -222,36 +229,63 @@ export class LiberarRemessasLoteBalcaoService {
     return [...grupos.values()];
   }
 
-  private async dispararEmailsPorRemessa(
+  /**
+   * Um e-mail por cliente com todas as remessas liberadas dele. A observação
+   * digitada pelo usuário só substitui a mensagem padrão quando o lote é de um
+   * único cliente.
+   */
+  private async dispararEmailsPorCliente(
     remessas: RemessaComCliente[],
     liberador: { id: bigint; nome: string; roles: { nome: string }[] },
     tiposPorRemessa: Map<string, bigint>,
+    observacaoUsuario: string | null,
   ) {
-    const clienteIds = [
-      ...new Set(remessas.map((r) => r.clienteId.toString())),
-    ].map((id) => BigInt(id));
+    const porCliente = new Map<string, RemessaComCliente[]>();
+    for (const remessa of remessas) {
+      const key = remessa.clienteId.toString();
+      porCliente.set(key, [...(porCliente.get(key) ?? []), remessa]);
+    }
+
+    const clienteIds = [...porCliente.keys()].map((id) => BigInt(id));
     const enderecosPorCliente =
       await this.mensagemHelper.carregarEnderecosResidenciaisPorClientes(clienteIds);
+    const mesmoClienteUnico = clienteIds.length === 1;
+    const observacaoUsuarioPreenchida = (observacaoUsuario ?? '').trim() !== '';
+    const delayMs = this.config.get<number>('mail.sendDelayMs') ?? 500;
 
-    for (const remessa of remessas) {
-      const tipoEntregaId = tiposPorRemessa.get(remessa.id.toString());
+    for (const [clienteId, remessasDoCliente] of porCliente) {
+      const primeira = remessasDoCliente[0];
+      const tipoEntregaId = tiposPorRemessa.get(primeira.id.toString());
       if (!tipoEntregaId) continue;
 
-      const endereco = enderecosPorCliente.get(remessa.clienteId.toString()) ?? null;
-      const nomeCliente = remessa.cliente?.nome ?? 'Cliente';
-      const observacao = await this.mensagemHelper.gerarMensagem(
-        tipoEntregaId,
-        nomeCliente,
-        remessa.numeroRemessa,
-        endereco,
-      );
+      const numeros = remessasDoCliente
+        .map((r) => r.numeroRemessa)
+        .filter((n) => n !== null && n !== undefined && String(n) !== '')
+        .join(', ');
+      const nomeCliente = primeira.cliente?.nome ?? 'Cliente';
+      const endereco = enderecosPorCliente.get(clienteId) ?? null;
+
+      const observacao =
+        mesmoClienteUnico && observacaoUsuarioPreenchida
+          ? observacaoUsuario!
+          : await this.mensagemHelper.gerarMensagem(tipoEntregaId, nomeCliente, numeros, endereco);
+
+      const assunto =
+        remessasDoCliente.length > 1
+          ? `Atualização das suas remessas Nº ${numeros}`
+          : `Atualização da sua remessa Nº ${numeros}`;
 
       await this.emailService.enviarSemExcecao(
-        remessa,
+        primeira,
         liberador,
         tipoEntregaId,
         observacao,
+        null,
+        assunto,
       );
+
+      // Delay entre envios para evitar rate limiting do MailerSend
+      await sleep(delayMs);
     }
   }
 }

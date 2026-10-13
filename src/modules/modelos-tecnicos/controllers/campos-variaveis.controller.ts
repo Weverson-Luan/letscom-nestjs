@@ -19,6 +19,8 @@ import {
   UpdateCampoVariavelDto,
 } from '../dto/campos-variaveis.dto';
 import { CamposVariaveisService } from '../services/campos-variaveis.service';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 const ROLES = [
   Role.ADMIN,
@@ -35,6 +37,7 @@ export class CamposVariaveisController {
   constructor(private readonly service: CamposVariaveisService) {}
 
   @Get()
+  @RequireFeatures(Feature.VISUALIZAR_MODELOS_TECNICOS)
   @ApiOperation({ summary: 'Lista campos variáveis (paginado)' })
   async index(@Query() query: PaginationQueryDto) {
     const { data, pagination } = await this.service.listar(
@@ -48,6 +51,7 @@ export class CamposVariaveisController {
   }
 
   @Put('modelo/:modeloTecnicoId')
+  @RequireFeatures(Feature.CRIAR_MODELOS_TECNICOS, Feature.EDITAR_MODELOS_TECNICOS)
   @ApiParam({ name: 'modeloTecnicoId', description: 'ID do modelo técnico' })
   @ApiOperation({ summary: 'Sincroniza campos variáveis de um modelo' })
   async sync(
@@ -65,6 +69,7 @@ export class CamposVariaveisController {
   }
 
   @Post()
+  @RequireFeatures(Feature.CRIAR_MODELOS_TECNICOS, Feature.EDITAR_MODELOS_TECNICOS)
   @ApiOperation({ summary: 'Cria campos variáveis em lote' })
   async store(@Body() body: CreateCamposVariaveisDto) {
     const data = await this.service.criarBatch(body);
@@ -72,6 +77,7 @@ export class CamposVariaveisController {
   }
 
   @Post('reorganizar/:modeloTecnicoId')
+  @RequireFeatures(Feature.CRIAR_MODELOS_TECNICOS, Feature.EDITAR_MODELOS_TECNICOS)
   @ApiParam({ name: 'modeloTecnicoId', description: 'ID do modelo técnico' })
   @ApiOperation({ summary: 'Reorganiza ordem dos campos variáveis' })
   async reorganizar(@Param('modeloTecnicoId') modeloTecnicoId: string) {
@@ -80,6 +86,7 @@ export class CamposVariaveisController {
   }
 
   @Get(':id')
+  @RequireFeatures(Feature.VISUALIZAR_MODELOS_TECNICOS)
   @ApiParam({ name: 'id', description: 'ID do campo variável' })
   @ApiOperation({ summary: 'Detalha um campo variável' })
   async show(@Param('id') id: string) {
@@ -88,6 +95,7 @@ export class CamposVariaveisController {
   }
 
   @Put(':id')
+  @RequireFeatures(Feature.CRIAR_MODELOS_TECNICOS, Feature.EDITAR_MODELOS_TECNICOS)
   @ApiOperation({ summary: 'Atualiza um campo variável' })
   async update(@Param('id') id: string, @Body() body: UpdateCampoVariavelDto) {
     const data = await this.service.atualizar(BigInt(id), body);
@@ -95,6 +103,7 @@ export class CamposVariaveisController {
   }
 
   @Delete(':id')
+  @RequireFeatures(Feature.CRIAR_MODELOS_TECNICOS, Feature.EDITAR_MODELOS_TECNICOS)
   @ApiOperation({ summary: 'Remove um campo variável e reindexa a ordem' })
   async destroy(@Param('id') id: string) {
     await this.service.excluir(BigInt(id));

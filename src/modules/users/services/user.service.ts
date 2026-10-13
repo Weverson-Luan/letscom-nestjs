@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
+import { Feature, MENSAGEM_SEM_PERMISSAO } from 'src/shared/auth/features';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { buildPagination } from 'src/shared/utils/api-response';
 import { HashService } from 'src/shared/utils/hash.service';
@@ -19,6 +21,7 @@ export class UserService {
     private readonly hash: HashService,
     private readonly featureFlagService: UserFeatureFlagService,
     private readonly roleUserRepo: RoleUserRepository,
+    private readonly featureGate: FeatureGateService,
   ) {}
 
   async list(query: Record<string, unknown>) {
@@ -68,10 +71,7 @@ export class UserService {
       where: { clienteId: authUser.id, status: 'pedido_liberado' },
     });
 
-    const features = await this.featureFlagService.listarHabilitadasDoUsuarioAutenticado(
-      authUser.id,
-      authUser.tipoLogin,
-    );
+    const features = await this.featureFlagService.listarHabilitadasDoUsuarioAutenticado(authUser);
 
     return {
       id: authUser.id,
@@ -144,6 +144,56 @@ export class UserService {
 
     await this.repository.update(id, updateData);
     return true;
+  }
+
+  /**
+   * Espelha UserController::podeAtualizarUsuario (404 se não existir, 403 se não puder):
+   * - O próprio usuário pode editar os seus dados (exceto ativar/inativar a si mesmo).
+   * - O subordinado pode editar os dados do cliente ao qual pertence.
+   * - Usuários internos só editam clientes, com `editar_cliente` e/ou `inativar_cliente`.
+   */
+  async assertPodeAtualizar(autenticado: AuthUser, id: bigint, data: Record<string, unknown>) {
+    const usuario = await this.repository.findById(id);
+    if (!usuario) throw new NotFoundException('Usuário não encontrado.');
+
+    if (!(await this.podeAtualizarUsuario(autenticado, id, data))) {
+      throw new ForbiddenException(MENSAGEM_SEM_PERMISSAO);
+    }
+  }
+
+  private async podeAtualizarUsuario(
+    autenticado: AuthUser,
+    usuarioId: bigint,
+    data: Record<string, unknown>,
+  ): Promise<boolean> {
+    const campos = Object.keys(data).filter((campo) => data[campo] !== undefined);
+    const alteraAtivo = campos.includes('ativo');
+    const alteraOutrosCampos = campos.some((campo) => campo !== 'ativo');
+
+    if (autenticado.tipoLogin === 'subordinado') {
+      return autenticado.clienteId === usuarioId && !alteraAtivo;
+    }
+
+    if (autenticado.id === usuarioId) {
+      return !alteraAtivo;
+    }
+
+    const usuarioAlvo = {
+      tipoLogin: 'user' as const,
+      roles: await this.roleUserRepo.findRoleNamesForUser(usuarioId),
+    };
+    if (
+      this.featureGate.isUsuarioCliente(autenticado) ||
+      !this.featureGate.isUsuarioCliente(usuarioAlvo)
+    ) {
+      return false;
+    }
+
+    if (alteraAtivo && !(await this.featureGate.permite(autenticado, [Feature.INATIVAR_CLIENTE]))) {
+      return false;
+    }
+
+    return !alteraOutrosCampos || this.featureGate.permite(autenticado, [Feature.EDITAR_CLIENTE]);
   }
 
   async delete(id: bigint) {

@@ -41,3 +41,11 @@ export class PaginationQueryDto {
   @IsIn(['asc', 'desc'])
   order?: 'asc' | 'desc';
 }
+
+/** Listagens que aceitam o filtro `ativo` (produtos, tecnologias, feature flags). */
+export class ActiveFilterQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ example: '1', description: 'Filtra por ativo (1/0, true/false)' })
+  @IsOptional()
+  @IsString()
+  ativo?: string;
+}

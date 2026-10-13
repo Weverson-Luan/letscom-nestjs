@@ -47,7 +47,7 @@ export class LiberacaoRemessaMensagemHelper {
     const enderecoFormatado = this.formatarEndereco(endereco);
     const responsavel = endereco?.nomeResponsavel ?? '';
     const setor = endereco?.setor ?? '';
-    const remessa = String(numeroRemessa);
+    const remessa = this.rotuloRemessa(numeroRemessa);
 
     switch (tipo) {
       case 'correios':
@@ -74,10 +74,16 @@ export class LiberacaoRemessaMensagemHelper {
     }
   }
 
+  /** "Sua Remessa Nº 10" ou, para vários números separados por vírgula, "Suas Remessas Nº 10, 11". */
+  rotuloRemessa(numeroRemessa: string | number | bigint): string {
+    const texto = String(numeroRemessa).trim();
+    return texto.includes(',') ? `Suas Remessas Nº ${texto}` : `Sua Remessa Nº ${texto}`;
+  }
+
   private mensagemBalcao(nome: string, remessa: string): string {
     return (
       `Olá ${nome}, tudo bem?\n` +
-      `Sua Remessa Nº ${remessa} já está disponível para retirada no Balcão da Letscom.\n` +
+      `${remessa} já está disponível para retirada no Balcão da Letscom.\n` +
       `Segue abaixo o endereço e horário de retirada:\n\n` +
       `Letscom\n` +
       `Rua Iguaçu, 674 – Casa 1\n` +
@@ -100,7 +106,7 @@ export class LiberacaoRemessaMensagemHelper {
   ): string {
     return (
       `Olá ${nome}, tudo bem?\n` +
-      `Sua Remessa Nº ${remessa} será enviada via Correios. Em breve você receberá o rastreio e o pedido no enderço:\n` +
+      `${remessa} será enviada via Correios. Em breve você receberá o rastreio e o pedido no enderço:\n` +
       `${endereco}\n\n` +
       `Setor: ${setor} \n` +
       `Responsável: ${responsavel}\n\n` +
@@ -117,7 +123,7 @@ export class LiberacaoRemessaMensagemHelper {
   ): string {
     return (
       `Olá ${nome}, tudo bem?\n` +
-      `Sua Remessa Nº ${remessa} será entregue via Motoboy Letscom, em horário comercial, no endereço:\n` +
+      `${remessa} será entregue via Motoboy Letscom, em horário comercial, no endereço:\n` +
       `${endereco}\n\n` +
       `Setor: ${setor} \n` +
       `Responsável: ${responsavel}\n\n` +
@@ -128,8 +134,7 @@ export class LiberacaoRemessaMensagemHelper {
 
   private mensagemOutros(nome: string, remessa: string): string {
     return (
-      `Olá ${nome}, tudo bem?\n` +
-      `Sua Remessa Nº ${remessa} foi despachada e será entregue conforme combinado.`
+      `Olá ${nome}, tudo bem?\n` + `${remessa} foi despachada e será entregue conforme combinado.`
     );
   }
 }

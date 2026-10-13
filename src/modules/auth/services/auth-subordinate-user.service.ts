@@ -2,12 +2,16 @@
  * IMPORTS
  */
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 // service / prisma
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 
 // repositories / role user
 import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
+
+// shared / auth
+import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
 
 // services
 import { JwtTokenService } from './jwt-token.service';
@@ -35,6 +39,8 @@ export class AuthSubordinateUserService {
     private readonly jwtTokenService: JwtTokenService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly roleUserRepo: RoleUserRepository,
+    private readonly featureGate: FeatureGateService,
+    private readonly config: ConfigService,
   ) {}
 
   async execute(dto: LoginDto) {
@@ -45,12 +51,18 @@ export class AuthSubordinateUserService {
       include: { clientePrincipal: true },
     });
 
-    const checkPassword = (await this.hash.check(dto.senha, clienteUser?.senha! ?? false))
+    const checkPassword = clienteUser
+      ? await this.hash.check(dto.senha, clienteUser.senha)
+      : false;
 
     if (clienteUser && checkPassword) {
       
       if (!clienteUser.ativo) {
         throw userDesactiveMappers();
+      }
+
+      if (this.config.get<boolean>('auth.bloqueioLoginClienteSubordinado')) {
+        throw this.respostaInstabilidade();
       }
 
       const clientePrincipal = clienteUser.clientePrincipal;
@@ -79,6 +91,12 @@ export class AuthSubordinateUserService {
         clienteUser.id,
       );
 
+      const features = await this.featureGate.listarKeysHabilitadas({
+        id: clienteUser.id,
+        tipoLogin: 'subordinado',
+        roles: await this.roleUserRepo.findRoleNamesForUserCliente(clienteUser.id),
+      });
+
       return {
         code: 200,
         message: 'Usuário subordinado logado com sucesso!',
@@ -91,6 +109,7 @@ export class AuthSubordinateUserService {
           cliente_principal: serializeUser(clientePrincipal),
           roles: role,
           consultor,
+          features,
         },
         access_token: token,
         refresh_token: refreshToken,
@@ -109,4 +128,19 @@ export class AuthSubordinateUserService {
     );
   }
 
+  /** lancar o error 422 - UNPROCESSABLE ENTITY */
+  private respostaInstabilidade() {
+    const msg =
+      this.config.get<string>('auth.mensagemInstabilidade') ??
+      'Estamos enfrentando uma instabilidade temporária em nosso sistema.';
+
+    return new HttpException(
+      {
+        code: 422,
+        message: msg,
+        errors: { sistema: msg },
+      },
+      HttpStatus.UNPROCESSABLE_ENTITY,
+    );
+  }
 }

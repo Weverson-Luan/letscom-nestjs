@@ -140,7 +140,24 @@ export class RemessaRepository {
     ];
     const search = this.buildSearch(query.search as string);
     if (search) and.push(search);
-    return this.run({ AND: and }, query, { createdAt: 'desc' });
+    return this.run(
+      { AND: and },
+      query,
+      { createdAt: 'desc' },
+      {
+        ...LIST_INCLUDE,
+        fotos: {
+          select: {
+            id: true,
+            remessaId: true,
+            nome: true,
+            matricula: true,
+            filePath: true,
+            createdAt: true,
+          },
+        },
+      },
+    );
   }
 
   findById(id: bigint, include: Prisma.RemessaInclude = LIST_INCLUDE) {

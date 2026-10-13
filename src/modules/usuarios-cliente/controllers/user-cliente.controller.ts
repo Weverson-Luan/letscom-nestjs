@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   Param,
@@ -15,7 +16,11 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
+import { Feature, MENSAGEM_SEM_PERMISSAO } from 'src/shared/auth/features';
 import { Role } from 'src/shared/constants/roles';
+import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { ApiResponse } from 'src/shared/utils/api-response';
@@ -28,9 +33,13 @@ import { UserClienteService } from '../services/user-cliente.service';
 @ApiBearerAuth()
 @Controller('usuarios-cliente')
 export class UserClienteController {
-  constructor(private readonly service: UserClienteService) {}
+  constructor(
+    private readonly service: UserClienteService,
+    private readonly featureGate: FeatureGateService,
+  ) {}
 
   @Get()
+  @RequireFeatures(Feature.VISUALIZAR_USUARIO_CLIENTE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR, Role.CLIENTE, Role.SUBORDINADO)
   @ApiOperation({ summary: 'Lista todos os usuários-cliente' })
   async index() {
@@ -42,6 +51,7 @@ export class UserClienteController {
   }
 
   @Get('cliente/:id')
+  @RequireFeatures(Feature.VISUALIZAR_USUARIO_CLIENTE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiParam({ name: 'id', description: 'ID do cliente' })
   @ApiOperation({ summary: 'Lista os usuários de um cliente (paginado)' })
@@ -61,6 +71,7 @@ export class UserClienteController {
   }
 
   @Get(':id')
+  @RequireFeatures(Feature.VISUALIZAR_USUARIO_CLIENTE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiParam({ name: 'id', description: 'ID do usuário-cliente' })
   @ApiOperation({ summary: 'Detalha um usuário-cliente' })
@@ -73,6 +84,7 @@ export class UserClienteController {
   }
 
   @Post()
+  @RequireFeatures(Feature.CRIAR_USUARIO_CLIENTE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @HttpCode(201)
   @ApiOperation({ summary: 'Cria um usuário-cliente' })
@@ -90,11 +102,26 @@ export class UserClienteController {
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiParam({ name: 'id', description: 'ID do usuário-cliente' })
   @ApiOperation({ summary: 'Atualiza um usuário-cliente' })
-  async update(@Param('id') id: string, @Body() body: UpdateUserClienteDto) {
-    const user = await this.service.update(
-      BigInt(id),
-      body as unknown as Record<string, any>,
-    );
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateUserClienteDto,
+    @CurrentUser() authUser: AuthUser,
+  ) {
+    const data = body as unknown as Record<string, any>;
+
+    // `ativo` exige inativar_usuario_cliente; os demais campos, editar_usuarios_cliente
+    const campos = Object.keys(data).filter((campo) => data[campo] !== undefined);
+    const exigidas: string[][] = [];
+    if (campos.includes('ativo')) exigidas.push([Feature.INATIVAR_USUARIO_CLIENTE]);
+    if (campos.some((campo) => campo !== 'ativo')) exigidas.push([Feature.EDITAR_USUARIOS_CLIENTE]);
+
+    for (const features of exigidas) {
+      if (!(await this.featureGate.permite(authUser, features))) {
+        throw new ForbiddenException(MENSAGEM_SEM_PERMISSAO);
+      }
+    }
+
+    const user = await this.service.update(BigInt(id), data);
     return ApiResponse.success(
       'Usuário do cliente atualizado com sucesso!',
       mapUserCliente(user),
@@ -102,6 +129,7 @@ export class UserClienteController {
   }
 
   @Delete(':id')
+  @RequireFeatures(Feature.INATIVAR_USUARIO_CLIENTE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiParam({ name: 'id', description: 'ID do usuário-cliente' })
   @ApiOperation({ summary: 'Exclui um usuário-cliente' })

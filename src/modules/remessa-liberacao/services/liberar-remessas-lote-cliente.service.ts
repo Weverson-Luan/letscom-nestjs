@@ -31,7 +31,9 @@ export class LiberarRemessasLoteClienteService {
     const remessaIds = [...new Set(dto.remessa_ids.map((id) => BigInt(id)))];
     const continuarApenasValidas = Boolean(dto.continuar_apenas_validas);
 
-    const validacao = await this.validarRemessas(remessaIds);
+    // tipo_entrega_id informado sobrepõe o tipo cadastrado de cada cliente
+    const tipoEntregaOverride = dto.tipo_entrega_id ? BigInt(dto.tipo_entrega_id) : null;
+    const validacao = await this.validarRemessas(remessaIds, tipoEntregaOverride);
 
     if (validacao.invalidas.length > 0 && !continuarApenasValidas) {
       throw new LoteValidacaoException(validacao.invalidas, validacao.validas);
@@ -78,7 +80,7 @@ export class LiberarRemessasLoteClienteService {
     };
   }
 
-  private async validarRemessas(remessaIds: bigint[]) {
+  private async validarRemessas(remessaIds: bigint[], tipoEntregaOverride: bigint | null = null) {
     const remessas = await this.prisma.remessa.findMany({
       where: { id: { in: remessaIds }, deletedAt: null },
       include: { cliente: true },
@@ -163,7 +165,8 @@ export class LiberarRemessasLoteClienteService {
         continue;
       }
 
-      const tipoEntregaId = tiposPorCliente.get(remessa.clienteId.toString());
+      const tipoEntregaId =
+        tipoEntregaOverride ?? tiposPorCliente.get(remessa.clienteId.toString());
       if (!tipoEntregaId) {
         invalidas.push({
           id: remessa.id,

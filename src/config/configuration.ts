@@ -45,6 +45,7 @@ export default () => ({
     fromName: process.env.MAIL_FROM_NAME,
     mailersendApiKey: process.env.MAILERSEND_API_KEY,
     mailersendTimeout: parseInt(process.env.MAILERSEND_TIMEOUT ?? '30', 10),
+    sendDelayMs: parseInt(process.env.EMAIL_SEND_DELAY ?? '500', 10),
   },
   business: {
     senhaUsuarioSubordinadoDefault:

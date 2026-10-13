@@ -26,6 +26,8 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateFullClientService } from '../services/create-full-client.service';
 import { UserService } from '../services/user.service';
 import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -44,6 +46,7 @@ export class UserController {
   }
 
   @Get('consultores')
+  @RequireFeatures(Feature.CRIAR_CLIENTE, Feature.EDITAR_CLIENTE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiOperation({ summary: 'Lista usuários consultores' })
   async buscarUsuariosConsultores(@Query() query: PaginationQueryDto) {
@@ -58,6 +61,7 @@ export class UserController {
   }
 
   @Get()
+  @RequireFeatures(Feature.VISUALIZAR_CLIENTE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiOperation({ summary: 'Lista clientes/usuários' })
   async buscarClientes(@Query() query: PaginationQueryDto) {
@@ -72,6 +76,7 @@ export class UserController {
   }
 
   @Get(':id')
+  @RequireFeatures(Feature.VISUALIZAR_CLIENTE, Feature.EDITAR_CLIENTE)
   @Roles(
     Role.ADMIN,
     Role.PRODUCAO,
@@ -94,6 +99,7 @@ export class UserController {
   }
 
   @Post()
+  @RequireFeatures(Feature.CRIAR_CLIENTE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @HttpCode(201)
   @ApiOperation({ summary: 'Cria um usuário' })
@@ -106,6 +112,7 @@ export class UserController {
   }
 
   @Post('cliente-completo')
+  @RequireFeatures(Feature.CRIAR_CLIENTE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @HttpCode(201)
   @ApiOperation({ summary: 'Cria cliente + endereço + subordinados (transacional)' })
@@ -134,12 +141,19 @@ export class UserController {
   )
   @ApiParam({ name: 'id', description: 'ID do usuário' })
   @ApiOperation({ summary: 'Atualiza um usuário' })
-  async atualizarUsuario(@Param('id') id: string, @Body() body: UpdateUserDto) {
-    await this.userService.update(BigInt(id), body as unknown as Record<string, any>);
+  async atualizarUsuario(
+    @Param('id') id: string,
+    @Body() body: UpdateUserDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const data = body as unknown as Record<string, any>;
+    await this.userService.assertPodeAtualizar(user, BigInt(id), data);
+    await this.userService.update(BigInt(id), data);
     return { success: 'ok' };
   }
 
   @Delete(':id')
+  @RequireFeatures(Feature.INATIVAR_CLIENTE)
   @Roles(Role.ADMIN, Role.CONSULTOR)
   @ApiParam({ name: 'id', description: 'ID do usuário' })
   @ApiOperation({ summary: 'Exclui (soft delete) um usuário' })

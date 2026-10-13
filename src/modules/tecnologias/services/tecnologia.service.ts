@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { resolvePagination } from 'src/shared/database/pagination';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { buildPagination } from 'src/shared/utils/api-response';
+import { optionalBooleanFilter } from 'src/shared/utils/boolean-filter';
 import { CreateTecnologiaDto } from '../dto/create-tecnologia.dto';
 import { UpdateTecnologiaDto } from '../dto/update-tecnologia.dto';
 import { mapTecnologia } from '../mappers/tecnologia.mapper';
@@ -16,11 +17,12 @@ export class TecnologiaService {
   async listar(query: Record<string, unknown>) {
     const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
     const order =
-      String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+      String(query.order ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
 
     const { data, total } = await this.repository.paginate({
       search: query.search as string | undefined,
-      sortBy: (query.sort_by as string) ?? 'created_at',
+      ativo: optionalBooleanFilter(query.ativo),
+      sortBy: (query.sort_by as string) ?? 'nome',
       order,
       skip,
       take,
@@ -61,11 +63,6 @@ export class TecnologiaService {
       ativo: dto.ativo,
     };
     return this.repository.update(id, data);
-  }
-
-  async excluir(id: bigint) {
-    await this.buscar(id);
-    await this.repository.delete(id);
   }
 
   private async validarNomeUnico(nome: string, ignoreId?: bigint) {

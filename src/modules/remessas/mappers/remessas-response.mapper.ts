@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
+import { basename } from 'path';
 
 const STEP_LABELS: Record<string, { id: number; label: string; color: string }> = {
   envio_de_dados: { id: 1, label: 'Envio de Dados', color: 'bg-gray-300' },
@@ -44,6 +45,64 @@ export class RemessasResponseMapper {
       );
     }
     return result;
+  }
+
+  /**
+   * Espelha RemessasResponseHelper::mapMinhasTarefas: projeção enxuta da tela
+   * "minhas tarefas" (sem URLs assinadas nem histórico de status).
+   */
+  mapMinhasTarefas(remessas: any[]): any[] {
+    const pessoa = (p: any) => (p ? { id: p.id, nome: p.nome } : null);
+    const nomeArquivo = (path?: string | null) => (path ? basename(path) : null);
+
+    return remessas.map((remessa) => {
+      const modelo = remessa.modeloTecnico ?? null;
+      const solicitante = remessa.usersSolicitanteSubordinadoId
+        ? remessa.solicitanteSubordinado
+        : remessa.solicitante;
+
+      return {
+        id: remessa.id,
+        total_solicitacoes: remessa.totalSolicitacoes,
+        situacao: remessa.situacao,
+        status: remessa.status,
+        data_inicio_producao: remessa.dataInicioProducao,
+        data_fim_producao: remessa.dataFimProducao,
+        posicao: remessa.posicao,
+        prazo: this.diffWeekdays(new Date(remessa.createdAt), new Date()),
+        cliente: pessoa(remessa.cliente),
+        solicitante: pessoa(solicitante),
+        consultor: null,
+        designer: pessoa(remessa.executor),
+        tecnologia: remessa.tecnologia
+          ? { id: remessa.tecnologia.id, nome: remessa.tecnologia.nome }
+          : null,
+        modelo_tecnico: modelo
+          ? {
+              id: modelo.id,
+              nome_modelo: modelo.nomeModelo,
+              is_provisorio: modelo.isProvisorio,
+              tem_carga_foto: Boolean(modelo.temCargaFoto),
+              tem_dados_variaveis: Boolean(modelo.temDadosVariaveis),
+              tem_furo: Boolean(modelo.temFuro),
+              tipo_furo: modelo.tipoFuro,
+              foto_frente_nome: nomeArquivo(modelo.fotoFrentePath),
+              foto_verso_nome: nomeArquivo(modelo.fotoVersoPath),
+            }
+          : null,
+        historico_status_remessa: [],
+        observacao: remessa.observacao ?? null,
+        numero_remessa: remessa.numeroRemessa,
+        items_remessa: null,
+        is_provisorio: Boolean(modelo?.isProvisorio ?? false),
+        tem_carga_foto: Boolean(modelo?.temCargaFoto ?? false),
+        tem_dados_variaveis: Boolean(modelo?.temDadosVariaveis ?? false),
+        tipo_entrega: null,
+        liberacao_expedicao: null,
+        created_at: remessa.createdAt,
+        updated_at: remessa.updatedAt,
+      };
+    });
   }
 
   private async mapItem(

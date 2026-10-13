@@ -29,6 +29,8 @@ export class ModeloTecnicoRepository {
 
   async paginate(params: {
     clienteId?: bigint;
+    /** inativos só entram quando solicitados (sempre ao final da lista) */
+    incluirInativos?: boolean;
     search?: string;
     sortBy?: string;
     order?: 'asc' | 'desc';
@@ -36,13 +38,17 @@ export class ModeloTecnicoRepository {
     take: number;
   }) {
     const where: Prisma.ModeloTecnicoWhereInput = {};
+    if (!params.incluirInativos) where.ativo = true;
     if (params.clienteId) where.clienteId = params.clienteId;
     if (params.search) {
       where.nomeModelo = { contains: params.search };
     }
 
     const sortField = SORT_MAP[params.sortBy ?? 'created_at'] ?? 'createdAt';
-    const orderBy = { [sortField]: params.order ?? 'desc' };
+    const orderBy: Prisma.ModeloTecnicoOrderByWithRelationInput[] = [
+      ...(params.incluirInativos ? [{ ativo: 'desc' as const }] : []),
+      { [sortField]: params.order ?? 'desc' },
+    ];
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.modeloTecnico.findMany({
@@ -73,7 +79,8 @@ export class ModeloTecnicoRepository {
     });
   }
 
-  delete(id: bigint) {
-    return this.prisma.modeloTecnico.delete({ where: { id } });
+  /** Soft disable: preserva o histórico de remessas vinculadas. */
+  setAtivo(id: bigint, ativo: boolean) {
+    return this.prisma.modeloTecnico.update({ where: { id }, data: { ativo } });
   }
 }

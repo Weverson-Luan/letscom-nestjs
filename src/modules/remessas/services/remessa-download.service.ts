@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import AdmZip from 'adm-zip';
 import { Readable } from 'stream';
 import * as ExcelJS from 'exceljs';
@@ -39,6 +39,12 @@ export class RemessaDownloadService {
     });
     if (!remessa) throw new NotFoundException('Remessa não encontrada.');
     this.assertNaoProvisoria(remessa.modeloTecnico);
+    if (!remessa.modeloTecnico?.temCargaFoto) {
+      throw new BusinessException(
+        'Download de fotos não disponível para modelos sem carga de fotos.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
 
     const zip = new AdmZip();
     for (const foto of remessa.fotos) {
@@ -68,7 +74,12 @@ export class RemessaDownloadService {
       include: { cliente: true, modeloTecnico: true },
     });
     if (!remessa) throw new NotFoundException('Remessa não encontrada.');
-    this.assertNaoProvisoria(remessa.modeloTecnico);
+    if (!remessa.modeloTecnico?.temDadosVariaveis) {
+      throw new BusinessException(
+        'Download de dados não disponível para modelos sem dados variáveis.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
 
     const planilha = await this.prisma.remessaPlanilha.findFirst({
       where: { remessaId: remessa.id },

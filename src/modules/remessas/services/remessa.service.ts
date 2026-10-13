@@ -10,6 +10,10 @@ import { ImageService } from 'src/shared/utils/image.service';
 import { SpreadsheetService } from 'src/shared/utils/spreadsheet.service';
 import { ZipService } from 'src/shared/utils/zip.service';
 import { RemessaRepository, AuthContext } from '../repositories/remessa.repository';
+import {
+  resolverMatriculaNaPlanilha,
+  sanitizarChaveMatricula,
+} from '../helpers/remessa-chave-matricula.helper';
 
 export interface UploadFile {
   buffer: Buffer;
@@ -125,6 +129,11 @@ export class RemessaService {
       include: { camposVariaveis: true },
     });
     if (!modelo) throw new BusinessException('Modelo técnico não encontrado.');
+    if (!modelo.ativo) {
+      throw new BusinessException(
+        'Este modelo técnico está inativo e não pode receber novas remessas.',
+      );
+    }
 
     const temCargaFoto = modelo.temCargaFoto;
     if (temCargaFoto) {
@@ -363,7 +372,7 @@ export class RemessaService {
 
     const dados: Record<string, { matricula: string; nome: string }> = {};
     for (const row of rows) {
-      const matricula = String(row[campoChaveLower] ?? '').trim();
+      const matricula = sanitizarChaveMatricula(String(row[campoChaveLower] ?? ''));
       if (matricula === '') continue;
 
       for (const col of obrigatorias) {
@@ -402,9 +411,9 @@ export class RemessaService {
     const entries = await this.zip.extract(file.buffer);
     let n = 0;
     for (const entry of entries) {
-      const matricula = entry.name.replace(/\.[^.]+$/, '').trim();
-      if (!dadosCsv[matricula]) {
-        throw new BusinessException(`Matrícula '${matricula}' não encontrada na planilha.`);
+      const matriculaZip = sanitizarChaveMatricula(entry.name.replace(/\.[^.]+$/, ''));
+      if (resolverMatriculaNaPlanilha(dadosCsv, matriculaZip) === null) {
+        throw new BusinessException(`Matrícula '${matriculaZip}' não encontrada na planilha.`);
       }
       n++;
     }
@@ -437,9 +446,10 @@ export class RemessaService {
   ): Promise<void> {
     const entries = await this.zip.extract(file.buffer);
     for (const entry of entries) {
-      const matricula = entry.name.replace(/\.[^.]+$/, '').trim();
-      if (!dadosCsv[matricula]) {
-        throw new BusinessException(`Matrícula '${matricula}' não encontrada na planilha.`);
+      const matriculaZip = sanitizarChaveMatricula(entry.name.replace(/\.[^.]+$/, ''));
+      const matricula = resolverMatriculaNaPlanilha(dadosCsv, matriculaZip);
+      if (matricula === null) {
+        throw new BusinessException(`Matrícula '${matriculaZip}' não encontrada na planilha.`);
       }
       let jpeg: Buffer;
       try {

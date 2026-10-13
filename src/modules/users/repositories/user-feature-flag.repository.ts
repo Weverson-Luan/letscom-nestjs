@@ -29,13 +29,4 @@ export class UserFeatureFlagRepository {
       }
     });
   }
-
-  async listarKeysHabilitadas(userId: bigint): Promise<string[]> {
-    const pivots = await this.prisma.userFeatureFlag.findMany({
-      where: { userId, ativo: true, featureFlag: { ativo: true } },
-      include: { featureFlag: true },
-      orderBy: { featureFlag: { key: 'asc' } },
-    });
-    return pivots.map((p) => p.featureFlag.key);
-  }
 }

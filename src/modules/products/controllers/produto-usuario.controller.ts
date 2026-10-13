@@ -5,6 +5,8 @@ import { Roles } from 'src/shared/decorators/roles.decorator';
 import { ApiResponse } from 'src/shared/utils/api-response';
 import { VincularProdutoDto } from '../dto/vincular-produto.dto';
 import { ProdutoUsuarioService } from '../services/produto-usuario.service';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 /**
  * Vínculo cliente ↔ produto — espelha ProdutoUsuarioController.
@@ -18,6 +20,7 @@ export class ProdutoUsuarioController {
   constructor(private readonly service: ProdutoUsuarioService) {}
 
   @Post('vincular')
+  @RequireFeatures(Feature.EDITAR_CLIENTE)
   @ApiOperation({ summary: 'Vincula um produto a um usuário (cliente)' })
   async vincular(@Body() body: VincularProdutoDto) {
     await this.service.vincular(BigInt(body.user_id), BigInt(body.produto_id));
@@ -25,6 +28,7 @@ export class ProdutoUsuarioController {
   }
 
   @Post('desvincular')
+  @RequireFeatures(Feature.EDITAR_CLIENTE)
   @ApiOperation({ summary: 'Desvincula um produto de um usuário (cliente)' })
   async desvincular(@Body() body: VincularProdutoDto) {
     await this.service.desvincular(
@@ -35,6 +39,7 @@ export class ProdutoUsuarioController {
   }
 
   @Get(':userId/listar')
+  @RequireFeatures(Feature.VISUALIZAR_CLIENTE)
   @ApiOperation({ summary: 'Lista produtos vinculados a um usuário' })
   async listar(@Param('userId') userId: string) {
     const produtos = await this.service.listar(BigInt(userId));

@@ -799,42 +799,79 @@ async function seedRemessaResponsabilidade() {
   }
 }
 
+/**
+ * Espelha database/seeders/FeatureFlagSeeder.php: mapeamento das features de
+ * autorização da API. `tipoUsuario` (roles liberadas por padrão) e `ativo` são
+ * só o padrão inicial — ajustes feitos pelo backoffice são preservados.
+ */
 async function seedFeatureFlags() {
-  const flags = [
-    {
-      key: 'backoffice_dashboard',
-      nome: 'Backoffice Dashboard',
-      descricao: 'Interface renovada do painel principal.',
-    },
-    {
-      key: 'beta_reports',
-      nome: 'Relatórios Beta',
-      descricao: 'Relatórios experimentais em fase de testes.',
-    },
-    {
-      key: 'ai_crop',
-      nome: 'Recorte com IA',
-      descricao: 'Processamento automático de imagens com inteligência artificial.',
-    },
-    {
-      key: 'zip_import',
-      nome: 'Importação ZIP',
-      descricao: 'Importação em lote de arquivos compactados.',
-    },
-    {
-      key: 'admin_tools',
-      nome: 'Ferramentas Admin',
-      descricao: 'Utilitários avançados para administradores.',
-    },
+  const flags: { key: string; nome: string; descricao: string; tipoUsuario?: string }[] = [
+    { key: 'acessar_atividades', nome: 'Acessar Atividades (Cropix)', descricao: 'Permite acessar a tela de atividades no Backoffice Cropix.' },
+    { key: 'acessar_produtos', nome: 'Acessar Produtos (Cropix)', descricao: 'Permite acessar a tela de produtos no Backoffice Cropix.' },
+    { key: 'acessar_tecnologias', nome: 'Acessar Tecnologias (Cropix)', descricao: 'Permite acessar a tela de tecnologias no Backoffice Cropix.' },
+    { key: 'acessar_feature_flags', nome: 'Acessar Feature Flags (Cropix)', descricao: 'Permite acessar o gerenciamento de feature flags no Backoffice Cropix.' },
+    { key: 'acessar_backoffice', nome: 'Acessar Backoffice', descricao: 'Exibe o item "Backoffice" no menu lateral e permite abri-lo.', tipoUsuario: 'admin,producao' },
+    { key: 'acessar_admin', nome: 'Acessar Admin', descricao: 'Permite acessar o painel administrativo.', tipoUsuario: 'admin,producao' },
+    { key: 'acessar_remessas', nome: 'Acessar Remessas', descricao: 'Exibe o item "Remessas" no menu lateral e permite abrir a tela de tarefas de remessas (pegar tarefa / minhas tarefas).', tipoUsuario: 'admin,producao' },
+    { key: 'acessar_pesquisar_remessas', nome: 'Acessar Pesquisar Remessas', descricao: 'Exibe o item "Pesquisar remessa" no menu lateral e permite abrir a tela de pesquisa de remessas.', tipoUsuario: 'admin,producao,consultor,expedicao,recepcao' },
+    { key: 'acessar_expedicao', nome: 'Acessar Expedição', descricao: 'Exibe o item "Expedição"/"Expedir Remessas" no menu lateral e permite abrir a tela de expedição.', tipoUsuario: 'admin,expedicao' },
+    { key: 'acessar_recepcao', nome: 'Acessar Recepção', descricao: 'Exibe o item "Recepção"/"Finalizar Remessas" no menu lateral e permite abrir a tela de recepção.', tipoUsuario: 'admin,recepcao' },
+    { key: 'acessar_gerenciar_cliente', nome: 'Acessar Gerenciar Clientes', descricao: 'Exibe o item "Gerenciar clientes" no menu lateral e permite abrir a tela de gerenciamento de clientes.', tipoUsuario: 'admin,producao,consultor' },
+    { key: 'acessar_modelos_cliente', nome: 'Acessar Modelos (Cliente)', descricao: 'Exibe o item "Modelos" no menu lateral do cliente e permite abrir a tela inicial com os modelos técnicos disponíveis.', tipoUsuario: 'cliente,subordinado' },
+    { key: 'acessar_remessas_andamento', nome: 'Acessar Remessas em Andamento', descricao: 'Exibe o item "Remessas Andamento" no menu lateral do cliente e permite abrir essa tela.', tipoUsuario: 'cliente,subordinado' },
+    { key: 'acessar_historico_remessas', nome: 'Acessar Histórico de Remessas', descricao: 'Exibe o item "Histórico de Remessas" no menu lateral do cliente e permite abrir essa tela.', tipoUsuario: 'cliente,subordinado' },
+    { key: 'visualizar_cliente', nome: 'Visualizar Cliente', descricao: 'Permite visualizar os clientes.', tipoUsuario: 'admin,producao,consultor' },
+    { key: 'criar_cliente', nome: 'Criar Cliente', descricao: 'Permite cadastrar novos clientes.', tipoUsuario: 'admin,consultor,producao' },
+    { key: 'editar_cliente', nome: 'Editar Cliente', descricao: 'Permite editar os dados do cliente.', tipoUsuario: 'admin,consultor' },
+    { key: 'inativar_cliente', nome: 'Inativar Cliente', descricao: 'Permite inativar o cliente.', tipoUsuario: 'admin' },
+    { key: 'gerenciar_creditos_cliente', nome: 'Gerenciar Créditos do Cliente', descricao: 'Permite acessar e gerenciar os créditos do cliente (vendas e cancelamentos).', tipoUsuario: 'admin' },
+    { key: 'visualizar_usuario_cliente', nome: 'Visualizar Usuários do Cliente', descricao: 'Permite visualizar os usuários do cliente.', tipoUsuario: 'admin,producao,consultor' },
+    { key: 'criar_usuario_cliente', nome: 'Criar Usuário do Cliente', descricao: 'Permite adicionar usuários ao cliente.', tipoUsuario: 'admin,producao' },
+    { key: 'inativar_usuario_cliente', nome: 'Inativar Usuário do Cliente', descricao: 'Permite inativar usuários do cliente.', tipoUsuario: 'admin,producao' },
+    { key: 'editar_usuarios_cliente', nome: 'Editar Usuários do Cliente', descricao: 'Permite editar os usuários do cliente.', tipoUsuario: 'admin,producao' },
+    { key: 'visualizar_saldo_creditos', nome: 'Visualizar Saldo de Créditos', descricao: 'Permite ao cliente visualizar o saldo de créditos.', tipoUsuario: 'cliente,subordinado' },
+    { key: 'visualizar_extrato_credito', nome: 'Visualizar Extrato de Créditos', descricao: 'Permite visualizar o extrato de créditos do cliente.', tipoUsuario: 'admin,producao,consultor' },
+    { key: 'visualizar_cobranca_credito', nome: 'Visualizar Cobrança de Créditos', descricao: 'Permite visualizar a cobrança de créditos do cliente.', tipoUsuario: 'admin,producao,consultor' },
+    { key: 'criar_credito', nome: 'Criar Crédito', descricao: 'Permite lançar créditos para o cliente.', tipoUsuario: 'admin,producao' },
+    { key: 'visualizar_modelos_tecnicos', nome: 'Visualizar Modelos Técnicos', descricao: 'Permite visualizar os modelos técnicos dos clientes.', tipoUsuario: 'admin,producao,consultor,cliente,subordinado' },
+    { key: 'criar_modelos_tecnicos', nome: 'Criar Modelos Técnicos', descricao: 'Permite adicionar modelos técnicos.', tipoUsuario: 'admin,producao' },
+    { key: 'editar_modelos_tecnicos', nome: 'Editar Modelos Técnicos', descricao: 'Permite editar modelos técnicos.', tipoUsuario: 'admin,producao,consultor' },
+    { key: 'inativar_modelos_tecnicos', nome: 'Inativar Modelos Técnicos', descricao: 'Permite inativar modelos técnicos.', tipoUsuario: 'admin,producao' },
+    { key: 'visualizar_remessas_andamento', nome: 'Visualizar Remessas em Andamento', descricao: 'Permite ao cliente acompanhar as remessas em andamento.', tipoUsuario: 'cliente,subordinado' },
+    { key: 'visualizar_historico_remessas', nome: 'Visualizar Histórico de Remessas', descricao: 'Permite ao cliente visualizar o histórico de remessas.', tipoUsuario: 'cliente,subordinado' },
+    { key: 'pesquisar_remessas', nome: 'Pesquisar Remessas', descricao: 'Permite acessar a tela de pesquisa de remessas.', tipoUsuario: 'admin,producao,consultor,expedicao,recepcao' },
+    { key: 'solicitar_remessas', nome: 'Solicitar Remessas', descricao: 'Permite solicitar novas remessas.', tipoUsuario: 'cliente,subordinado,admin,producao' },
+    { key: 'devolver_remessas', nome: 'Devolver Remessas', descricao: 'Permite devolver uma remessa conferida para envio de dados.', tipoUsuario: 'admin,producao' },
+    { key: 'liberacao_mutiplas_remessas_balcao', nome: 'Liberação de Múltiplas Remessas (Balcão)', descricao: 'Permite liberar várias remessas de uma vez no balcão.', tipoUsuario: 'expedicao,admin,producao' },
+    { key: 'liberacao_remessas_recepcao', nome: 'Liberação de Remessas (Recepção)', descricao: 'Permite liberar remessas na recepção.', tipoUsuario: 'recepcao,admin,producao' },
+    { key: 'liberacao_mutiplas_remessa_recepcao', nome: 'Liberação de Múltiplas Remessas (Recepção)', descricao: 'Permite liberar várias remessas de uma vez na recepção.', tipoUsuario: 'recepcao,admin,producao' },
+    { key: 'liberacao_remessa_balcao', nome: 'Liberação de Remessa (Balcão)', descricao: 'Permite liberar remessas no balcão.', tipoUsuario: 'expedicao,admin,producao' },
+    { key: 'pegar_tarefa_remessas', nome: 'Pegar Tarefa de Remessas', descricao: 'Permite assumir tarefas de remessas.', tipoUsuario: 'admin,producao' },
+    { key: 'minhas_tarefa_remessas', nome: 'Minhas Tarefas de Remessas', descricao: 'Permite visualizar as próprias tarefas de remessas.', tipoUsuario: 'admin,producao' },
+    { key: 'finalizar_tarefa_remessas', nome: 'Finalizar Tarefa de Remessas', descricao: 'Permite finalizar tarefas de remessas.', tipoUsuario: 'admin,producao' },
+    { key: 'baixar_remessas', nome: 'Baixar Remessas', descricao: 'Permite baixar os arquivos das remessas.', tipoUsuario: 'admin,producao' },
+    { key: 'adicionar_observacao_remessas', nome: 'Adicionar Observação em Remessas', descricao: 'Permite adicionar observações nas remessas.', tipoUsuario: 'admin,producao,consultor,expedicao,recepcao' },
+    { key: 'excluir_remessas', nome: 'Excluir Remessas', descricao: 'Permite excluir remessas.', tipoUsuario: 'admin,producao' },
   ];
 
-  for (const flag of flags) {
-    await prisma.featureFlag.upsert({
-      where: { key: flag.key },
-      create: { ...flag, ativo: false },
-      update: { nome: flag.nome, descricao: flag.descricao, ativo: false },
-    });
-  }
+  await prisma.$transaction(async (tx) => {
+    // Remove as flags fora do mapeamento (vínculos em user_feature_flags caem por cascade).
+    await tx.featureFlag.deleteMany({ where: { key: { notIn: flags.map((f) => f.key) } } });
+
+    for (const flag of flags) {
+      await tx.featureFlag.upsert({
+        where: { key: flag.key },
+        create: {
+          key: flag.key,
+          nome: flag.nome,
+          descricao: flag.descricao,
+          tipoUsuario: flag.tipoUsuario ?? null,
+          ativo: true,
+        },
+        update: { nome: flag.nome, descricao: flag.descricao },
+      });
+    }
+  });
 }
 
 async function seedClienteConsultor() {

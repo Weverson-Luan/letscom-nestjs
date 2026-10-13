@@ -26,8 +26,7 @@ export class AuthController {
   constructor(
     private readonly authUserService: AuthClientUserService,
     private readonly authSubordinateUserService: AuthSubordinateUserService,
-    private readonly refreshTokenUseCase: RefreshTokenService,
-    private readonly logoutUseCase: RefreshTokenService,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
   @Public()
@@ -60,7 +59,7 @@ export class AuthController {
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @ApiOperation({ summary: 'Renova o access token (rotação de refresh token).' })
   refresh(@Body() dto: RefreshTokenDto) {
-    return this.refreshTokenUseCase.rotate(dto.refresh_token);
+    return this.refreshTokenService.executeRefreshToken(dto.refresh_token);
   }
 
   @Post('auth/logout')
@@ -70,6 +69,6 @@ export class AuthController {
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @ApiOperation({ summary: 'Logout (revoga refresh tokens).' })
   logout(@CurrentUser() user: AuthUser) {
-    return this.logoutUseCase.execute(user);
+    return this.refreshTokenService.execute(user);
   }
 }

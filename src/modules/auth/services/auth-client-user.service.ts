@@ -12,9 +12,13 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 // repositories / role user
 import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
 
+// shared / auth
+import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
+
 // services
 import { JwtTokenService } from './jwt-token.service';
 import { RefreshTokenService } from './refresh-token.service';
+import { AuthSubordinateUserService } from './auth-subordinate-user.service';
 
 // utils / hash
 import { HashService } from 'src/shared/utils/hash.service';
@@ -38,6 +42,8 @@ export class AuthClientUserService {
     private readonly refreshTokenService: RefreshTokenService,
     private readonly config: ConfigService,
     private readonly roleUserRepo: RoleUserRepository,
+    private readonly featureGate: FeatureGateService,
+    private readonly authSubordinateUserService: AuthSubordinateUserService,
   ) {}
 
   async execute(dto: LoginDto) {
@@ -76,6 +82,12 @@ export class AuthClientUserService {
 
       const consultor = await getClientConsultantMappers(this.prisma, user.id);
 
+      const features = await this.featureGate.listarKeysHabilitadas({
+        id: user.id,
+        tipoLogin: 'user',
+        roles: await this.roleUserRepo.findRoleNamesForUser(user.id),
+      });
+
       return {
         code: 200,
         message: 'Usuário logado com sucesso!',
@@ -88,23 +100,15 @@ export class AuthClientUserService {
           tipo_pessoa: user.tipoPessoa,
           consultor,
           roles: role,
+          features,
         },
         access_token: token,
         refresh_token: refreshToken,
       };
     }
 
-
-    // falha ao autenticar lancar o error 401 - UNAUTHORIZED
-    throw new HttpException(
-      {
-        code: 401,
-        status: 'error',
-        error:
-          'Usuário ou senha inválidos. Verifique suas credenciais e tente novamente!',
-      },
-      HttpStatus.UNAUTHORIZED,
-    );
+    // credenciais não conferem com users: tenta users_cliente (lança 401 se também falhar)
+    return this.authSubordinateUserService.execute(dto);
   }
 
 

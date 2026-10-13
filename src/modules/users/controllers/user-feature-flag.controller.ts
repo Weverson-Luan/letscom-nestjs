@@ -11,6 +11,8 @@ import {
   mapUserFeatureFlagsPayload,
 } from '../mappers/feature-flags.mapper';
 import { UserFeatureFlagService } from '../services/user-feature-flag.service';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -21,10 +23,7 @@ export class UserFeatureFlagController {
   @Get('dados/feature-flags')
   @ApiOperation({ summary: 'Feature flags habilitadas do usuário autenticado' })
   async minhas(@CurrentUser() user: AuthUser) {
-    const keys = await this.service.listarHabilitadasDoUsuarioAutenticado(
-      user.id,
-      user.tipoLogin,
-    );
+    const keys = await this.service.listarHabilitadasDoUsuarioAutenticado(user);
     return ApiResponse.success(
       'Feature flags habilitadas carregadas com sucesso!',
       mapEnabledKeys(keys),
@@ -32,6 +31,7 @@ export class UserFeatureFlagController {
   }
 
   @Get(':user/feature-flags')
+  @RequireFeatures(Feature.ACESSAR_FEATURE_FLAGS)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Lista feature flags de um usuário' })
   async index(@Param('user') userId: string) {
@@ -44,6 +44,7 @@ export class UserFeatureFlagController {
   }
 
   @Put(':user/feature-flags')
+  @RequireFeatures(Feature.ACESSAR_FEATURE_FLAGS)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Sincroniza feature flags de um usuário' })
   async sync(@Param('user') userId: string, @Body() dto: SyncFeatureFlagsDto) {

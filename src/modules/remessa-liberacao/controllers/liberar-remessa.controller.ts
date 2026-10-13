@@ -8,8 +8,11 @@ import { LiberarRemessaBalcaoDto } from '../dto/liberar-remessa-balcao.dto';
 import { LiberarRemessasLoteDto } from '../dto/liberar-remessas-lote.dto';
 import { LiberarRemessasLoteBalcaoService } from '../services/liberar-remessas-lote-balcao.service';
 import { RemessaLiberadaBalcaoService } from '../services/remessa-liberada-balcao.service';
+import { Feature, FEATURES_LIBERACAO_BALCAO } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 const ROLES = [Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR, Role.EXPEDICAO] as const;
+const ROLES_LIBERACAO = [Role.ADMIN, Role.EXPEDICAO] as const;
 
 /**
  * Liberação de remessa no balcão (expedição).
@@ -25,7 +28,8 @@ export class LiberarRemessaController {
   ) {}
 
   @Post('lote')
-  @Roles(...ROLES)
+  @RequireFeatures(Feature.LIBERACAO_MULTIPLAS_REMESSAS_BALCAO)
+  @Roles(...ROLES_LIBERACAO)
   @ApiOperation({ summary: 'Libera remessas em lote para o balcão (atualiza status)' })
   async liberarEmLote(
     @Body() dto: LiberarRemessasLoteDto,
@@ -36,7 +40,8 @@ export class LiberarRemessaController {
   }
 
   @Post()
-  @Roles(...ROLES)
+  @RequireFeatures(Feature.LIBERACAO_REMESSA_BALCAO)
+  @Roles(...ROLES_LIBERACAO)
   @ApiOperation({
     summary: 'Libera uma remessa para o balcão (não altera status da remessa)',
   })
@@ -49,6 +54,7 @@ export class LiberarRemessaController {
   }
 
   @Get()
+  @RequireFeatures(...FEATURES_LIBERACAO_BALCAO)
   @Roles(...ROLES)
   @ApiOperation({ summary: 'Lista todas as liberações de remessa (balcão)' })
   async listar() {
@@ -57,6 +63,7 @@ export class LiberarRemessaController {
   }
 
   @Get(':remessaId')
+  @RequireFeatures(...FEATURES_LIBERACAO_BALCAO)
   @Roles(...ROLES)
   @ApiOperation({ summary: 'Busca liberação de remessa por remessa_id' })
   async porRemessa(@Param('remessaId') remessaId: string) {

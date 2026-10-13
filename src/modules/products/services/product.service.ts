@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { resolvePagination } from 'src/shared/database/pagination';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { buildPagination } from 'src/shared/utils/api-response';
+import { optionalBooleanFilter } from 'src/shared/utils/boolean-filter';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { mapProduct } from '../mappers/product.mapper';
@@ -16,11 +17,12 @@ export class ProductService {
   async listar(query: Record<string, unknown>) {
     const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
     const order =
-      String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+      String(query.order ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
 
     const { data, total } = await this.repository.paginate({
       search: query.search as string | undefined,
-      sortBy: (query.sort_by as string) ?? 'created_at',
+      ativo: optionalBooleanFilter(query.ativo),
+      sortBy: (query.sort_by as string) ?? 'nome',
       order,
       skip,
       take,
@@ -50,7 +52,7 @@ export class ProductService {
       estoqueMinimo: dto.estoque_minimo,
       estoqueMaximo: dto.estoque_maximo,
       estoqueAtual: dto.estoque_atual,
-      ativo: true,
+      ativo: dto.ativo ?? true,
     };
     return this.repository.create(data);
   }
@@ -70,13 +72,9 @@ export class ProductService {
     if (dto.estoque_minimo !== undefined) data.estoqueMinimo = dto.estoque_minimo;
     if (dto.estoque_maximo !== undefined) data.estoqueMaximo = dto.estoque_maximo;
     if (dto.estoque_atual !== undefined) data.estoqueAtual = dto.estoque_atual;
+    if (dto.ativo !== undefined) data.ativo = dto.ativo;
 
     return this.repository.update(id, data);
-  }
-
-  async excluir(id: bigint) {
-    await this.buscar(id);
-    await this.repository.softDelete(id);
   }
 
   private validarEstoque(minimo: number, maximo: number, atual: number) {
@@ -86,9 +84,15 @@ export class ProductService {
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
-    if (atual < minimo || atual > maximo) {
+    if (atual < minimo) {
       throw new BusinessException(
-        'O estoque atual deve estar entre o mínimo e máximo',
+        'O estoque atual deve ser maior ou igual ao mínimo',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    if (atual > maximo) {
+      throw new BusinessException(
+        'O estoque atual deve ser menor ou igual ao máximo',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }

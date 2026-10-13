@@ -16,7 +16,8 @@ src/
 │   └── <dominio>/{controllers,use-cases,services,repositories,dto,mappers,...}
 ├── shared/             # infra transversal
 │   ├── prisma/         # PrismaService (@Global)
-│   ├── guards/         # JwtStrategy, JwtAuthGuard, RolesGuard (globais)
+│   ├── auth/           # Feature (keys), FeatureGateService, regras de ação da remessa
+│   ├── guards/         # JwtStrategy, JwtAuthGuard, RolesGuard, FeaturesGuard (globais)
 │   ├── decorators/     # @Roles(), @Public(), @CurrentUser()
 │   ├── filters/        # AllExceptionsFilter (resposta padrão)
 │   ├── interceptors/   # LoggingInterceptor (Winston)
@@ -39,7 +40,8 @@ src/
 | 1 | Módulo **Remessas** (solicitação, tarefas, status, downloads, responsabilidade, uploads) | ✅ |
 | 2 | **credit-sales**, **liberações**, **modelos-técnicos**, **endereços**, **entregas-cliente**, **tipos-entrega**, **enderecos-entrega** | ✅ |
 | 2 | **dashboard**, **roles**, **tecnologias**, **products**, **usuarios-cliente**, **users-atendimentos**, **videos-tutorias** | ✅ |
-| — | **Backup** (dashboard/backups, cron) | Fora de escopo |
+| 3 | Sincronização com `letscom-backend` (`feat/features-flags`, commit `1b7f0e4`): autorização por **feature flags**, inativação de modelos técnicos, `ativo` em produtos/tecnologias, `totais_por_produto`, liberação em lote por cliente | ✅ |
+| — | **Backup** | Removido também no Laravel |
 
 ## Setup
 
@@ -67,3 +69,4 @@ docker compose up --build
 - **Resposta padrão**: `{ code, status, message, data, pagination }` (espelha os `*ResponseHelper`).
 - **Correções documentadas** (decisão do projeto): `role_user` ganhou `id` sintético; endpoints de reset/criação mantêm o comportamento original (HTTP 200 com `code` no corpo em validação).
 - **Cache**: version-key em Redis (substitui o driver `database`).
+- **Feature flags**: `@RequireFeatures(...)` + `FeaturesGuard` global espelham o middleware `feature:` do Laravel (roda depois do `RolesGuard`). Uma flag ativa vale pelo vínculo direto em `user_feature_flags` ou, sem vínculo, pela role do usuário em `tipo_usuario`. Rode `npm run prisma:seed` para criar o mapeamento de flags; sem ele, todo usuário recebe 403 nas rotas protegidas.

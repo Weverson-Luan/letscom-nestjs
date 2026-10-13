@@ -29,6 +29,8 @@ import {
 } from '../dto/entrega-cliente.dto';
 import { mapEntregaCliente } from '../mappers/entrega-cliente.mapper';
 import { EntregaClienteService } from '../services/entrega-cliente.service';
+import { Feature, FEATURES_LIBERACAO } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 type MulterFile = { buffer: Buffer; originalname: string; mimetype?: string };
 
@@ -36,6 +38,7 @@ type MulterFile = { buffer: Buffer; originalname: string; mimetype?: string };
 @ApiBearerAuth()
 @Roles(...ALL_ROLES)
 @Controller('entregas-cliente')
+@RequireFeatures(...FEATURES_LIBERACAO)
 export class EntregaClienteController {
   constructor(private readonly service: EntregaClienteService) {}
 

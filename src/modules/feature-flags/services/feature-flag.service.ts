@@ -1,7 +1,10 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { TIPOS_USUARIO_FEATURE_FLAG } from 'src/shared/constants/roles';
+import { resolvePagination } from 'src/shared/database/pagination';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
+import { buildPagination } from 'src/shared/utils/api-response';
+import { optionalBooleanFilter } from 'src/shared/utils/boolean-filter';
 import { FeatureFlagRepository } from '../repositories/feature-flag.repository';
 import { CreateFeatureFlagDto } from '../dto/create-feature-flag.dto';
 import { UpdateFeatureFlagDto } from '../dto/update-feature-flag.dto';
@@ -11,8 +14,21 @@ import { UpdateFeatureFlagDto } from '../dto/update-feature-flag.dto';
 export class FeatureFlagService {
   constructor(private readonly repository: FeatureFlagRepository) {}
 
-  listar() {
-    return this.repository.findAll();
+  /** Espelha FeatureFlagRepository::paginate (busca em key/nome/descricao, filtro `ativo`). */
+  async listarPaginado(query: Record<string, unknown>) {
+    const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
+    const order = String(query.order ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
+
+    const { data, total } = await this.repository.paginate({
+      search: String(query.search ?? '').trim() || undefined,
+      ativo: optionalBooleanFilter(query.ativo),
+      sortBy: String(query.sort_by ?? 'key'),
+      order,
+      skip,
+      take,
+    });
+
+    return { data, pagination: buildPagination(total, page, perPage) };
   }
 
   async buscar(id: bigint) {

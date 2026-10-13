@@ -21,7 +21,7 @@ export class LiberarRemessasLoteDto {
   @Min(1, { each: true })
   remessa_ids!: number[];
 
-  /** Ignorado no lote: o tipo vem de `tipo_entrega_user` do cliente. */
+  /** Quando informado, sobrepõe o tipo de entrega cadastrado (`tipo_entrega_user`) de cada cliente. */
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @Type(() => Number)

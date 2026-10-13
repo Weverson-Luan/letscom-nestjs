@@ -21,11 +21,13 @@ import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decora
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { ApiResponse } from 'src/shared/utils/api-response';
 import { CreateCreditSaleDto } from '../dto/create-credit-sale.dto';
-import { CreditSaleListQueryDto } from '../dto/list-credit-sale-query.dto';
+import { CreditoClienteQueryDto, CreditSaleListQueryDto } from '../dto/list-credit-sale-query.dto';
 import { UpdateCreditSaleDto } from '../dto/update-credit-sale.dto';
 import { mapCreditSale } from '../mappers/credit-sale.mapper';
 import { CreditSaleService } from '../services/credit-sale.service';
 import { CreditoClienteExtratoService } from '../services/credito-cliente-extrato.service';
+import { Feature } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 const ROLES_LEITURA = [
   Role.ADMIN,
@@ -47,6 +49,7 @@ export class CreditSaleController {
   ) {}
 
   @Get()
+  @RequireFeatures(Feature.GERENCIAR_CREDITOS_CLIENTE, Feature.VISUALIZAR_EXTRATO_CREDITO)
   @Roles(...ROLES_LEITURA)
   @ApiOperation({ summary: 'Lista vendas de créditos (paginado)' })
   async index(@Query() query: CreditSaleListQueryDto) {
@@ -61,6 +64,7 @@ export class CreditSaleController {
   }
 
   @Get('cliente/:id')
+  @RequireFeatures(Feature.GERENCIAR_CREDITOS_CLIENTE, Feature.VISUALIZAR_EXTRATO_CREDITO)
   @Roles(...ROLES_LEITURA)
   @ApiParam({ name: 'id', description: 'ID do cliente' })
   @ApiOperation({ summary: 'Lista transações de um cliente' })
@@ -80,6 +84,7 @@ export class CreditSaleController {
   }
 
   @Get('cliente/:clienteId/creditos')
+  @RequireFeatures(Feature.VISUALIZAR_SALDO_CREDITOS, Feature.GERENCIAR_CREDITOS_CLIENTE)
   @Roles(...ROLES_LEITURA)
   @ApiParam({ name: 'clienteId', description: 'ID do cliente' })
   @ApiQuery({
@@ -101,12 +106,13 @@ export class CreditSaleController {
   }
 
   @Get('cliente/:clienteId/extrato')
+  @RequireFeatures(Feature.VISUALIZAR_EXTRATO_CREDITO)
   @Roles(...ROLES_LEITURA)
   @ApiParam({ name: 'clienteId', description: 'ID do cliente' })
   @ApiOperation({ summary: 'Extrato de movimentações de crédito do cliente' })
   async extrato(
     @Param('clienteId') clienteId: string,
-    @Query() query: CreditSaleListQueryDto,
+    @Query() query: CreditoClienteQueryDto,
   ) {
     const { data, pagination } = await this.extratoService.listarPorCliente(
       BigInt(clienteId),
@@ -120,17 +126,19 @@ export class CreditSaleController {
   }
 
   @Get('cliente/:clienteId/cobranca')
-  @Roles(Role.ADMIN)
+  @RequireFeatures(Feature.VISUALIZAR_COBRANCA_CREDITO)
+  @Roles(Role.ADMIN, Role.CONSULTOR)
   @ApiParam({ name: 'clienteId', description: 'ID do cliente' })
   @ApiOperation({ summary: 'Cobrança faturável de créditos do cliente' })
   async cobranca(
     @Param('clienteId') clienteId: string,
-    @Query() query: CreditSaleListQueryDto,
+    @Query() query: CreditoClienteQueryDto,
   ) {
-    const { data, pagination, totais } = await this.extratoService.listarCobranca(
-      BigInt(clienteId),
-      query as unknown as Record<string, unknown>,
-    );
+    const { data, pagination, totais, totais_por_produto } =
+      await this.extratoService.listarCobranca(
+        BigInt(clienteId),
+        query as unknown as Record<string, unknown>,
+      );
     return {
       ...ApiResponse.success(
         'Cobrança de créditos carregada com sucesso.',
@@ -138,10 +146,12 @@ export class CreditSaleController {
         pagination,
       ),
       totais,
+      totais_por_produto,
     };
   }
 
   @Post()
+  @RequireFeatures(Feature.CRIAR_CREDITO, Feature.GERENCIAR_CREDITOS_CLIENTE)
   @Roles(...ROLES_ESCRITA)
   @HttpCode(201)
   @ApiOperation({ summary: 'Cria uma venda de créditos' })
@@ -158,6 +168,7 @@ export class CreditSaleController {
   }
 
   @Post(':id/cancelar')
+  @RequireFeatures(Feature.GERENCIAR_CREDITOS_CLIENTE)
   @Roles(...ROLES_ESCRITA)
   @ApiParam({ name: 'id', description: 'ID da venda' })
   @ApiOperation({ summary: 'Cancela uma venda de créditos' })
@@ -167,6 +178,7 @@ export class CreditSaleController {
   }
 
   @Get(':id')
+  @RequireFeatures(Feature.GERENCIAR_CREDITOS_CLIENTE, Feature.VISUALIZAR_EXTRATO_CREDITO)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR, Role.CLIENTE)
   @ApiParam({ name: 'id', description: 'ID da venda' })
   @ApiOperation({ summary: 'Detalha uma venda de créditos' })
@@ -179,6 +191,7 @@ export class CreditSaleController {
   }
 
   @Put(':id')
+  @RequireFeatures(Feature.GERENCIAR_CREDITOS_CLIENTE)
   @Roles(...ROLES_ESCRITA)
   @ApiParam({ name: 'id', description: 'ID da venda' })
   @ApiOperation({ summary: 'Atualiza uma venda de créditos (não confirmada)' })
@@ -188,6 +201,7 @@ export class CreditSaleController {
   }
 
   @Delete(':id')
+  @RequireFeatures(Feature.GERENCIAR_CREDITOS_CLIENTE)
   @Roles(...ROLES_ESCRITA)
   @ApiParam({ name: 'id', description: 'ID da venda' })
   @ApiOperation({ summary: 'Exclui (soft delete) uma venda não confirmada' })

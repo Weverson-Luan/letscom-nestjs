@@ -23,6 +23,8 @@ import {
 } from '../mappers/tipo-entrega.mapper';
 import { TipoEntregaUserService } from '../services/tipo-entrega-user.service';
 import { TipoEntregaService } from '../services/tipo-entrega.service';
+import { Feature, FEATURES_LIBERACAO } from 'src/shared/auth/features';
+import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
 @ApiTags('tipos-entrega')
 @ApiBearerAuth()
@@ -35,6 +37,7 @@ export class TipoEntregaController {
   ) {}
 
   @Get()
+  @RequireFeatures(Feature.CRIAR_CLIENTE, Feature.EDITAR_CLIENTE, ...FEATURES_LIBERACAO)
   @ApiOperation({ summary: 'Lista tipos de entrega' })
   async index() {
     const tipos = await this.service.listar();
@@ -45,6 +48,7 @@ export class TipoEntregaController {
   }
 
   @Get('usuarios/:id')
+  @RequireFeatures(Feature.CRIAR_CLIENTE, Feature.EDITAR_CLIENTE, ...FEATURES_LIBERACAO)
   @ApiParam({ name: 'id', description: 'ID do cliente' })
   @ApiOperation({ summary: 'Lista tipos de entrega vinculados a um usuário' })
   async listarPorUsuario(@Param('id') id: string) {
@@ -53,6 +57,7 @@ export class TipoEntregaController {
   }
 
   @Post('vincular-tipos-entrega/users')
+  @RequireFeatures(Feature.CRIAR_CLIENTE, Feature.EDITAR_CLIENTE)
   @ApiOperation({ summary: 'Vincula tipo de entrega a um cliente' })
   async vincular(@Body() body: VincularTipoEntregaDto) {
     const result = await this.userService.vincular(
@@ -66,6 +71,7 @@ export class TipoEntregaController {
   }
 
   @Post('atualizar/users')
+  @RequireFeatures(Feature.CRIAR_CLIENTE, Feature.EDITAR_CLIENTE)
   @ApiOperation({ summary: 'Atualiza tipo de entrega de um cliente' })
   async atualizarTipoEntrega(@Body() body: VincularTipoEntregaDto) {
     return this.userService.atualizarTipoEntrega(
@@ -75,6 +81,7 @@ export class TipoEntregaController {
   }
 
   @Post()
+  @RequireFeatures(Feature.EDITAR_CLIENTE)
   @HttpCode(201)
   @ApiOperation({ summary: 'Cria um tipo de entrega' })
   async store(@Body() body: CreateTipoEntregaDto) {
@@ -83,6 +90,7 @@ export class TipoEntregaController {
   }
 
   @Get(':id')
+  @RequireFeatures(Feature.CRIAR_CLIENTE, Feature.EDITAR_CLIENTE, ...FEATURES_LIBERACAO)
   @ApiParam({ name: 'id', description: 'ID do tipo de entrega' })
   @ApiOperation({ summary: 'Detalha um tipo de entrega' })
   async show(@Param('id') id: string) {
@@ -91,6 +99,7 @@ export class TipoEntregaController {
   }
 
   @Put(':id')
+  @RequireFeatures(Feature.EDITAR_CLIENTE)
   @ApiParam({ name: 'id', description: 'ID do tipo de entrega' })
   @ApiOperation({ summary: 'Atualiza um tipo de entrega' })
   async update(@Param('id') id: string, @Body() body: UpdateTipoEntregaDto) {
@@ -99,6 +108,7 @@ export class TipoEntregaController {
   }
 
   @Delete(':id')
+  @RequireFeatures(Feature.EDITAR_CLIENTE)
   @ApiOperation({ summary: 'Remove um tipo de entrega' })
   async destroy(@Param('id') id: string) {
     await this.service.excluir(BigInt(id));

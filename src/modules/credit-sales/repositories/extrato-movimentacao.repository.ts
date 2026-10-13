@@ -8,6 +8,14 @@ const SORT_MAP: Record<string, string> = {
   id: 'id',
 };
 
+type FiltrosCobranca = {
+  produtoId?: bigint;
+  numeroRemessa?: string;
+  statusRemessa?: string;
+  dataInicio?: string;
+  dataFim?: string;
+};
+
 @Injectable()
 export class ExtratoMovimentacaoRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -147,28 +155,9 @@ export class ExtratoMovimentacaoRepository {
     return { data, total };
   }
 
-  async totaisCobranca(
-    clienteId: bigint,
-    filtros: {
-      produtoId?: bigint;
-      numeroRemessa?: string;
-      statusRemessa?: string;
-      dataInicio?: string;
-      dataFim?: string;
-    },
-  ) {
-    // Usa SQL para COUNT DISTINCT + SUM com join produtos (como Laravel).
-    const rows = await this.prisma.$queryRaw<
-      {
-        total_remessas_faturaveis: bigint;
-        total_creditos_consumidos: number;
-        valor_total_cobranca: number;
-      }[]
-    >`
-      SELECT
-        COUNT(DISTINCT e.remessa_id) AS total_remessas_faturaveis,
-        COALESCE(SUM(e.quantidade_creditos), 0) AS total_creditos_consumidos,
-        COALESCE(SUM(e.quantidade_creditos * p.valor_creditos), 0) AS valor_total_cobranca
+  /** FROM/WHERE dos consumos faturáveis em SQL (totais agregados, como no Laravel). */
+  private sqlFaturavel(clienteId: bigint, filtros: FiltrosCobranca): Prisma.Sql {
+    return Prisma.sql`
       FROM extrato_movimentacoes_creditos_cliente e
       INNER JOIN produtos p ON p.id = e.produto_id
       INNER JOIN remessas r ON r.id = e.remessa_id
@@ -189,6 +178,22 @@ export class ExtratoMovimentacaoRepository {
         ${filtros.dataInicio ? Prisma.sql`AND DATE(e.created_at) >= ${filtros.dataInicio}` : Prisma.empty}
         ${filtros.dataFim ? Prisma.sql`AND DATE(e.created_at) <= ${filtros.dataFim}` : Prisma.empty}
     `;
+  }
+
+  async totaisCobranca(clienteId: bigint, filtros: FiltrosCobranca) {
+    const rows = await this.prisma.$queryRaw<
+      {
+        total_remessas_faturaveis: bigint;
+        total_creditos_consumidos: number;
+        valor_total_cobranca: number;
+      }[]
+    >`
+      SELECT
+        COUNT(DISTINCT e.remessa_id) AS total_remessas_faturaveis,
+        COALESCE(SUM(e.quantidade_creditos), 0) AS total_creditos_consumidos,
+        COALESCE(SUM(e.quantidade_creditos * p.valor_creditos), 0) AS valor_total_cobranca
+      ${this.sqlFaturavel(clienteId, filtros)}
+    `;
 
     const row = rows[0];
     return {
@@ -196,5 +201,26 @@ export class ExtratoMovimentacaoRepository {
       total_creditos_consumidos: Number(row?.total_creditos_consumidos ?? 0),
       valor_total_cobranca: Number(row?.valor_total_cobranca ?? 0),
     };
+  }
+
+  /** Espelha CobrancaCreditoClienteRepository::calcularTotaisPorProduto. */
+  async totaisCobrancaPorProduto(clienteId: bigint, filtros: FiltrosCobranca) {
+    const rows = await this.prisma.$queryRaw<
+      { produto_id: bigint; produto_nome: string; total_creditos_consumidos: number }[]
+    >`
+      SELECT
+        p.id AS produto_id,
+        p.nome AS produto_nome,
+        COALESCE(SUM(e.quantidade_creditos), 0) AS total_creditos_consumidos
+      ${this.sqlFaturavel(clienteId, filtros)}
+      GROUP BY p.id, p.nome
+      ORDER BY p.nome
+    `;
+
+    return rows.map((row) => ({
+      produto_id: Number(row.produto_id),
+      produto_nome: String(row.produto_nome),
+      total_creditos_consumidos: Number(row.total_creditos_consumidos),
+    }));
   }
 }
