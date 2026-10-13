@@ -115,8 +115,7 @@ export class RemessaService {
       where: {
         clienteId,
         produtoId,
-        status: 'confirmado',
-        tipoTransacao: 'entrada',
+        status: 'confirmado', tipoTransacao: 'entrada',
       },
       orderBy: { dataVenda: 'asc' },
     });

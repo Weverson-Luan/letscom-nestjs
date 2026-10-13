@@ -13,8 +13,7 @@ const ROLES_CLIENTE = ['cliente', 'subordinado'];
 
 /**
  * Regras de acesso por feature flag, válidas para todos os usuários (internos,
- * clientes e subordinados) — espelha App\Support\Auth\FeatureGate e
- * UserFeatureFlagRepository::listarKeysHabilitadas do Laravel.
+ * clientes e subordinados). O acesso é definido apenas por `feature_flags.tipo_usuario`.
  */
 @Injectable()
 export class FeatureGateService {
@@ -26,23 +25,10 @@ export class FeatureGateService {
   /**
    * Keys das feature flags liberadas para o usuário.
    *
-   * A flag precisa estar ativa e:
-   * - com vínculo direto, vale o `ativo` do vínculo (false bloqueia mesmo que a role esteja liberada);
-   * - sem vínculo direto, é liberada quando a role do usuário está em `tipo_usuario`.
-   *
-   * Subordinados (users_cliente) não têm vínculo direto: valem apenas as roles.
+   * A flag precisa estar ativa e a role do usuário precisa estar em `tipo_usuario`.
    */
   async listarKeysHabilitadas(user: FeatureSubject): Promise<string[]> {
     const roles = user.roles.map((role) => role.trim().toLowerCase());
-
-    const vinculos = new Map<bigint, boolean>();
-    if (user.tipoLogin === 'user') {
-      const pivots = await this.prisma.userFeatureFlag.findMany({
-        where: { userId: user.id },
-        select: { featureFlagId: true, ativo: true },
-      });
-      for (const pivot of pivots) vinculos.set(pivot.featureFlagId, pivot.ativo);
-    }
 
     const flags = await this.prisma.featureFlag.findMany({
       where: { ativo: true },
@@ -52,8 +38,6 @@ export class FeatureGateService {
 
     return flags
       .filter((flag) => {
-        if (vinculos.has(flag.id)) return vinculos.get(flag.id) === true;
-
         const tipos = (flag.tipoUsuario ?? '').split(',').map((tipo) => tipo.trim());
         return roles.some((role) => tipos.includes(role));
       })

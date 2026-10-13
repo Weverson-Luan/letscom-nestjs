@@ -114,7 +114,6 @@ model User {
   tiposEntregaUser         TipoEntregaUser[]
   enderecos                Endereco[]
   modelosTecnicos          ModeloTecnico[]
-  featureFlags             UserFeatureFlag[]
   usersCliente             UserCliente[]                       @relation("UserClientePrincipal")
   remessasCliente          Remessa[]                           @relation("RemessaCliente")
   remessasConsultor        Remessa[]                           @relation("RemessaConsultor")
@@ -562,25 +561,8 @@ model FeatureFlag {
   createdAt   DateTime? @default(now()) @map("created_at")
   updatedAt   DateTime? @updatedAt @map("updated_at")
 
-  users UserFeatureFlag[]
-
   @@index([tipoUsuario])
   @@map("feature_flags")
-}
-
-model UserFeatureFlag {
-  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  userId        BigInt    @map("user_id") @db.UnsignedBigInt
-  featureFlagId BigInt    @map("feature_flag_id") @db.UnsignedBigInt
-  ativo         Boolean   @default(true)
-  createdAt     DateTime? @default(now()) @map("created_at")
-  updatedAt     DateTime? @updatedAt @map("updated_at")
-
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  featureFlag FeatureFlag @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, featureFlagId])
-  @@map("user_feature_flags")
 }
 
 // =====================================================================

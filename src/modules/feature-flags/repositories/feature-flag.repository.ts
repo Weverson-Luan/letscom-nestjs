@@ -70,8 +70,4 @@ export class FeatureFlagRepository {
   delete(id: bigint) {
     return this.prisma.featureFlag.delete({ where: { id } });
   }
-
-  countUsuariosVinculados(id: bigint) {
-    return this.prisma.userFeatureFlag.count({ where: { featureFlagId: id } });
-  }
 }

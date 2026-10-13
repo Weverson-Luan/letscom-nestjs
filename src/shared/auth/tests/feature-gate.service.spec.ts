@@ -10,13 +10,11 @@ describe('FeatureGateService', () => {
   ];
   const prisma = {
     featureFlag: { findMany: jest.fn().mockResolvedValue(flags) },
-    userFeatureFlag: { findMany: jest.fn() },
   };
   let gate: FeatureGateService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.userFeatureFlag.findMany.mockResolvedValue([]);
     gate = new FeatureGateService(prisma as unknown as PrismaService);
   });
 
@@ -32,22 +30,7 @@ describe('FeatureGateService', () => {
     );
   });
 
-  it('vínculo direto prevalece sobre a role (true libera, false bloqueia)', async () => {
-    prisma.userFeatureFlag.findMany.mockResolvedValue([
-      { featureFlagId: BigInt(1), ativo: false },
-      { featureFlagId: BigInt(3), ativo: true },
-    ]);
-
-    const keys = await gate.listarKeysHabilitadas({
-      id: BigInt(9),
-      tipoLogin: 'user',
-      roles: ['admin'],
-    });
-
-    expect(keys).toEqual(['inativar_cliente', 'acessar_feature_flags']);
-  });
-
-  it('subordinado não consulta vínculos diretos e vale só a role', async () => {
+  it('subordinado vale pela role em tipo_usuario', async () => {
     const keys = await gate.listarKeysHabilitadas({
       id: BigInt(9),
       tipoLogin: 'subordinado',
@@ -55,7 +38,16 @@ describe('FeatureGateService', () => {
     });
 
     expect(keys).toEqual(['visualizar_saldo_creditos']);
-    expect(prisma.userFeatureFlag.findMany).not.toHaveBeenCalled();
+  });
+
+  it('flag sem tipo_usuario não é liberada para ninguém', async () => {
+    const keys = await gate.listarKeysHabilitadas({
+      id: BigInt(9),
+      tipoLogin: 'user',
+      roles: ['admin', 'consultor', 'cliente'],
+    });
+
+    expect(keys).not.toContain('acessar_feature_flags');
   });
 
   it('permite exige pelo menos uma das features e usa cache por usuário', async () => {

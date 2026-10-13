@@ -68,13 +68,6 @@ export class FeatureFlagService {
 
   async excluir(id: bigint) {
     await this.buscar(id);
-    const vinculados = await this.repository.countUsuariosVinculados(id);
-    if (vinculados > 0) {
-      throw new BusinessException(
-        'Não é possível excluir uma feature flag com usuários vinculados.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
     await this.repository.delete(id);
   }
 
