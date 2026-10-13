@@ -391,6 +391,8 @@ model Remessa {
   @@index([status, userIdExecutor], map: "remessas_status_executor_index")
   @@index([createdAt], map: "remessas_created_at_index")
   @@index([clienteId, createdAt], map: "remessas_cliente_created_index")
+  @@index([status, userIdExecutor, deletedAt, createdAt], map: "remessas_disponiveis_status_executor_deleted_created_index")
+  @@index([status, deletedAt], map: "remessas_status_deleted_index")
   @@map("remessas")
 }
 
