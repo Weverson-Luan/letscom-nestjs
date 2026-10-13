@@ -2,7 +2,7 @@ import {
   normalizarChaveParaComparacao,
   resolverMatriculaNaPlanilha,
   sanitizarChaveMatricula,
-} from '../helpers/remessa-chave-matricula.helper';
+} from '../services/helpers/remessa-chave-matricula.helper';
 
 describe('RemessaChaveMatriculaHelper', () => {
   const cpfComNbsp = ' 038.639.437-75';

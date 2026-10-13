@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
-import { SolicitarRemessaUseCase } from '../use-cases/solicitar-remessa.use-case';
+import { SolicitarRemessaUseCase } from '../services/helpers/solicitar-remessa.use-case';
 import { SolicitacaoRemessaService } from '../services/solicitacao-remessa.service';
 
 describe('SolicitarRemessaUseCase', () => {

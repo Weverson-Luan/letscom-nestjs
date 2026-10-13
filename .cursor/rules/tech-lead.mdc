@@ -1,0 +1,60 @@
+---
+description: Padrões do tech lead do letscom-api — nomes em português, estrutura NestJS/Prisma
+globs: src/**/*.ts
+alwaysApply: true
+---
+
+# Tech lead — letscom-api
+
+Ao escrever ou revisar código neste projeto, siga estas regras. Se o usuário pedir algo que as
+viole, avise e proponha o nome/estrutura correta.
+
+## Nomes (obrigatório)
+
+**O projeto é em português. Verbos sempre em português.**
+
+- Funções, métodos, variáveis e constantes em **português, sem acento**: `buscar`, `criar`,
+  `atualizar`, `remover`, `listar`, `sanitizar`, `normalizar`, `gerar`, `extrair`, `persistir`,
+  `consumir`, `registrar`, `validar`, `calcular`, `montar`, `mapear`.
+- Proibido verbo em inglês em código novo (`get*`, `find*`, `create*`, `update*`, `delete*`,
+  `build*`, `map*`, `resolve*`, `sanitize*`, `normalize*`, `handle*`...).
+- Nunca misturar idiomas no mesmo identificador (`getDisponiveisParaProducao` ❌ →
+  `buscarDisponiveisParaProducao` ✅).
+- Termos técnicos sem tradução natural podem ficar em inglês só como substantivo
+  (`payload`, `token`, `zip`, `upload`, `hash`, `feature`).
+- O nome diz **o que** faz, não onde é usado nem para quê (`...NaPlanilha`, `...ParaComparacao` ❌
+  quando o parâmetro/arquivo já dá o contexto).
+- Mesmo conceito = mesmo verbo (padrão: `buscar`, não alternar com `obter`).
+- Booleanos: `eh*`/`tem*`/`pode*`/`deve*`. Constantes: `UPPER_SNAKE_CASE` em português.
+- Arquivos: `kebab-case` + sufixo NestJS (`.service.ts`, `.repository.ts`, `.mapper.ts`,
+  `.helper.ts`, `.use-case.ts`, `.dto.ts`, `.spec.ts`).
+
+Exceções: métodos exigidos por framework/biblioteca (`onModuleInit`, `canActivate`, `intercept`,
+`transform`, métodos do Prisma) e nomes de classes Nest (`RemessaService`).
+
+### Migração gradual
+
+O legado está em inglês (`create`, `findById`, `paginate`, `sanitizePayload`, `mapProduct`...).
+
+- Código **novo** ou **renomeado** → regra vale integralmente.
+- Legado apenas tocado → não renomear sem pedido; no máximo sugerir.
+- Nunca renomear em massa fora de um PR de refatoração.
+- Método novo em classe legada já nasce em português, mesmo com vizinhos em inglês.
+
+## Literais frágeis
+
+- Caracteres invisíveis/Unicode em regex ou string sempre com escape:
+  `/[﻿​-‍⁠]/g`, nunca o caractere literal.
+
+## Estrutura NestJS
+
+- Controller: recebe, valida (DTO + class-validator) e delega. Sem Prisma.
+- Banco só em `repositories/`; regra de negócio no service.
+- Funções puras em `helpers/`; formatação de resposta em `mappers/`.
+- Testes em `src/modules/<modulo>/tests/*.spec.ts`; helper novo exige spec.
+- Sem `console.log`.
+
+## Banco
+
+- Nunca rodar `prisma migrate dev` / `db push` / `migrate`. Só criar o arquivo de migration;
+  o container aplica `migrate deploy` ao reiniciar.

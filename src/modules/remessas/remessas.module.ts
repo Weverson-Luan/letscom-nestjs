@@ -11,7 +11,7 @@ import { RemessaService } from './services/remessa.service';
 import { RemessaStatusService } from './services/remessa-status.service';
 import { RemessasCacheService } from './services/remessas-cache.service';
 import { SolicitacaoRemessaService } from './services/solicitacao-remessa.service';
-import { SolicitarRemessaUseCase } from './use-cases/solicitar-remessa.use-case';
+import { SolicitarRemessaUseCase } from './services/helpers/solicitar-remessa.use-case';
 
 @Module({
   controllers: [

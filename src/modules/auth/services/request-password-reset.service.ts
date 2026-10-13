@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { AuthResetPasswordService } from '../services/auth-reset-password.service';
-import { requestResetPasswordMappers } from './helpers/request-reset-password.';
+import { requestResetPasswordMappers } from './helpers/request-reset-password';
 import { PasswordResetRepository } from '../repositories/password-reset.repository';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { MailService } from 'src/shared/mail/mail.service';

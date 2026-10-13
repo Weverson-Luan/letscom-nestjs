@@ -13,7 +13,7 @@ import { RemessaRepository, AuthContext } from '../repositories/remessa.reposito
 import {
   resolverMatriculaNaPlanilha,
   sanitizarChaveMatricula,
-} from '../helpers/remessa-chave-matricula.helper';
+} from './helpers/remessa-chave-matricula.helper';
 
 export interface UploadFile {
   buffer: Buffer;

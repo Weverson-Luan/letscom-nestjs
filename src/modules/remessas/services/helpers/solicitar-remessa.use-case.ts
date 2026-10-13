@@ -4,8 +4,8 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
-import { SolicitacaoRemessaService } from '../services/solicitacao-remessa.service';
-import { UploadFile } from '../services/remessa.service';
+import { SolicitacaoRemessaService } from '../solicitacao-remessa.service';
+import { UploadFile } from '../remessa.service';
 
 const STATUS_VALIDOS = [
   'envio_de_dados',

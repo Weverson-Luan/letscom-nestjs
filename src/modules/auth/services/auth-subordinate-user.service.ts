@@ -23,7 +23,7 @@ import { HashService } from 'src/shared/utils/hash.service';
 // mappers
 import { serializeUser } from '../mappers/auth-response.mapper';
 import { userDesactiveMappers } from './helpers/user-desactive.';
-import { getClientConsultantMappers } from './helpers/get-client-consultant.';
+import { getClientConsultantMappers } from './helpers/get-client-consultant';
 
 // typings
 import { LoginDto } from '../dto/login.dto';
