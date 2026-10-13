@@ -20,7 +20,7 @@ export enum NodeEnv {
 export class EnvironmentVariables {
   @IsOptional()
   @IsEnum(NodeEnv)
-  APP_ENV: NodeEnv = NodeEnv.development;
+  NODE_ENV: NodeEnv = NodeEnv.development;
 
   @IsOptional()
   @Type(() => Number)

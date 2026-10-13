@@ -4,7 +4,7 @@
  */
 export default () => ({
   app: {
-    env: process.env.APP_ENV ?? 'development',
+    env: process.env.NODE_ENV ?? 'development',
     port: parseInt(process.env.APP_PORT ?? '3000', 10),
     context: process.env.APP_CONTEXT ?? 'apiparcelas',
     url: process.env.APP_URL ?? 'http://localhost:3000',

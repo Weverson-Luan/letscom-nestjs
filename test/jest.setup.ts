@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 const defaults: Record<string, string> = {
-  APP_ENV: 'test',
+  NODE_ENV: 'test',
   APP_PORT: '3000',
   APP_CONTEXT: 'apiparcelas',
   APP_URL: 'http://localhost:3000',
