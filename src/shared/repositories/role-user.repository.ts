@@ -23,7 +23,7 @@ export class RoleUserRepository {
    */
   async findPrimaryRoleForUser(userId: bigint): Promise<Role | null> {
     const rows = await this.prisma.$queryRaw<Role[]>`
-      SELECT r.id, r.nome, r.descricao, r.created_at AS createdAt, r.updated_at AS updatedAt
+      SELECT r.id, r.nome, r.descricao, r.created_at, r.updated_at
       FROM roles r
       INNER JOIN role_user ru ON ru.role_id = r.id
       WHERE ru.user_id = ${userId} AND ru.ativo = 1
@@ -39,7 +39,7 @@ export class RoleUserRepository {
    */
   async findPrimaryRoleForUserCliente(clientSubId: bigint): Promise<Role | null> {
     const rows = await this.prisma.$queryRaw<Role[]>`
-      SELECT r.id, r.nome, r.descricao, r.created_at AS createdAt, r.updated_at AS updatedAt
+      SELECT r.id, r.nome, r.descricao, r.created_at, r.updated_at
       FROM roles r
       INNER JOIN role_user ru ON ru.role_id = r.id
       WHERE ru.client_sub_id = ${clientSubId} AND ru.ativo = 1
