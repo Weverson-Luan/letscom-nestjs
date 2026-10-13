@@ -20,7 +20,15 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node --transpile-only prisma/seed.ts"
+    "prisma:seed": "ts-node --transpile-only prisma/seed.ts",
+    "docker:up": "docker compose -f docker-compose.dev.yml up -d",
+    "docker:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:rebuild": "docker compose -f docker-compose.dev.yml up -d --build -V",
+    "docker:restart": "docker restart letscom-api-dev",
+    "docker:monitor": "./scripts/docker-monitor.sh",
+    "docker:status": "./scripts/docker-monitor.sh status",
+    "docker:logs": "./scripts/docker-monitor.sh logs",
+    "docker:errors": "./scripts/docker-monitor.sh errors"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
