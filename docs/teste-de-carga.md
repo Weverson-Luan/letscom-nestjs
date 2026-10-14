@@ -108,6 +108,7 @@ Ficam em [`test/carga/`](../test/carga/):
 |---|---|---|---|
 | `carga:conexao` | `testar-conexao.js` | `GET /testar_conexao` (pública) | base da API: Nest + Prisma + MySQL, sem regra de negócio |
 | `carga:remessas` | `listar-tarefas-disponiveis.js` | `GET /remessas/tarefas-disponiveis` (autenticada) | JWT + papel + feature flag + listagem paginada com cache no Redis |
+| `carga:minhas-tarefas` | `listar-minhas-tarefas.js` | `GET /remessas/minhas-tarefas` (autenticada) | listagem paginada com cache no Redis por usuário + busca `LIKE` nos relacionamentos (p95 separado por tipo de busca) |
 | `carga:solicitar-remessa` | `solicitar-remessa-sem-planilha.js` | `POST /remessas` sem arquivos (autenticada, **grava**) | só a transação: saldo, remessa, consumo de crédito, status, invalidação de cache |
 | `carga:solicitar-remessa-planilha` | `solicitar-remessa-com-planilha.js` | `POST /remessas` multipart com CSV (autenticada, **grava**) | transação + upload, leitura da planilha (CPU na API), validação de colunas e gravação no storage |
 
@@ -126,6 +127,42 @@ As credenciais vêm de `K6_EMAIL` e `K6_SENHA`, de um destes lugares:
 - **no comando**, que tem prioridade sobre o `.env`: `-- -e K6_EMAIL=... -e K6_SENHA=...`
 
 Sem elas, o teste para logo no início com `Informe K6_EMAIL e K6_SENHA`.
+
+### 4.0 Minhas tarefas (`carga:minhas-tarefas`)
+
+Lista as remessas `em_producao` que têm executor: o `admin` vê todas, `producao` só as dele. Precisa de um usuário
+`admin` ou `producao`, os únicos com a feature `minhas_tarefa_remessas` no seed. O mesmo `K6_EMAIL`/`K6_SENHA`
+do `carga:remessas` serve.
+
+O cache no Redis tem como chave usuário + página + `search`. Para não medir só o Redis, o script mistura três tipos de
+requisição e mostra o p95 de cada um no resumo (`http_req_duration{busca:...}`):
+
+| Tag `busca` | Fatia | Requisição | O que mede | Limite p95 |
+|---|---|---|---|---|
+| `sem` | 50% | sem `search`, páginas 1 a 3 | uso comum; quase sempre acerta o cache | 500 ms |
+| `comum` | 25% | `search` com termos de `K6_BUSCAS` | buscas repetidas; cache depois da primeira | 800 ms |
+| `unica` | 25% | `search` que nunca se repete | sempre vai ao MySQL: `LIKE '%termo%'` em cliente, modelo, consultor, solicitante, subordinado e executor | 1500 ms |
+
+`K6_BUSCAS` (default `a,WLTECH,admin`) aceita termos separados por vírgula: nomes ou números de remessa que existam
+no seu banco. Se `busca:unica` estourar, o gargalo é a busca no banco (índices/`LIKE`), não o cache.
+Não há limite de p95 geral neste script, só os três por tipo.
+
+Cada requisição `unica` grava uma chave nova no Redis (`remessas_minhas_tarefas:u<id>:...`), que só some ao expirar
+(`REMESSAS_CACHE_TTL`). Nos perfis `estresse` e `pico` isso acumula milhares de chaves de uso único: acompanhe a
+memória do Redis.
+
+Com poucas tarefas em produção o resultado não diz muito: as consultas voltam vazias e rápidas. Confira o volume
+antes (só leitura):
+
+```sql
+-- mesmo filtro da rota (ela hoje não exclui remessas com deleted_at)
+SELECT COUNT(*) FROM remessas WHERE status = 'em_producao' AND user_id_executor IS NOT NULL;
+```
+
+```bash
+npm run carga:minhas-tarefas
+npm run carga:minhas-tarefas -- -e PERFIL=carga -e K6_BUSCAS=WLTECH,Maria,50001
+```
 
 ### 4.1 Solicitação de remessas (`carga:solicitar-remessa` e `carga:solicitar-remessa-planilha`)
 
@@ -254,6 +291,7 @@ npm run carga:remessas -- -e K6_EMAIL=admin@example.com -e K6_SENHA=admin123
 npm run carga:conexao -- -e PERFIL=carga
 npm run carga:conexao -- -e PERFIL=estresse
 npm run carga:remessas -- -e PERFIL=pico
+npm run carga:minhas-tarefas -- -e PERFIL=estresse
 npm run carga:solicitar-remessa -- -e PERFIL=carga        # grava no banco: ver seção 4.1
 npm run carga:solicitar-remessa-planilha -- -e LINHAS=50  # grava no banco e no storage
 
