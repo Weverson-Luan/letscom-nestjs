@@ -5,7 +5,7 @@ import { limparBanco } from './helpers/limpar-banco';
 
 /**
  * globalSetup e globalTeardown do e2e: esvazia o banco (mantém estrutura e _prisma_migrations)
- * e o Redis de teste antes e depois da suíte. Os containers do docker-compose.test.yml ficam no ar.
+ * e o Redis de teste antes e depois da suíte. Quem sobe e para os containers é o pretest/posttest:e2e.
  */
 export default async function limparAmbienteE2e(): Promise<void> {
   const prisma = new PrismaClient();

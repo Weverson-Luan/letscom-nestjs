@@ -1,7 +1,8 @@
-import { CacheModule as NestCacheModule } from '@nestjs/cache-manager';
-import { Global, Module } from '@nestjs/common';
+import { CACHE_MANAGER, CacheModule as NestCacheModule } from '@nestjs/cache-manager';
+import { Global, Inject, Module, OnModuleDestroy } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { redisStore } from 'cache-manager-redis-yet';
+import { Cache } from 'cache-manager';
+import { RedisStore, redisStore } from 'cache-manager-redis-yet';
 import { VersionedCacheService } from './versioned-cache.service';
 
 /**
@@ -36,4 +37,15 @@ import { VersionedCacheService } from './versioned-cache.service';
   providers: [VersionedCacheService],
   exports: [VersionedCacheService, NestCacheModule],
 })
-export class CacheModule {}
+export class CacheModule implements OnModuleDestroy {
+  constructor(@Inject(CACHE_MANAGER) private readonly cache: Cache) {}
+
+  /**
+   * O @nestjs/cache-manager não fecha a conexão do redisStore no app.close():
+   * sem isso o processo não encerra (jest e2e fica preso e o shutdown da API trava).
+   */
+  async onModuleDestroy(): Promise<void> {
+    const cliente = (this.cache.store as Partial<RedisStore>).client;
+    if (cliente?.isOpen) await cliente.quit();
+  }
+}
