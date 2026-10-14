@@ -19,6 +19,8 @@
     "pretest:e2e": "npm run docker:up:test:dev && dotenv -o -e .env.test -- prisma migrate deploy",
     "test:e2e": "dotenv -o -e .env.test -- jest --config ./test/jest-e2e.json --runInBand",
     "posttest:e2e": "npm run docker:stop:test:stop",
+    "carga:conexao": "k6 run test/carga/testar-conexao.js",
+    "carga:remessas": "dotenv -e .env -- k6 run test/carga/listar-tarefas-disponiveis.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",

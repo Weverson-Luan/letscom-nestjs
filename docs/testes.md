@@ -2,6 +2,7 @@
 
 Guia para quem está chegando no projeto rodar os testes unitários e e2e sem precisar de ajuda.
 Regras sobre **o que** testar estão em [arquitetura.md](arquitetura.md#testes--integridade-obrigatória).
+Teste de carga (k6): [teste-de-carga.md](teste-de-carga.md).
 
 ## Resumo rápido
 

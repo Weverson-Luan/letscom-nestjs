@@ -3,7 +3,7 @@
 Migração NestJS do backend Laravel 11 (gestão de créditos e remessas). NestJS 10 + Prisma (MySQL) + Redis.
 
 Arquitetura, regras de camada e estratégia de testes: **[docs/arquitetura.md](docs/arquitetura.md)** — siga sempre.
-Como rodar testes (unit e e2e): **[docs/testes.md](docs/testes.md)**.
+Como rodar testes (unit e e2e): **[docs/testes.md](docs/testes.md)**. Teste de carga (k6): **[docs/teste-de-carga.md](docs/teste-de-carga.md)** — o dev executa (gera carga real na API).
 Padrões de revisão: subagente `tech-lead` em `.claude/agents/tech-lead.md` — rode-o antes de encerrar qualquer alteração de código.
 
 ## Regras inegociáveis
