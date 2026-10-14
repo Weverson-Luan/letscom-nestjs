@@ -1,9 +1,11 @@
 import { plainToInstance, Type } from 'class-transformer';
 import {
   IsEnum,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
+  Min,
   validateSync,
 } from 'class-validator';
 
@@ -75,6 +77,12 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   REDIS_PASSWORD?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  REDIS_DB = 0;
 
   @IsOptional()
   @Type(() => Number)

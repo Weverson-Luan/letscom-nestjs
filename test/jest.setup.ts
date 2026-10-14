@@ -1,19 +1,23 @@
 import 'reflect-metadata';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { parseEnv } from 'node:util';
 
+// banco e Redis de teste (docker-compose.test.yml) vêm do .env.test, versionado.
+// SOBRESCREVE o ambiente: um DATABASE_URL/REDIS_* de dev exportado no shell nunca é usado nos testes.
+Object.assign(process.env, parseEnv(readFileSync(resolve(__dirname, '../.env.test'), 'utf8')));
+
+// demais variáveis obrigatórias: só preenchemos o que não estiver definido.
 const defaults: Record<string, string> = {
-  NODE_ENV: 'test',
   APP_PORT: '3000',
   APP_CONTEXT: 'apiparcelas',
   APP_URL: 'http://localhost:3000',
   FRONTEND_URL: 'http://localhost:8000',
-  DATABASE_URL: 'mysql://letscom:letscom@localhost:3306/letscom_test',
   JWT_SECRET: 'letscom-jwt-secret-test-letscom-jwt-secret-test',
   JWT_ACCESS_TTL_DAYS: '7',
   JWT_REFRESH_TTL: '30',
   JWT_ALGORITHM: 'HS256',
   BCRYPT_ROUNDS: '4',
-  REDIS_HOST: '127.0.0.1',
-  REDIS_PORT: '6379',
   FILESYSTEM_DISK: 'local',
   CLOUDFLARE_R2_ACCOUNT_ID: 'test-account',
   CLOUDFLARE_R2_ACCESS_KEY_ID: 'test-access-key',

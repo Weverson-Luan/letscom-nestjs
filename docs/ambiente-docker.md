@@ -21,6 +21,11 @@ Os dois composes sobem os mesmos três serviços:
 
 A API só sobe depois que o banco e o Redis estiverem **healthy** (`depends_on` + healthcheck). Ao iniciar, ela roda `prisma migrate deploy`, que aplica as migrations pendentes automaticamente.
 
+Para os testes e2e há um terceiro compose, `docker-compose.test.yml` (`npm run docker:test`), com
+`letscom-bd-test` (MySQL, porta `3308`) e `letscom-redis-test` (Redis, porta `6380`). Ele usa o mesmo nome de
+projeto do dev, então aparece no grupo `letscom-dev`, mas não toca nos containers de dev. Detalhes em
+[testes.md](testes.md).
+
 Dev e prod usam nomes de projeto diferentes (`letscom-dev` e `letscom-prod`). Por isso, cada um tem seu próprio banco, volumes e rede, e um não interfere no outro.
 
 ## Estágios do Dockerfile

@@ -1,60 +1,85 @@
 ---
-description: Padrões do tech lead do letscom-api — nomes em português, estrutura NestJS/Prisma
-globs: src/**/*.ts
+description: Padrões do tech lead do letscom-api — arquitetura modular, testes obrigatórios, nomes em português, IA nunca executa migration
+globs: src/**/*.ts, test/**/*.ts, prisma/**
 alwaysApply: true
 ---
 
 # Tech lead — letscom-api
 
-Ao escrever ou revisar código neste projeto, siga estas regras. Se o usuário pedir algo que as
-viole, avise e proponha o nome/estrutura correta.
+Referência completa: `docs/arquitetura.md`. Siga sempre. Se o pedido violar estas regras, avise e
+proponha o caminho correto.
 
-## Nomes (obrigatório)
+## Banco e migrations — NUNCA executar
 
-**O projeto é em português. Verbos sempre em português.**
+- Nunca rode `prisma migrate *`, `prisma db *` (push/execute/seed/pull), `npm run prisma:migrate`,
+  `npm run prisma:seed`, `docker restart`, `docker compose up`, `npm run docker:*`
+  (o container aplica `migrate deploy` ao subir).
+- Permitido: editar `prisma/schema.prisma`, escrever
+  `prisma/migrations/<AAAAMMDDHHMMSS>_<nome>/migration.sql` e rodar `npx prisma generate`.
+- Ao final, **devolva ao dev** o SQL e os comandos para ele executar no terminal:
 
-- Funções, métodos, variáveis e constantes em **português, sem acento**: `buscar`, `criar`,
-  `atualizar`, `remover`, `listar`, `sanitizar`, `normalizar`, `gerar`, `extrair`, `persistir`,
-  `consumir`, `registrar`, `validar`, `calcular`, `montar`, `mapear`.
-- Proibido verbo em inglês em código novo (`get*`, `find*`, `create*`, `update*`, `delete*`,
-  `build*`, `map*`, `resolve*`, `sanitize*`, `normalize*`, `handle*`...).
-- Nunca misturar idiomas no mesmo identificador (`getDisponiveisParaProducao` ❌ →
-  `buscarDisponiveisParaProducao` ✅).
-- Termos técnicos sem tradução natural podem ficar em inglês só como substantivo
-  (`payload`, `token`, `zip`, `upload`, `hash`, `feature`).
-- O nome diz **o que** faz, não onde é usado nem para quê (`...NaPlanilha`, `...ParaComparacao` ❌
-  quando o parâmetro/arquivo já dá o contexto).
-- Mesmo conceito = mesmo verbo (padrão: `buscar`, não alternar com `obter`).
-- Booleanos: `eh*`/`tem*`/`pode*`/`deve*`. Constantes: `UPPER_SNAKE_CASE` em português.
-- Arquivos: `kebab-case` + sufixo NestJS (`.service.ts`, `.repository.ts`, `.mapper.ts`,
-  `.helper.ts`, `.use-case.ts`, `.dto.ts`, `.spec.ts`).
+```bash
+cat prisma/migrations/<pasta>/migration.sql
+npm run docker:restart            # ou: npx prisma migrate deploy
+npm run test:e2e:docker          # valida a migration num banco de teste descartável
+```
 
-Exceções: métodos exigidos por framework/biblioteca (`onModuleInit`, `canActivate`, `intercept`,
-`transform`, métodos do Prisma) e nomes de classes Nest (`RemessaService`).
+## Arquitetura modular
 
-### Migração gradual
+```
+src/modules/<modulo>/
+  <modulo>.module.ts   controllers/   dto/   services/ (+ services/helpers/)
+  repositories/        mappers/       exceptions/    tests/
+test/e2e/<modulo>/*.e2e-spec.ts
+```
 
-O legado está em inglês (`create`, `findById`, `paginate`, `sanitizePayload`, `mapProduct`...).
+- Controller: rota, guards (`@Roles`/`@Features`/`@Public`), DTO, Swagger → delega ao service. Sem Prisma.
+- Service: regra de negócio; abre `this.prisma.$transaction` e passa `tx` aos repositories.
+- Repository: único lugar com Prisma; escrita aceita `tx?: Prisma.TransactionClient` e usa `(tx ?? this.prisma)`.
+- Mapper/helper: funções puras, sem I/O. Resposta HTTP sempre via mapper (contrato do Laravel).
+- Erro de negócio: `BusinessException` (ou subclasse em `exceptions/`).
+- Provider de outro módulo: só via `exports` do dono + `imports: [OutroModule]`. Nunca registrar
+  repository alheio em `providers`.
+- `src/shared` nunca importa de `src/modules`.
+- Env só via `ConfigService`; env nova em `configuration.ts`, `env.validation.ts` e `test/jest.setup.ts`.
+- Sem `console.log`.
 
-- Código **novo** ou **renomeado** → regra vale integralmente.
-- Legado apenas tocado → não renomear sem pedido; no máximo sugerir.
-- Nunca renomear em massa fora de um PR de refatoração.
-- Método novo em classe legada já nasce em português, mesmo com vizinhos em inglês.
+### Um service por funcionalidade (espelhar o módulo `auth`)
+
+- Proibido "service deus". **1 arquivo = 1 funcionalidade = 1 classe**:
+  `<acao>-<recurso>.service.ts` → `<Acao><Recurso>Service` (ex.: `solicitar-remessa.service.ts`).
+- Um único método público `execute(...)` (contrato fixo, fica em inglês); auxiliares `private`.
+- Funcionalidade nova = arquivo novo. Nunca adicionar método público em service existente
+  (ex.: `remessa.service.ts`).
+- Controller injeta um service por endpoint e só chama `execute`.
+- Passo compartilhado: função pura em `services/helpers/`, repository, ou service técnico focado
+  (ex.: `JwtTokenService`). Caso de uso não chama outro caso de uso.
+- Um spec por service: `tests/<acao>-<recurso>.service.spec.ts`.
+
+## Testes — sempre
+
+- **Unitário** para todo service/helper/mapper novo ou alterado:
+  `src/modules/<modulo>/tests/<arquivo>.spec.ts`, mocks via `Test.createTestingModule` + `useValue`.
+  Cobrir caminho feliz, cada `BusinessException`, bordas e argumentos passados ao repository.
+- **E2E** para todo endpoint novo/alterado: `test/e2e/<modulo>/<recurso>.e2e-spec.ts` com
+  `test/e2e/helpers/criar-app-e2e.ts`. Cobrir 401, 403 (se aplicável), 400 (DTO), 2xx com formato
+  da resposta e efeito persistido. Cada teste cria e limpa seus dados.
+- Rodar `npm test` antes de concluir. E2E: o dev roda `npm run test:e2e:docker` (sobe banco
+  descartável, migra, testa e derruba). A IA não roda esse comando. Guia: `docs/testes.md`.
+
+## Nomes
+
+**Projeto em português. Verbos sempre em português, sem acento.**
+
+- `buscar`, `criar`, `atualizar`, `remover`, `listar`, `sanitizar`, `normalizar`, `gerar`, `extrair`,
+  `persistir`, `consumir`, `registrar`, `validar`, `calcular`, `montar`, `mapear`.
+- Proibido verbo em inglês em código novo (`get*`, `find*`, `create*`, `map*`, `resolve*`, `handle*`...).
+- Nunca misturar idiomas no mesmo identificador. Termos técnicos (`payload`, `token`, `zip`) só como substantivo.
+- Nome diz o que faz, não onde é usado (`...NaPlanilha`, `...ParaComparacao` ❌).
+- Booleanos `eh*`/`tem*`/`pode*`/`deve*`. Constantes `UPPER_SNAKE_CASE` em português.
+- Arquivos `kebab-case` + sufixo NestJS. Exceções: métodos de framework/biblioteca e nomes de classes Nest.
+- Migração gradual: legado em inglês não é renomeado em massa; código novo já nasce em português.
 
 ## Literais frágeis
 
-- Caracteres invisíveis/Unicode em regex ou string sempre com escape:
-  `/[﻿​-‍⁠]/g`, nunca o caractere literal.
-
-## Estrutura NestJS
-
-- Controller: recebe, valida (DTO + class-validator) e delega. Sem Prisma.
-- Banco só em `repositories/`; regra de negócio no service.
-- Funções puras em `helpers/`; formatação de resposta em `mappers/`.
-- Testes em `src/modules/<modulo>/tests/*.spec.ts`; helper novo exige spec.
-- Sem `console.log`.
-
-## Banco
-
-- Nunca rodar `prisma migrate dev` / `db push` / `migrate`. Só criar o arquivo de migration;
-  o container aplica `migrate deploy` ao reiniciar.
+Caracteres invisíveis/Unicode em regex ou string sempre com escape: `/[﻿​-‍⁠]/g`.

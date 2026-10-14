@@ -1,0 +1,52 @@
+## banco e cache só dos testes e2e. Compose independente do dev, mas com o mesmo nome de projeto:
+## aparece no grupo letscom-dev do Docker Desktop sem tocar no letscom-bd-dev nem no letscom-redis-dev.
+## sobe com npm run docker:test e fica no ar; os testes limpam os dados antes e depois (test/e2e/limpar-ambiente-e2e.ts).
+## credenciais fixas de teste (não são segredo): as mesmas do .env.test.
+## nunca use --remove-orphans aqui nem no dev: com o mesmo nome de projeto, derrubaria os containers do outro compose.
+name: letscom-dev
+
+services:
+  mysql-test:
+    image: mysql:8.4
+    container_name: letscom-bd-test
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: letscom
+      MYSQL_PASSWORD: letscom
+      MYSQL_DATABASE: letscom_test
+      TZ: America/Sao_Paulo
+    ports:
+      ## porta diferente da do dev (MYSQL_PORT) para os dois rodarem juntos
+      - "3308:3306"
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -proot --silent" ]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    ## dados em memória: banco de teste não precisa sobreviver ao container
+    tmpfs:
+      - /var/lib/mysql
+    networks:
+      - letscom-test-network
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: letscom-redis-test
+    restart: unless-stopped
+    ## sem senha e sem persistência: cache descartável
+    command: [ "redis-server", "--save", "", "--appendonly", "no" ]
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+    networks:
+      - letscom-test-network
+
+networks:
+  letscom-test-network:
+    driver: bridge

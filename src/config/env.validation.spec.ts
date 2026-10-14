@@ -32,4 +32,33 @@ describe('validateEnv', () => {
       }),
     ).toThrow('Erro de validação das variáveis de ambiente');
   });
+
+  it('usa REDIS_DB 0 por padrão e aceita índice inteiro', () => {
+    expect(
+      validateEnv({
+        APP_CONTEXT: 'apiparcelas',
+        DATABASE_URL: 'mysql://user:pass@localhost:3306/letscom',
+        JWT_SECRET: 'secret-test',
+      }).REDIS_DB,
+    ).toBe(0);
+    expect(
+      validateEnv({
+        APP_CONTEXT: 'apiparcelas',
+        DATABASE_URL: 'mysql://user:pass@localhost:3306/letscom',
+        JWT_SECRET: 'secret-test',
+        REDIS_DB: '1',
+      }).REDIS_DB,
+    ).toBe(1);
+  });
+
+  it.each(['-1', '1.5', 'abc'])('falha quando REDIS_DB é %s', (valor) => {
+    expect(() =>
+      validateEnv({
+        APP_CONTEXT: 'apiparcelas',
+        DATABASE_URL: 'mysql://user:pass@localhost:3306/letscom',
+        JWT_SECRET: 'secret-test',
+        REDIS_DB: valor,
+      }),
+    ).toThrow('Erro de validação das variáveis de ambiente');
+  });
 });

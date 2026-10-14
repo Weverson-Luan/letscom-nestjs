@@ -19,11 +19,13 @@ import { VersionedCacheService } from './versioned-cache.service';
         const host = config.get<string>('redis.host');
         const port = config.get<number>('redis.port');
         const password = config.get<string>('redis.password');
+        const db = config.get<number>('redis.db');
 
         return {
           store: await redisStore({
             socket: { host, port },
             password: password || undefined,
+            database: db,
           }),
           // ttl padrão (ms) — as listagens passam ttl explícito
           ttl: 0,

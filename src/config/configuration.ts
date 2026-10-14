@@ -25,6 +25,8 @@ export default () => ({
     host: process.env.REDIS_HOST ?? '127.0.0.1',
     port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
     password: process.env.REDIS_PASSWORD || undefined,
+    // índice do banco lógico do Redis: e2e usa outro índice para não misturar com o cache de dev
+    db: parseInt(process.env.REDIS_DB ?? '0', 10),
   },
   remessas: {
     cacheTtl: parseInt(process.env.REMESSAS_CACHE_TTL ?? '60', 10),
