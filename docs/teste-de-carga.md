@@ -108,6 +108,7 @@ Ficam em [`test/carga/`](../test/carga/):
 |---|---|---|---|
 | `carga:conexao` | `testar-conexao.js` | `GET /testar_conexao` (pública) | base da API: Nest + Prisma + MySQL, sem regra de negócio |
 | `carga:remessas` | `listar-tarefas-disponiveis.js` | `GET /remessas/tarefas-disponiveis` (autenticada) | JWT + papel + feature flag + listagem paginada com cache no Redis |
+| `carga:solicitar-remessa` | `solicitar-remessa.js` | `POST /remessas` (autenticada, **grava**) | transação de solicitação: saldo, remessa, consumo de crédito, status, invalidação de cache |
 
 O `carga:remessas` precisa de um usuário de dev com papel `admin` ou `producao`: a rota aceita também
 `consultor`, mas o seed só libera a feature `pegar_tarefa_remessas` para `admin,producao`. Com o banco
@@ -125,6 +126,91 @@ As credenciais vêm de `K6_EMAIL` e `K6_SENHA`, de um destes lugares:
 
 Sem elas, o teste para logo no início com `Informe K6_EMAIL e K6_SENHA`.
 
+### 4.1 Solicitação de remessas (`carga:solicitar-remessa`)
+
+Rota de **escrita**: cada requisição cria uma remessa e consome créditos. Rode só em banco de dev/descartável.
+
+O script envia remessas **sem arquivos** (sem planilha/ZIP), com `total_solicitacoes=1` (1 crédito cada) e
+`observacao='carga-k6'` para facilitar a limpeza. No `setup()` ele consulta o saldo e para se não houver crédito;
+no `teardown()` consulta de novo e confere que o saldo **não ficou negativo**.
+
+**1. Descubra os IDs** (consulta só de leitura, no banco de dev):
+
+```sql
+SELECT id AS cliente_id FROM users WHERE email = 'admin@example.com';
+SELECT id AS produto_id, nome FROM produtos WHERE ativo = 1;
+SELECT id AS modelo_tecnico_id, nome_modelo FROM modelos_tecnicos WHERE ativo = 1 AND tem_carga_foto = 0;
+SELECT id AS tecnologia_id, nome FROM tecnologias;
+```
+
+**2. Coloque no `.env`** (além de `K6_EMAIL`/`K6_SENHA` de um admin):
+
+```
+K6_CLIENTE_ID=...
+K6_PRODUTO_ID=...
+K6_MODELO_TECNICO_ID=...
+K6_TECNOLOGIA_ID=...
+# K6_SOLICITANTE_ID=...   opcional; default = K6_CLIENTE_ID
+```
+
+**3. Garanta créditos.** O seed dá só 15 créditos ao `admin@example.com`. Cada remessa criada gasta 1; estimativa
+de remessas por perfil (cada VU faz ~1 requisição/s):
+
+| Perfil | Remessas (aprox.) |
+|---|---|
+| `fumaca` | 10 |
+| `carga` | ~4.800 |
+| `estresse` | ~47.000 |
+| `pico` | ~25.000 |
+
+Lance créditos pela própria API (como admin), com folga:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/apiparcelas/login -H 'Content-Type: application/json' \
+  -d '{"email":"admin@example.com","senha":"admin123"}' | jq -r .access_token)
+curl -X POST http://localhost:8000/apiparcelas/vendas_creditos -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"cliente_id":<CLIENTE_ID>,"produto_id":<PRODUTO_ID>,"quantidade_creditos":10000,"tipo_transacao":"entrada","status":"confirmado","observacao":"carga-k6"}'
+```
+
+Sem saldo, as requisições voltam `422 Saldo insuficiente` e aparecem na métrica `remessas_recusadas_422`.
+
+**4. Rode** (sempre fumaça primeiro):
+
+```bash
+npm run carga:solicitar-remessa
+npm run carga:solicitar-remessa -- -e PERFIL=carga
+```
+
+**5. O que olhar, além das métricas padrão:**
+
+| Métrica / log | Significado |
+|---|---|
+| `remessas_criadas` | remessas gravadas (201) |
+| `remessas_recusadas_422` | regra de negócio recusou (normalmente saldo esgotado) |
+| `remessas_erro_interno_500` | falhou dentro da transação. Com concorrência, a causa provável é colisão no `numero_remessa` (gerado com `MAX + 1`, coluna `UNIQUE`) ou deadlock/timeout no MySQL — confira `npm run docker:errors` |
+| log `Saldo final ... consumido` | o consumido deve ser igual a `remessas_criadas`; se for maior, ou o check `saldo não ficou negativo` falhar, há corrida na checagem de saldo (vendas com soft delete no cliente também causam diferença: o endpoint de saldo as ignora, a transação não) |
+
+**6. Limpe depois.** Execute no banco de dev (apaga só o que o teste criou; o extrato tem FK `RESTRICT`, por isso a ordem):
+
+```sql
+START TRANSACTION;
+CREATE TEMPORARY TABLE carga_remessas AS SELECT id FROM remessas WHERE observacao = 'carga-k6';
+CREATE TEMPORARY TABLE carga_vendas AS
+  SELECT venda_credito_id AS id FROM extrato_movimentacoes_creditos_cliente
+  WHERE remessa_id IN (SELECT id FROM carga_remessas) AND venda_credito_id IS NOT NULL;
+DELETE FROM extrato_movimentacoes_creditos_cliente WHERE remessa_id IN (SELECT id FROM carga_remessas);
+DELETE FROM vendas_creditos WHERE id IN (SELECT id FROM carga_vendas);
+DELETE FROM remessas WHERE id IN (SELECT id FROM carga_remessas);  -- remessas_status vai em cascata
+-- ciência de responsabilidade usada pelo script (ligada ao cliente, não à remessa)
+DELETE FROM remessa_responsabilidade WHERE cliente_id = <CLIENTE_ID> AND documento = '00000000000';
+COMMIT;
+DROP TEMPORARY TABLE carga_remessas, carga_vendas;
+```
+
+A venda de entrada `observacao='carga-k6'` (créditos lançados no passo 3) pode ser cancelada pela API
+(`POST /vendas_creditos/:id/cancelar`) ou mantida para o próximo teste.
+
 ## 5. Exemplos para executar
 
 ```bash
@@ -137,6 +223,7 @@ npm run carga:remessas -- -e K6_EMAIL=admin@example.com -e K6_SENHA=admin123
 npm run carga:conexao -- -e PERFIL=carga
 npm run carga:conexao -- -e PERFIL=estresse
 npm run carga:remessas -- -e PERFIL=pico
+npm run carga:solicitar-remessa -- -e PERFIL=carga        # grava no banco: ver seção 4.1
 
 # outro ambiente
 npm run carga:conexao -- -e BASE_URL=https://homolog.exemplo.com/apiparcelas -e PERFIL=carga
@@ -214,7 +301,8 @@ e uma linha na tabela da [seção 4](#4-scripts-disponíveis).
 
 - **Nunca contra produção.** Use dev, homologação ou um ambiente dedicado.
 - **Prefira rotas de leitura.** Rotas que gravam (criar cliente, solicitar remessa) enchem o banco de dados
-  de teste; se precisar delas, use um banco descartável e limpe depois.
+  de teste; se precisar delas, use um banco descartável e limpe depois (a limpeza do `carga:solicitar-remessa`
+  está na [seção 4.1](#41-solicitação-de-remessas-cargasolicitar-remessa)).
 - **Cache do Redis.** As listagens de remessas ficam em cache por `REMESSAS_CACHE_TTL` segundos. Repetir
   sempre a mesma URL mede o Redis, não o MySQL. Por isso o script varia a página.
 - **Rodar do mesmo lugar.** Para comparar antes e depois, use a mesma máquina, o mesmo perfil e o mesmo volume

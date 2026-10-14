@@ -21,6 +21,7 @@
     "posttest:e2e": "npm run docker:stop:test:stop",
     "carga:conexao": "k6 run test/carga/testar-conexao.js",
     "carga:remessas": "dotenv -e .env -- k6 run test/carga/listar-tarefas-disponiveis.js",
+    "carga:solicitar-remessa": "dotenv -e .env -- k6 run test/carga/solicitar-remessa.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
