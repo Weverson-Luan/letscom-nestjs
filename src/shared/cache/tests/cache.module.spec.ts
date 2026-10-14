@@ -23,6 +23,8 @@ describe('CacheModule', () => {
   });
 
   it('não falha quando o store não tem cliente Redis (ex.: memória)', async () => {
-    await expect(new CacheModule(criarCacheComCliente()).onModuleDestroy()).resolves.toBeUndefined();
+    await expect(
+      new CacheModule(criarCacheComCliente()).onModuleDestroy(),
+    ).resolves.toBeUndefined();
   });
 });

@@ -13,7 +13,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "typecheck": "node node_modules/typescript-7/bin/tsc --noEmit",
+    "typecheck": "node node_modules/typescript-7/bin/tsc --noEmit && node node_modules/typescript-7/bin/tsc --noEmit -p test/tsconfig.json",
     "test": "jest",
     "test:watch": "jest --watch",
     "pretest:e2e": "npm run docker:up:test:dev && dotenv -o -e .env.test -- prisma migrate deploy",

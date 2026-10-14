@@ -26,7 +26,10 @@ function limparRedis(): Promise<void> {
     ['FLUSHDB'],
   ];
   const payload = comandos
-    .map((args) => `*${args.length}\r\n${args.map((a) => `$${Buffer.byteLength(a)}\r\n${a}\r\n`).join('')}`)
+    .map(
+      (args) =>
+        `*${args.length}\r\n${args.map((a) => `$${Buffer.byteLength(a)}\r\n${a}\r\n`).join('')}`,
+    )
     .join('');
 
   return new Promise((resolver, rejeitar) => {
@@ -41,7 +44,9 @@ function limparRedis(): Promise<void> {
 
     const socket = createConnection(Number(REDIS_PORT), REDIS_HOST, () => socket.write(payload));
     // porta errada (ex.: outro serviço que não responde RESP) não pode travar o globalSetup
-    socket.setTimeout(5000, () => concluir(new Error(`limparRedis: sem resposta de ${REDIS_HOST}:${REDIS_PORT}`)));
+    socket.setTimeout(5000, () =>
+      concluir(new Error(`limparRedis: sem resposta de ${REDIS_HOST}:${REDIS_PORT}`)),
+    );
 
     let resposta = '';
     socket.on('data', (parte) => {
@@ -53,6 +58,8 @@ function limparRedis(): Promise<void> {
       concluir(erro ? new Error(`limparRedis falhou: ${erro}`) : undefined);
     });
     socket.on('error', (erro) => concluir(erro));
-    socket.on('close', () => concluir(new Error('limparRedis: conexão fechada antes da resposta completa')));
+    socket.on('close', () =>
+      concluir(new Error('limparRedis: conexão fechada antes da resposta completa')),
+    );
   });
 }
