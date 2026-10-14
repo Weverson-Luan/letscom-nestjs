@@ -3,10 +3,12 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TipoEndereco } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsArray,
   IsEmail,
+  IsEnum,
   IsIn,
   IsNotEmpty,
   IsNumber,
@@ -106,10 +108,9 @@ export class FullClientEnderecoDto {
   @IsNotEmpty()
   cep!: string;
 
-  @ApiProperty({ example: 'comercial' })
-  @IsString()
-  @IsNotEmpty()
-  tipo_endereco!: string;
+  @ApiProperty({ enum: TipoEndereco, example: TipoEndereco.entrega })
+  @IsEnum(TipoEndereco)
+  tipo_endereco!: TipoEndereco;
 
   @ApiProperty({ example: 'João Responsável' })
   @IsString()
