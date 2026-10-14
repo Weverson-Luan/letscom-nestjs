@@ -32,6 +32,9 @@ export const Feature = {
   INATIVAR_CLIENTE: 'inativar_cliente',
   GERENCIAR_CREDITOS_CLIENTE: 'gerenciar_creditos_cliente',
 
+  // USUARIOS INTERNOS (backoffice: consultor, producao, recepcao)
+  GERENCIAR_USUARIOS_INTERNOS: 'gerenciar_usuarios_internos',
+
   // USUARIO CLIENTE
   VISUALIZAR_USUARIO_CLIENTE: 'visualizar_usuario_cliente',
   CRIAR_USUARIO_CLIENTE: 'criar_usuario_cliente',

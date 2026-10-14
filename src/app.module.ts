@@ -29,6 +29,7 @@ import { RemessasModule } from './modules/remessas/remessas.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { UsersModule } from './modules/users/users.module';
 import { UsuariosClienteModule } from './modules/usuarios-cliente/usuarios-cliente.module';
+import { UsuariosInternosModule } from './modules/usuarios-internos/usuarios-internos.module';
 import { UsersAtendimentosModule } from './modules/users-atendimentos/users-atendimentos.module';
 import { TecnologiasModule } from './modules/tecnologias/tecnologias.module';
 import { TiposEntregaModule } from './modules/tipos-entrega/tipos-entrega.module';
@@ -92,6 +93,7 @@ import { UtilsModule } from './shared/utils/utils.module';
     TiposEntregaModule,
     TutorialsModule,
     UsersAtendimentosModule,
+    UsuariosInternosModule,
     UsuariosClienteModule,
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: LoggingInterceptor }],
