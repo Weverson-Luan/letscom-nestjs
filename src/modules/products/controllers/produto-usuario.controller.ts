@@ -31,10 +31,7 @@ export class ProdutoUsuarioController {
   @RequireFeatures(Feature.EDITAR_CLIENTE)
   @ApiOperation({ summary: 'Desvincula um produto de um usuário (cliente)' })
   async desvincular(@Body() body: VincularProdutoDto) {
-    await this.service.desvincular(
-      BigInt(body.user_id),
-      BigInt(body.produto_id),
-    );
+    await this.service.desvincular(BigInt(body.user_id), BigInt(body.produto_id));
     return ApiResponse.success('Produto desvinculado com sucesso.', []);
   }
 
@@ -43,9 +40,6 @@ export class ProdutoUsuarioController {
   @ApiOperation({ summary: 'Lista produtos vinculados a um usuário' })
   async listar(@Param('userId') userId: string) {
     const produtos = await this.service.listar(BigInt(userId));
-    return ApiResponse.success(
-      'Produtos vinculados carregados com sucesso!',
-      produtos,
-    );
+    return ApiResponse.success('Produtos vinculados carregados com sucesso!', produtos);
   }
 }

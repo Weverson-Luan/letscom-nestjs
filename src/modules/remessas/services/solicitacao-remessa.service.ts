@@ -91,9 +91,7 @@ export class SolicitacaoRemessaService {
           /* noop */
         }
       }
-      this.logger.error(
-        `Falha no fluxo de solicitação de remessa: ${(error as Error).message}`,
-      );
+      this.logger.error(`Falha no fluxo de solicitação de remessa: ${(error as Error).message}`);
       throw error;
     }
   }

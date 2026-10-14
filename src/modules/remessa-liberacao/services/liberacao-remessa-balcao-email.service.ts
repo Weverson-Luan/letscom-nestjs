@@ -42,7 +42,15 @@ export class LiberacaoRemessaBalcaoEmailService {
     filePath?: string | null,
     assunto?: string | null,
   ): Promise<void> {
-    await this.enviarInterno(remessa, liberador, tipoEntregaId, observacao, filePath, true, assunto);
+    await this.enviarInterno(
+      remessa,
+      liberador,
+      tipoEntregaId,
+      observacao,
+      filePath,
+      true,
+      assunto,
+    );
   }
 
   async enviarSemExcecao(
@@ -71,9 +79,7 @@ export class LiberacaoRemessaBalcaoEmailService {
     }
   }
 
-  resolverDestinatario(
-    remessa: RemessaComSolicitantes,
-  ): { email: string; nome: string } | null {
+  resolverDestinatario(remessa: RemessaComSolicitantes): { email: string; nome: string } | null {
     if (remessa.userIdSolicitanteRemessa) {
       const solicitante = remessa.solicitante;
       if (!solicitante?.email) return null;

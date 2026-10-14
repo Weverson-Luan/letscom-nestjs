@@ -61,9 +61,9 @@ describe('AuthClientUserService (login)', () => {
     prisma.user.findFirst.mockResolvedValue(null);
     prisma.userCliente.findFirst.mockResolvedValue(null);
 
-    await expect(
-      useCase.execute({ email: 'x@y.com', senha: '123456' }),
-    ).rejects.toMatchObject({ status: 401 });
+    await expect(useCase.execute({ email: 'x@y.com', senha: '123456' })).rejects.toMatchObject({
+      status: 401,
+    });
   });
 
   it('autentica usuário interno com sucesso', async () => {

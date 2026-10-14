@@ -2,9 +2,7 @@
  * IMPORTS
  */
 
-
 import { Module } from '@nestjs/common';
-
 
 // services
 import { JwtTokenService } from './services/jwt-token.service';
@@ -21,8 +19,6 @@ import { PasswordResetController } from './controllers/password-reset.controller
 // repositories
 import { PasswordResetRepository } from './repositories/password-reset.repository';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
-
-
 
 @Module({
   controllers: [AuthController, PasswordResetController],

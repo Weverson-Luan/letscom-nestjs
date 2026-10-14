@@ -12,13 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -57,10 +51,7 @@ export class RemessaLiberadaClienteController {
   @ApiOperation({
     summary: 'Libera remessas em lote para o cliente (status → concluido)',
   })
-  async liberarEmLote(
-    @Body() dto: LiberarRemessasLoteDto,
-    @CurrentUser() user: AuthUser,
-  ) {
+  async liberarEmLote(@Body() dto: LiberarRemessasLoteDto, @CurrentUser() user: AuthUser) {
     const data = await this.loteService.liberarEmLote(dto, user);
     return ApiResponse.success('Remessas liberadas com sucesso!', data, null, 201);
   }
@@ -70,15 +61,10 @@ export class RemessaLiberadaClienteController {
   @Roles(...ROLES_LEITURA)
   @ApiOperation({ summary: 'Lista liberações para cliente (paginado)' })
   async listar(@Query() query: PaginationQueryDto) {
-    const { data, pagination } =
-      await this.service.listarTodasLiberacoesPaginadas(
-        query as unknown as Record<string, unknown>,
-      );
-    return ApiResponse.success(
-      'Remessas liberadas carregadas com sucesso!',
-      data,
-      pagination,
+    const { data, pagination } = await this.service.listarTodasLiberacoesPaginadas(
+      query as unknown as Record<string, unknown>,
     );
+    return ApiResponse.success('Remessas liberadas carregadas com sucesso!', data, pagination);
   }
 
   @Get(':id')
@@ -107,9 +93,7 @@ export class RemessaLiberadaClienteController {
     if (file) {
       const ext = (file.originalname.split('.').pop() ?? '').toLowerCase();
       if (!['jpg', 'jpeg', 'png', 'pdf'].includes(ext)) {
-        throw new BadRequestException(
-          'Arquivo inválido. Use jpg, jpeg, png ou pdf.',
-        );
+        throw new BadRequestException('Arquivo inválido. Use jpg, jpeg, png ou pdf.');
       }
     }
 
@@ -121,10 +105,7 @@ export class RemessaLiberadaClienteController {
   @RequireFeatures(...FEATURES_LIBERACAO_RECEPCAO)
   @Roles(...ROLES_UPDATE)
   @ApiOperation({ summary: 'Atualiza liberação para cliente' })
-  async atualizar(
-    @Param('id') id: string,
-    @Body() dto: UpdateRemessaLiberadaClienteDto,
-  ) {
+  async atualizar(@Param('id') id: string, @Body() dto: UpdateRemessaLiberadaClienteDto) {
     const data = await this.service.atualizar(BigInt(id), dto);
     return ApiResponse.success('Liberação atualizada com sucesso!', data);
   }

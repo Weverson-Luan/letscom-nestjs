@@ -9,8 +9,8 @@ Padrões de revisão: subagente `tech-lead` em `.claude/agents/tech-lead.md` —
 ## Regras inegociáveis
 
 1. **Nunca executar migration nem alterar o banco.** Não rode `prisma migrate *`, `prisma db *`,
-   `npm run prisma:migrate|prisma:seed`, nem `docker restart` / `docker compose up` / `npm run docker:*` / `npm run test:e2e:docker|test:e2e:up`
-   (o container e o script de e2e aplicam `migrate deploy`). Escreva o `schema.prisma` e o
+   `npm run prisma:migrate|prisma:seed`, nem `docker restart` / `docker compose up` / `npm run docker:*` / `npm run test:e2e`
+   (o container e o `test:e2e` aplicam `migrate deploy`; o `test:e2e` também sobe containers). Escreva o `schema.prisma` e o
    `prisma/migrations/<timestamp>_<nome>/migration.sql` e **devolva ao dev o SQL e os comandos** para
    ele executar no terminal (formato em `docs/arquitetura.md` → "Banco e migrations").
 2. **Todo código novo ou alterado vem com testes**: unitário em `src/modules/<modulo>/tests/*.spec.ts`
@@ -25,8 +25,7 @@ Padrões de revisão: subagente `tech-lead` em `.claude/agents/tech-lead.md` —
 
 ```bash
 npm test                 # unitários
-npm run test:e2e         # e2e contra ambiente de teste JÁ no ar (pode rodar)
-npm run test:e2e:docker  # DEV executa: sobe banco descartável, migra, testa, derruba (IA não roda)
+npm run test:e2e         # DEV executa: sobe banco/Redis de teste, migra, testa e para os containers (IA não roda)
 npm run lint
 npm run typecheck
 npx prisma generate      # permitido: só gera o client

@@ -54,9 +54,7 @@ export class DashboardRepository {
       take: limit,
     });
     for (const remessa of remessas) {
-      const sufixo = remessa.cliente?.nome
-        ? ` por ${remessa.cliente.nome}`
-        : '';
+      const sufixo = remessa.cliente?.nome ? ` por ${remessa.cliente.nome}` : '';
       atividades.push({
         tipo: 'remessa_criada',
         descricao: `Nova remessa #${remessa.numeroRemessa} criada${sufixo}.`,
@@ -70,8 +68,7 @@ export class DashboardRepository {
       take: limit,
     });
     for (const log of statusLogs) {
-      const numero =
-        log.remessa?.numeroRemessa?.toString() ?? String(log.remessaId);
+      const numero = log.remessa?.numeroRemessa?.toString() ?? String(log.remessaId);
       atividades.push({
         tipo: 'status_alterado',
         descricao: `Remessa #${numero} avançou para ${log.status}.`,
@@ -95,12 +92,9 @@ export class DashboardRepository {
           select: { id: true, numeroRemessa: true },
         })
       : [];
-    const numeroMap = new Map(
-      numeros.map((r) => [r.id.toString(), r.numeroRemessa.toString()]),
-    );
+    const numeroMap = new Map(numeros.map((r) => [r.id.toString(), r.numeroRemessa.toString()]));
     for (const lote of lotesFotos) {
-      const numero =
-        numeroMap.get(lote.remessa_id.toString()) ?? String(lote.remessa_id);
+      const numero = numeroMap.get(lote.remessa_id.toString()) ?? String(lote.remessa_id);
       atividades.push({
         tipo: 'fotos_enviadas',
         descricao: `Lote com ${Number(lote.qtd)} fotos enviado para remessa #${numero}.`,
@@ -125,10 +119,7 @@ export class DashboardRepository {
     }
 
     return atividades
-      .sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      )
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, limit)
       .map((a) => ({
         tipo: a.tipo,

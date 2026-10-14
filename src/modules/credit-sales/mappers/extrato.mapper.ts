@@ -22,9 +22,7 @@ export function mapExtratoLinha(linha: ExtratoWithRels) {
     tipo_operacao: linha.tipoOperacao,
     direcao_movimento: linha.direcaoMovimento,
     quantidade_creditos: Number(linha.quantidadeCreditos),
-    saldo_creditos_produto_apos_movimento: Number(
-      linha.saldoCreditosProdutoAposMovimento,
-    ),
+    saldo_creditos_produto_apos_movimento: Number(linha.saldoCreditosProdutoAposMovimento),
     remessa_id: linha.remessaId,
     remessa: linha.remessa
       ? {
@@ -56,9 +54,7 @@ export function mapCobrancaLinha(linha: ExtratoWithRels) {
     id: linha.id,
     created_at: linha.createdAt,
     produto_id: linha.produtoId,
-    produto: linha.produto
-      ? { id: linha.produto.id, nome: linha.produto.nome }
-      : null,
+    produto: linha.produto ? { id: linha.produto.id, nome: linha.produto.nome } : null,
     quantidade_creditos: quantidade,
     valor_unitario_credito: valorUnitario,
     valor_total_linha: Math.round(quantidade * valorUnitario * 100) / 100,

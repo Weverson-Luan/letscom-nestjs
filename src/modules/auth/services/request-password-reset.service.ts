@@ -7,7 +7,6 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { MailService } from 'src/shared/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 
-
 // function requestReset(email: string): Promise<boolean> {
 //   let nome: string | null = null;
 
@@ -49,7 +48,6 @@ import { ConfigService } from '@nestjs/config';
 //   return true;
 // }
 
-
 /**
  * Espelha PasswordResetController::requestReset. Observação de fidelidade:
  * erros de validação e de negócio retornam HTTP 200 com `code` no corpo
@@ -68,8 +66,7 @@ export class RequestPasswordResetUseCase {
   async execute(body: Record<string, any>): Promise<{ status: number; body: any }> {
     const email = body?.email;
 
-    const emailValido =
-      typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const emailValido = typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
     if (!email) {
       return {
@@ -93,7 +90,13 @@ export class RequestPasswordResetUseCase {
     }
 
     try {
-      await requestResetPasswordMappers(this.repository, this.prisma,this.config, this.mail, email )
+      await requestResetPasswordMappers(
+        this.repository,
+        this.prisma,
+        this.config,
+        this.mail,
+        email,
+      );
 
       return { status: 200, body: { code: 200, message: 'E-mail enviado com sucesso!' } };
     } catch (error) {

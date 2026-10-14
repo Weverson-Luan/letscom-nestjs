@@ -67,11 +67,7 @@ export class ApiResponse {
  * Constrói o objeto de paginação a partir dos parâmetros calculados,
  * espelhando o retorno do paginator do Laravel.
  */
-export function buildPagination(
-  total: number,
-  page: number,
-  perPage: number,
-): Pagination {
+export function buildPagination(total: number, page: number, perPage: number): Pagination {
   return {
     current_page: page,
     last_page: Math.max(1, Math.ceil(total / perPage)),

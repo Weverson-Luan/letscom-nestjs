@@ -1,9 +1,12 @@
-import { BusinessException } from "src/shared/exceptions/business.exception";
+import { BusinessException } from 'src/shared/exceptions/business.exception';
 
 import * as bcrypt from 'bcrypt';
 
-async function  resetPassword(
-  repository: any, prisma: any, token: string, novaSenha: string
+async function resetPassword(
+  repository: any,
+  prisma: any,
+  token: string,
+  novaSenha: string,
 ): Promise<boolean> {
   const tokenData = await repository.findToken(token);
 
@@ -22,8 +25,6 @@ async function  resetPassword(
     throw new Error('Usuário não encontrado!');
   }
 
-
-
   await prisma.user.update({
     where: { id: user.id },
     data: { senha: await bcrypt.hash(novaSenha, 12) },
@@ -34,10 +35,7 @@ async function  resetPassword(
   return true;
 }
 
-
 /**
  * EXPORTS
  */
-export {
-  resetPassword
-}
+export { resetPassword };

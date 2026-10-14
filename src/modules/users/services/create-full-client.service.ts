@@ -5,7 +5,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
 
@@ -15,7 +14,11 @@ import { formatarCep } from 'src/shared/utils/format-zip-code';
 import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
 
 // typings
-import { FullClientClienteDto, FullClientEnderecoDto, FullClientUsuarioClienteDto } from '../dto/create-full-client.dto';
+import {
+  FullClientClienteDto,
+  FullClientEnderecoDto,
+  FullClientUsuarioClienteDto,
+} from '../dto/create-full-client.dto';
 
 /**
  * Faz a criação de um cliente completo, incluindo:
@@ -32,7 +35,6 @@ export class CreateFullClientService {
     private readonly config: ConfigService,
     private readonly roleUserRepo: RoleUserRepository,
   ) {}
-
 
   async executar(data: {
     cliente: FullClientClienteDto;
@@ -57,12 +59,7 @@ export class CreateFullClientService {
       });
 
       if (clientePayload.roles) {
-        await this.roleUserRepo.attachToUser(
-          tx,
-          user.id,
-          BigInt(clientePayload.roles),
-          true,
-        );
+        await this.roleUserRepo.attachToUser(tx, user.id, BigInt(clientePayload.roles), true);
       }
       if (clientePayload.consultor_id) {
         await tx.clienteConsultor.create({
@@ -109,12 +106,7 @@ export class CreateFullClientService {
           },
         });
         if (sub.role_id) {
-          await this.roleUserRepo.attachToUserCliente(
-            tx,
-            created.id,
-            BigInt(sub.role_id),
-            true,
-          );
+          await this.roleUserRepo.attachToUserCliente(tx, created.id, BigInt(sub.role_id), true);
         }
         usuariosCliente.push(created);
       }

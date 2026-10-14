@@ -90,22 +90,17 @@ export class LiberarRemessasLoteClienteService {
     const jaLiberadas = await this.repository.findRemessaIdsLiberadas(remessaIds);
     const jaLiberadasSet = new Set(jaLiberadas.map((r) => r.remessaId.toString()));
 
-    const liberacoesExpedicao =
-      await this.balcaoRepository.findRemessaIdsLiberadas(remessaIds);
-    const expedicaoSet = new Set(
-      liberacoesExpedicao.map((r) => r.remessaId.toString()),
-    );
+    const liberacoesExpedicao = await this.balcaoRepository.findRemessaIdsLiberadas(remessaIds);
+    const expedicaoSet = new Set(liberacoesExpedicao.map((r) => r.remessaId.toString()));
 
-    const clienteIds = [
-      ...new Set(remessas.map((r) => r.clienteId.toString())),
-    ].map((id) => BigInt(id));
+    const clienteIds = [...new Set(remessas.map((r) => r.clienteId.toString()))].map((id) =>
+      BigInt(id),
+    );
 
     const tipos = await this.prisma.tipoEntregaUser.findMany({
       where: { clienteId: { in: clienteIds } },
     });
-    const tiposPorCliente = new Map(
-      tipos.map((t) => [t.clienteId.toString(), t.tipoEntregaId]),
-    );
+    const tiposPorCliente = new Map(tipos.map((t) => [t.clienteId.toString(), t.tipoEntregaId]));
 
     const validas: LoteItem[] = [];
     const invalidas: LoteItem[] = [];

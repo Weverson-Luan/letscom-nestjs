@@ -47,9 +47,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('Subordinado não encontrado');
       }
 
-      const roles = await this.roleUserRepo.findRoleNamesForUserCliente(
-        userCliente.id,
-      );
+      const roles = await this.roleUserRepo.findRoleNamesForUserCliente(userCliente.id);
 
       return {
         id: userCliente.id,

@@ -10,9 +10,7 @@ export function mapTipoEntrega(item: TipoEntrega) {
   };
 }
 
-export function mapTipoEntregaUser(
-  item: TipoEntregaUser & { tipoEntrega?: TipoEntrega | null },
-) {
+export function mapTipoEntregaUser(item: TipoEntregaUser & { tipoEntrega?: TipoEntrega | null }) {
   return {
     id: item.id,
     cliente_id: item.clienteId,

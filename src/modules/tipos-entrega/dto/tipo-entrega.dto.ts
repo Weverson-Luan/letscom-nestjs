@@ -1,13 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TipoEntregaValor } from '@prisma/client';
 import { Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsEnum,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-} from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateTipoEntregaDto {
   @ApiPropertyOptional({ enum: TipoEntregaValor })

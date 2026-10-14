@@ -1,20 +1,5 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -65,14 +50,8 @@ export class UserController {
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiOperation({ summary: 'Lista clientes/usuários' })
   async buscarClientes(@Query() query: PaginationQueryDto) {
-    const result = await this.userService.list(
-      query as unknown as Record<string, unknown>,
-    );
-    return ApiResponse.success(
-      'Usuários carregadas com sucesso!',
-      result.data,
-      result.pagination,
-    );
+    const result = await this.userService.list(query as unknown as Record<string, unknown>);
+    return ApiResponse.success('Usuários carregadas com sucesso!', result.data, result.pagination);
   }
 
   @Get(':id')

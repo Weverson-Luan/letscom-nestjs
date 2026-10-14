@@ -35,7 +35,6 @@ export class RefreshTokenService {
     return kind === 'subordinado' ? TOKENABLE_SUBORDINADO : TOKENABLE_USER;
   }
 
-
   async execute(user: AuthUser | undefined) {
     if (user) {
       await this.revokeAll(
@@ -60,7 +59,6 @@ export class RefreshTokenService {
     };
   }
 
-
   async executeRefreshToken(refreshToken: string) {
     try {
       const result = await this.rotate(refreshToken);
@@ -75,7 +73,6 @@ export class RefreshTokenService {
       );
     }
   }
-
 
   /** Emite um refresh token opaco e persiste o hash. Retorna o token em claro. */
   async issue(tokenable: Tokenable): Promise<string> {
@@ -102,7 +99,9 @@ export class RefreshTokenService {
    * Valida o refresh, revoga o registro atual e emite novo access + refresh.
    * Lança BadRequestException (mapeado para 401 no controller) em caso inválido.
    */
-  async rotate(plainRefreshToken: string): Promise<{ access_token: string; refresh_token: string }> {
+  async rotate(
+    plainRefreshToken: string,
+  ): Promise<{ access_token: string; refresh_token: string }> {
     const hash = this.hash(plainRefreshToken);
     const record = await this.repository.findValidByHash(hash);
 

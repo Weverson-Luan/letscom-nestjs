@@ -21,17 +21,11 @@ export function createWinstonOptions(level = 'debug'): winston.LoggerOptions {
       new winston.transports.File({
         filename: 'logs/error.log',
         level: 'error',
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json(),
-        ),
+        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
       }),
       new winston.transports.File({
         filename: 'logs/app.log',
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json(),
-        ),
+        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
       }),
     ],
   };

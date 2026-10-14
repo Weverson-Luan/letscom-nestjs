@@ -10,12 +10,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
 import { Feature, MENSAGEM_SEM_PERMISSAO } from 'src/shared/auth/features';
 import { Role } from 'src/shared/constants/roles';
@@ -55,19 +50,12 @@ export class UserClienteController {
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiParam({ name: 'id', description: 'ID do cliente' })
   @ApiOperation({ summary: 'Lista os usuários de um cliente (paginado)' })
-  async buscarPorCliente(
-    @Param('id') id: string,
-    @Query() query: PaginationQueryDto,
-  ) {
+  async buscarPorCliente(@Param('id') id: string, @Query() query: PaginationQueryDto) {
     const { data, pagination } = await this.service.listarPorCliente(
       BigInt(id),
       query as unknown as Record<string, unknown>,
     );
-    return ApiResponse.success(
-      'Usuários do cliente carregados com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Usuários do cliente carregados com sucesso!', data, pagination);
   }
 
   @Get(':id')
@@ -122,10 +110,7 @@ export class UserClienteController {
     }
 
     const user = await this.service.update(BigInt(id), data);
-    return ApiResponse.success(
-      'Usuário do cliente atualizado com sucesso!',
-      mapUserCliente(user),
-    );
+    return ApiResponse.success('Usuário do cliente atualizado com sucesso!', mapUserCliente(user));
   }
 
   @Delete(':id')

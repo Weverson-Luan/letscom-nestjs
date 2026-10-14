@@ -16,9 +16,6 @@ export class VideoTutorialController {
   @ApiOperation({ summary: 'Retorna URL assinada do vídeo tutorial' })
   async show() {
     const video = await this.service.obterUrl();
-    return ApiResponse.success(
-      'URL do vídeo tutorial gerada com sucesso.',
-      video,
-    );
+    return ApiResponse.success('URL do vídeo tutorial gerada com sucesso.', video);
   }
 }

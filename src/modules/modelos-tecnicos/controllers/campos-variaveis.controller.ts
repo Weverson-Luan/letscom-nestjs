@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -22,12 +13,7 @@ import { CamposVariaveisService } from '../services/campos-variaveis.service';
 import { Feature } from 'src/shared/auth/features';
 import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
-const ROLES = [
-  Role.ADMIN,
-  Role.PRODUCAO,
-  Role.CONSULTOR,
-  Role.CLIENTE,
-] as const;
+const ROLES = [Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR, Role.CLIENTE] as const;
 
 @ApiTags('modelos-tecnicos-campos-variaveis')
 @ApiBearerAuth()
@@ -43,11 +29,7 @@ export class CamposVariaveisController {
     const { data, pagination } = await this.service.listar(
       query as unknown as Record<string, unknown>,
     );
-    return ApiResponse.success(
-      'Campos variáveis carregados com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Campos variáveis carregados com sucesso!', data, pagination);
   }
 
   @Put('modelo/:modeloTecnicoId')
@@ -58,14 +40,8 @@ export class CamposVariaveisController {
     @Param('modeloTecnicoId') modeloTecnicoId: string,
     @Body() body: SyncCamposVariaveisDto,
   ) {
-    const data = await this.service.sincronizar(
-      BigInt(modeloTecnicoId),
-      body.campos ?? [],
-    );
-    return ApiResponse.success(
-      'Campos variáveis sincronizados com sucesso.',
-      data,
-    );
+    const data = await this.service.sincronizar(BigInt(modeloTecnicoId), body.campos ?? []);
+    return ApiResponse.success('Campos variáveis sincronizados com sucesso.', data);
   }
 
   @Post()

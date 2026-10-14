@@ -84,13 +84,9 @@ describe('StorageService', () => {
     const service = new StorageService(config as unknown as ConfigService);
     service.onModuleInit();
 
-    await expect(service.getSignedUrl(testPath)).resolves.toBe(
-      'https://signed.example/foto.jpg',
-    );
-    expect(mockedGetSignedUrl).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      { expiresIn: 900 },
-    );
+    await expect(service.getSignedUrl(testPath)).resolves.toBe('https://signed.example/foto.jpg');
+    expect(mockedGetSignedUrl).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
+      expiresIn: 900,
+    });
   });
 });

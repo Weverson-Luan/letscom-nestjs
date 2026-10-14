@@ -1,6 +1,7 @@
 ## banco e cache só dos testes e2e. Compose independente do dev, mas com o mesmo nome de projeto:
 ## aparece no grupo letscom-dev do Docker Desktop sem tocar no letscom-bd-dev nem no letscom-redis-dev.
-## sobe com npm run docker:test e fica no ar; os testes limpam os dados antes e depois (test/e2e/limpar-ambiente-e2e.ts).
+## o npm run test:e2e sobe (pretest:e2e), migra, testa e para (posttest:e2e); fora dos testes fica parado.
+## os testes limpam os dados antes e depois (test/e2e/limpar-ambiente-e2e.ts).
 ## credenciais fixas de teste (não são segredo): as mesmas do .env.test.
 ## nunca use --remove-orphans aqui nem no dev: com o mesmo nome de projeto, derrubaria os containers do outro compose.
 name: letscom-dev

@@ -31,10 +31,7 @@ export class LiberarRemessaController {
   @RequireFeatures(Feature.LIBERACAO_MULTIPLAS_REMESSAS_BALCAO)
   @Roles(...ROLES_LIBERACAO)
   @ApiOperation({ summary: 'Libera remessas em lote para o balcão (atualiza status)' })
-  async liberarEmLote(
-    @Body() dto: LiberarRemessasLoteDto,
-    @CurrentUser() user: AuthUser,
-  ) {
+  async liberarEmLote(@Body() dto: LiberarRemessasLoteDto, @CurrentUser() user: AuthUser) {
     const data = await this.loteService.liberarEmLote(dto, user);
     return ApiResponse.success('Remessas liberadas com sucesso!', data, null, 201);
   }
@@ -45,10 +42,7 @@ export class LiberarRemessaController {
   @ApiOperation({
     summary: 'Libera uma remessa para o balcão (não altera status da remessa)',
   })
-  async liberar(
-    @Body() dto: LiberarRemessaBalcaoDto,
-    @CurrentUser() user: AuthUser,
-  ) {
+  async liberar(@Body() dto: LiberarRemessaBalcaoDto, @CurrentUser() user: AuthUser) {
     const data = await this.service.liberarRemessaParaBalcao(dto, user);
     return ApiResponse.success('Remessa liberada com sucesso!', data, null, 201);
   }

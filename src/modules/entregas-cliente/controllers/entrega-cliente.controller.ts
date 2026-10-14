@@ -12,21 +12,12 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ALL_ROLES } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { ApiResponse } from 'src/shared/utils/api-response';
-import {
-  CreateEntregaClienteDto,
-  UpdateEntregaClienteDto,
-} from '../dto/entrega-cliente.dto';
+import { CreateEntregaClienteDto, UpdateEntregaClienteDto } from '../dto/entrega-cliente.dto';
 import { mapEntregaCliente } from '../mappers/entrega-cliente.mapper';
 import { EntregaClienteService } from '../services/entrega-cliente.service';
 import { Feature, FEATURES_LIBERACAO } from 'src/shared/auth/features';
@@ -60,10 +51,7 @@ export class EntregaClienteController {
   @ApiOperation({ summary: 'Detalha uma entrega' })
   async show(@Param('id') id: string) {
     const entrega = await this.service.buscar(BigInt(id));
-    return ApiResponse.success(
-      'Entrega carregada com sucesso!',
-      mapEntregaCliente(entrega),
-    );
+    return ApiResponse.success('Entrega carregada com sucesso!', mapEntregaCliente(entrega));
   }
 
   @Post()
@@ -71,10 +59,7 @@ export class EntregaClienteController {
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('imagem_protocolo'))
   @ApiOperation({ summary: 'Registra entrega de remessa ao cliente' })
-  async store(
-    @Body() body: CreateEntregaClienteDto,
-    @UploadedFile() imagem?: MulterFile,
-  ) {
+  async store(@Body() body: CreateEntregaClienteDto, @UploadedFile() imagem?: MulterFile) {
     const entrega = await this.service.registrar(body, imagem);
     return {
       status: 'success',
@@ -94,10 +79,7 @@ export class EntregaClienteController {
     @UploadedFile() imagem?: MulterFile,
   ) {
     const entrega = await this.service.atualizar(BigInt(id), body, imagem);
-    return ApiResponse.success(
-      'Entrega atualizada com sucesso!',
-      mapEntregaCliente(entrega),
-    );
+    return ApiResponse.success('Entrega atualizada com sucesso!', mapEntregaCliente(entrega));
   }
 
   @Delete(':id')

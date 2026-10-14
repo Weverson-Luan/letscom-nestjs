@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ALL_ROLES } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -38,11 +29,7 @@ export class TecnologiaController {
     const { data, pagination } = await this.service.listar(
       query as unknown as Record<string, unknown>,
     );
-    return ApiResponse.success(
-      'Tecnologias carregadas com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Tecnologias carregadas com sucesso!', data, pagination);
   }
 
   @Get(':id')
@@ -56,10 +43,7 @@ export class TecnologiaController {
   @ApiOperation({ summary: 'Detalha uma tecnologia' })
   async show(@Param('id') id: string) {
     const tecnologia = await this.service.buscar(BigInt(id));
-    return ApiResponse.success(
-      'Tecnologia carregada com sucesso!',
-      mapTecnologia(tecnologia),
-    );
+    return ApiResponse.success('Tecnologia carregada com sucesso!', mapTecnologia(tecnologia));
   }
 
   @Post()
@@ -84,9 +68,6 @@ export class TecnologiaController {
   @ApiOperation({ summary: 'Atualiza uma tecnologia' })
   async update(@Param('id') id: string, @Body() body: UpdateTecnologiaDto) {
     const tecnologia = await this.service.atualizar(BigInt(id), body);
-    return ApiResponse.success(
-      'Tecnologia atualizada com sucesso!',
-      mapTecnologia(tecnologia),
-    );
+    return ApiResponse.success('Tecnologia atualizada com sucesso!', mapTecnologia(tecnologia));
   }
 }

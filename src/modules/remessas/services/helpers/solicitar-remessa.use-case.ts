@@ -66,7 +66,11 @@ export class SolicitarRemessaUseCase {
       if (error instanceof NotFoundException) {
         return {
           status: 404,
-          body: { status: 404, message: 'Entidade não encontrada', errors: { message: error.message } },
+          body: {
+            status: 404,
+            message: 'Entidade não encontrada',
+            errors: { message: error.message },
+          },
         };
       }
       return { status: 500, body: { status: 500, message: 'Erro interno no servidor' } };
@@ -83,7 +87,8 @@ export class SolicitarRemessaUseCase {
         'Informe o solicitante em users (user_id_solicitante_remessa) ou o subordinado do portal (users_solicitante_subordinado_id).';
       errors.user_id_solicitante_remessa = [msg];
     }
-    if (!int(body.modelo_tecnico_id)) errors.modelo_tecnico_id = ['O modelo técnico deve ser informado.'];
+    if (!int(body.modelo_tecnico_id))
+      errors.modelo_tecnico_id = ['O modelo técnico deve ser informado.'];
     if (!int(body.tecnologia_id)) errors.tecnologia_id = ['A tecnologia deve ser informada.'];
     if (!int(body.total_solicitacoes) || Number(body.total_solicitacoes) < 1) {
       errors.total_solicitacoes = ['O total de solicitações deve ser maior que zero.'];

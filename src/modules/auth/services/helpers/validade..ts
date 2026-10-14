@@ -20,10 +20,7 @@ function validateResetPasswordBody(body: Record<string, any>): Record<string, st
   return errors;
 }
 
-
 /**
  * EXPORTS
  */
-export {
-  validateResetPasswordBody
-}
+export { validateResetPasswordBody };

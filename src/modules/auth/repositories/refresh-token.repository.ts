@@ -8,12 +8,7 @@ export const TOKENABLE_SUBORDINADO = 'App\\Models\\UserCliente';
 export class RefreshTokenRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: {
-    tokenableType: string;
-    tokenableId: bigint;
-    tokenHash: string;
-    expiresAt: Date;
-  }) {
+  create(data: { tokenableType: string; tokenableId: bigint; tokenHash: string; expiresAt: Date }) {
     return this.prisma.refreshToken.create({ data });
   }
 

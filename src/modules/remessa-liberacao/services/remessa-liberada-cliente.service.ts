@@ -98,10 +98,7 @@ export class RemessaLiberadaClienteService {
     await this.repository.delete(id);
   }
 
-  private async uploadArquivoCliente(
-    file: MulterFile,
-    remessaId: bigint,
-  ): Promise<string> {
+  private async uploadArquivoCliente(file: MulterFile, remessaId: bigint): Promise<string> {
     const ext = extname(file.originalname).toLowerCase();
     if (!ALLOWED_EXTS.has(ext)) {
       throw new BusinessException('Arquivo inválido. Use jpg, jpeg, png ou pdf.');

@@ -18,12 +18,45 @@ export interface ParsedSheet {
 export class SpreadsheetService {
   /** Fragmentos de cabeçalho que indicam coluna a exportar como TEXTO. */
   private static readonly FRAGMENTOS_TEXTO = [
-    'cpf', 'cnpj', 'cep', 'telefone', 'fone', 'celular', 'matricula', 'codigo',
-    'documento', 'remessa', 'rg', 'pis', 'nit', 'inscricao', 'identificador',
-    'chave', 'nascimento', 'admissao', 'validade', 'vencimento', 'emissao',
-    'serie', 'titulo', 'eleitor', 'passaporte', 'cnh', 'carteira', 'funcional',
-    'cracha', 'badge', 'rfid', 'uid', 'ddd', 'data', 'date', 'datanascimento',
-    'dataadmissao', 'datavencimento', 'dataemissao',
+    'cpf',
+    'cnpj',
+    'cep',
+    'telefone',
+    'fone',
+    'celular',
+    'matricula',
+    'codigo',
+    'documento',
+    'remessa',
+    'rg',
+    'pis',
+    'nit',
+    'inscricao',
+    'identificador',
+    'chave',
+    'nascimento',
+    'admissao',
+    'validade',
+    'vencimento',
+    'emissao',
+    'serie',
+    'titulo',
+    'eleitor',
+    'passaporte',
+    'cnh',
+    'carteira',
+    'funcional',
+    'cracha',
+    'badge',
+    'rfid',
+    'uid',
+    'ddd',
+    'data',
+    'date',
+    'datanascimento',
+    'dataadmissao',
+    'datavencimento',
+    'dataemissao',
   ];
 
   // ---------------------------------------------------------------- IMPORT
@@ -37,9 +70,7 @@ export class SpreadsheetService {
     if (ext === 'xlsx' || ext === 'xls') {
       return this.parseExcelBuffer(buffer);
     }
-    throw new Error(
-      `Formato de planilha não suportado (${ext}). Use CSV, TXT, XLS ou XLSX.`,
-    );
+    throw new Error(`Formato de planilha não suportado (${ext}). Use CSV, TXT, XLS ou XLSX.`);
   }
 
   private parseCsvBuffer(buffer: Buffer): ParsedSheet {
@@ -63,7 +94,11 @@ export class SpreadsheetService {
     const headers: string[] = [];
     const headerRow = sheet.getRow(1);
     headerRow.eachCell({ includeEmpty: true }, (cell) => {
-      headers.push(String(cell.value ?? '').trim().toLowerCase());
+      headers.push(
+        String(cell.value ?? '')
+          .trim()
+          .toLowerCase(),
+      );
     });
 
     const rows: Record<string, string>[] = [];
@@ -90,7 +125,9 @@ export class SpreadsheetService {
    * Espelha RemessaPlanilhaExportHelper::normalizarCabecalhoColuna.
    */
   normalizarCabecalho(header?: string): string {
-    const texto = String(header ?? '').trim().toLowerCase();
+    const texto = String(header ?? '')
+      .trim()
+      .toLowerCase();
     if (texto === '') return '';
     const semAcento = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     return semAcento.replace(/[^a-z0-9]/g, '');

@@ -75,9 +75,7 @@ export class MailService {
 
     if (options.attachments?.length) {
       emailParams.setAttachments(
-        options.attachments.map(
-          (a) => new Attachment(a.contentBase64, a.filename, 'attachment'),
-        ),
+        options.attachments.map((a) => new Attachment(a.contentBase64, a.filename, 'attachment')),
       );
     }
 

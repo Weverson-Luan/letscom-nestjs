@@ -203,8 +203,7 @@ npx prisma migrate deploy       # aplicando direto do host
 # 2.1 atualizar o client dentro do container (node_modules próprio) para o hot reload compilar
 docker exec letscom-api-dev npx prisma generate
 
-# 3. validar com os testes e2e (sobe o ambiente de teste se preciso, migra o letscom_test e testa)
-npm run docker:test
+# 3. validar com os testes e2e (sobe o ambiente de teste, migra o letscom_test, testa e para os containers)
 npm run test:e2e
 ```
 
@@ -213,10 +212,11 @@ O bloqueio está reforçado em `.claude/settings.json` (`permissions.deny`), que
 
 ### E2E e banco de teste
 
-O ambiente de teste é o `docker-compose.test.yml` (`npm run docker:test`): MySQL `letscom-bd-test`
+O ambiente de teste é o `docker-compose.test.yml`: MySQL `letscom-bd-test`
 (porta `3308`, banco `letscom_test`) e Redis `letscom-redis-test` (porta `6380`). Compose separado do dev,
-mas com o mesmo nome de projeto, então aparece no grupo `letscom-dev`. Os containers ficam no ar; o
-`npm run test:e2e` aplica as migrations (`pretest:e2e`) e limpa os dados antes e depois da suíte.
+mas com o mesmo nome de projeto, então aparece no grupo `letscom-dev`. Os containers ficam parados; o
+`npm run test:e2e` sobe os dois (`pretest:e2e`), aplica as migrations, limpa os dados antes e depois da
+suíte e, se tudo passar, para os containers (`posttest:e2e`).
 
-`npm run test:e2e` aplica migrations e `npm run docker:test` sobe containers, então quem executa é o **dev**.
+`npm run test:e2e` sobe containers e aplica migrations, então quem executa é o **dev**.
 Passo a passo completo: **[docs/testes.md](testes.md)**.

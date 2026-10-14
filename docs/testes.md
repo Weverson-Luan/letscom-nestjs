@@ -8,8 +8,7 @@ Regras sobre **o que** testar estão em [arquitetura.md](arquitetura.md#testes--
 ```bash
 npm install                 # uma vez
 npm test                    # unitários (não precisam de Docker)
-npm run docker:test         # uma vez: sobe letscom-bd-test + letscom-redis-test (ficam no ar)
-npm run test:e2e            # aplica migrations no letscom_test, limpa os dados e roda os e2e
+npm run test:e2e            # sobe letscom-bd-test + letscom-redis-test, migra, roda os e2e e para os containers
 ```
 
 ## Pré-requisitos
@@ -23,10 +22,10 @@ npm run test:e2e            # aplica migrations no letscom_test, limpa os dados 
 O ambiente de teste é o `docker-compose.test.yml`: compose próprio, separado do de dev, mas com o mesmo nome
 de projeto (`letscom-dev`), então aparece no mesmo grupo do Docker Desktop. As variáveis de banco e Redis dos
 testes ficam no `.env.test` (versionado, credenciais fixas de teste), carregado pelo `test/jest.setup.ts` e
-pelo `pretest:e2e`, sempre **sobrescrevendo** o ambiente: nem o `.env` de dev nem um `DATABASE_URL` exportado no
+pelo `dotenv -o -e .env.test` dos scripts `pretest:e2e`/`test:e2e`, sempre **sobrescrevendo** o ambiente: nem o `.env` de dev nem um `DATABASE_URL` exportado no
 shell são usados para banco e Redis.
 
-O aviso `Found orphan containers` no `docker:up`/`docker:test` é esperado (os dois composes dividem o projeto).
+O aviso `Found orphan containers` no `docker:up`/`test:e2e` é esperado (os dois composes dividem o projeto).
 **Não** use `--remove-orphans`: ele derrubaria os containers do outro compose.
 
 ---
@@ -56,29 +55,35 @@ banco `letscom_test` do `letscom-bd-test` e o Redis do `letscom-redis-test`.
 ### Como rodar
 
 ```bash
-npm run docker:test                               # sobe o ambiente de teste (uma vez; fica no ar)
 npm run test:e2e                                  # todos
 npm run test:e2e -- test/e2e/health               # só uma pasta ou arquivo
 npm run test:e2e -- -t "responde 200"             # só testes cujo nome contém o trecho
-npm run docker:stop:test                          # para o ambiente de teste quando não for usar
 ```
 
-O que acontece no `npm run test:e2e`:
+Não precisa subir nada antes: fora dos testes, `letscom-bd-test` e `letscom-redis-test` ficam parados.
 
-1. `pretest:e2e` ([`scripts/migrar-banco-teste.mjs`](../scripts/migrar-banco-teste.mjs)): `prisma migrate deploy` no
-   `letscom_test`. Os valores do `.env.test` sobrescrevem o ambiente e o script recusa banco que não termine em `_test`;
+O que acontece no `npm run test:e2e` (scripts `pretest:e2e` → `test:e2e` → `posttest:e2e` do `package.json`):
+
+1. `pretest:e2e`: `npm run docker:up:test:dev` sobe banco e Redis de teste e espera ficarem healthy;
+   depois `dotenv -o -e .env.test -- prisma migrate deploy` migra o `letscom_test`;
 2. `globalSetup` ([`test/e2e/limpar-ambiente-e2e.ts`](../test/e2e/limpar-ambiente-e2e.ts)): `TRUNCATE` em
    todas as tabelas (mantém estrutura e `_prisma_migrations`) e `FLUSHDB` no Redis de teste;
 3. jest e2e com `--runInBand`;
-4. `globalTeardown`: a mesma limpeza do passo 2. Os containers continuam no ar, vazios.
+4. `globalTeardown`: a mesma limpeza do passo 2;
+5. `posttest:e2e`: `npm run docker:stop:test:stop` para os containers.
+
+O `posttest:e2e` só roda se **todos os testes passarem**. Com falha (ou Ctrl+C), os containers ficam no ar.
+Isso permite inspecionar o banco; depois, pare na mão com `npm run docker:stop:test:stop`.
+
+O banco de teste usa `tmpfs`: ao parar, os dados somem, e o passo 1 recria as tabelas na próxima rodada.
 
 Isolamento: banco e Redis de teste são containers próprios; o `letscom-bd-dev` e o `letscom-redis-dev`
 nunca são tocados. O `limparBanco` só aceita bancos terminados em `_test`. Dentro da suíte, use
 `limparBanco` no `beforeEach` para isolar um teste do outro.
 
 Inspecionar: conecte em `mysql://letscom:letscom@127.0.0.1:3308/letscom_test` (DBeaver, TablePlus ou
-`node --env-file=.env.test node_modules/prisma/build/index.js studio`, com o shell sem `DATABASE_URL` exportado). Como o teardown limpa os dados,
-para ver o estado de uma falha comente o `globalTeardown` em `test/jest-e2e.json` localmente.
+`npx dotenv -o -e .env.test -- prisma studio`). Para ver o estado de uma falha, comente o `globalTeardown`
+em `test/jest-e2e.json` localmente: como o teste falhou, os containers continuam no ar com os dados.
 
 ---
 
@@ -139,10 +144,10 @@ inválido · **2xx** validando o formato da resposta · **efeito persistido** no
 
 | Sintoma | Causa / solução |
 |---|---|
-| `ECONNREFUSED 127.0.0.1:3308` ou `:6380` | ambiente de teste não está no ar. Rode `npm run docker:test` |
-| `port is already allocated` no `docker:test` | porta `3308` ou `6380` em uso por outro serviço. Libere a porta ou ajuste `docker-compose.test.yml` e `.env.test` juntos |
+| `ECONNREFUSED 127.0.0.1:3308` ou `:6380` | rodou o jest direto, sem o `npm run test:e2e`, que é quem sobe o ambiente |
+| `port is already allocated` no `test:e2e` | porta `3308` ou `6380` em uso por outro serviço. Libere a porta ou ajuste `docker-compose.test.yml` e `.env.test` juntos |
 | `Cannot find module` / `Could not find a declaration file` | dependência nova no `package.json`. Rode `npm install` |
-| `The table ... does not exist` | migrations não aplicadas. Veja a saída do `pretest:e2e` |
+| `The table ... does not exist` | migrations não aplicadas. Veja a saída do `prisma migrate deploy` no `pretest:e2e` |
 | `limparBanco recusado` | o `DATABASE_URL` não aponta para um banco `_test`, ou seja, a trava evitou apagar outro banco |
 | `Cannot connect to the Docker daemon` | Docker Desktop desligado |
 | Teste passa sozinho e falha junto com os outros | dados vazando entre testes. Use `limparBanco` no `beforeEach` e não dependa da ordem |
@@ -151,7 +156,6 @@ inválido · **2xx** validando o formato da resposta · **efeito persistido** no
 
 ## 5. Regra para IA (Claude / Cursor)
 
-`npm run test:e2e` aplica migrations (`pretest:e2e`) e `npm run docker:test` sobe containers,
-**então quem executa é o dev**.
+`npm run test:e2e` sobe containers e aplica migrations, **então quem executa é o dev**.
 A IA roda `npm test` e, para o e2e, devolve os comandos para o dev executar. Bloqueio configurado em
 `.claude/settings.json`.

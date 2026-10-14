@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Feature } from 'src/shared/auth/features';
 import { RequireFeatures } from 'src/shared/decorators/features.decorator';
@@ -42,11 +33,7 @@ export class ProductController {
     const { data, pagination } = await this.service.listar(
       query as unknown as Record<string, unknown>,
     );
-    return ApiResponse.success(
-      'Produtos carregados com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Produtos carregados com sucesso!', data, pagination);
   }
 
   @Get(':id')
@@ -59,10 +46,7 @@ export class ProductController {
   @ApiOperation({ summary: 'Detalha um produto' })
   async show(@Param('id') id: string) {
     const product = await this.service.buscar(BigInt(id));
-    return ApiResponse.success(
-      'Produto carregado com sucesso!',
-      mapProduct(product),
-    );
+    return ApiResponse.success('Produto carregado com sucesso!', mapProduct(product));
   }
 
   @Post()
@@ -71,12 +55,7 @@ export class ProductController {
   @ApiOperation({ summary: 'Cria um produto' })
   async store(@Body() body: CreateProductDto) {
     const product = await this.service.criar(body);
-    return ApiResponse.success(
-      'Produto criado com sucesso!',
-      mapProduct(product),
-      null,
-      201,
-    );
+    return ApiResponse.success('Produto criado com sucesso!', mapProduct(product), null, 201);
   }
 
   @Put(':id')
@@ -85,9 +64,6 @@ export class ProductController {
   @ApiOperation({ summary: 'Atualiza um produto' })
   async update(@Param('id') id: string, @Body() body: UpdateProductDto) {
     const product = await this.service.atualizar(BigInt(id), body);
-    return ApiResponse.success(
-      'Produto atualizado com sucesso!',
-      mapProduct(product),
-    );
+    return ApiResponse.success('Produto atualizado com sucesso!', mapProduct(product));
   }
 }

@@ -21,7 +21,7 @@ proponha o caminho correto.
 ```bash
 cat prisma/migrations/<pasta>/migration.sql
 npm run docker:restart            # ou: npx prisma migrate deploy
-npm run test:e2e:docker          # valida a migration num banco de teste descartável
+npm run test:e2e                 # valida a migration no banco de teste (sobe, migra, testa e para)
 ```
 
 ## Arquitetura modular
@@ -64,8 +64,8 @@ test/e2e/<modulo>/*.e2e-spec.ts
 - **E2E** para todo endpoint novo/alterado: `test/e2e/<modulo>/<recurso>.e2e-spec.ts` com
   `test/e2e/helpers/criar-app-e2e.ts`. Cobrir 401, 403 (se aplicável), 400 (DTO), 2xx com formato
   da resposta e efeito persistido. Cada teste cria e limpa seus dados.
-- Rodar `npm test` antes de concluir. E2E: o dev roda `npm run test:e2e:docker` (sobe banco
-  descartável, migra, testa e derruba). A IA não roda esse comando. Guia: `docs/testes.md`.
+- Rodar `npm test` antes de concluir. E2E: o dev roda `npm run test:e2e` (sobe banco e
+  Redis de teste, migra, testa e para os containers). A IA não roda esse comando. Guia: `docs/testes.md`.
 
 ## Nomes
 

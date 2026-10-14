@@ -51,21 +51,9 @@ export class LiberacaoRemessaMensagemHelper {
 
     switch (tipo) {
       case 'correios':
-        return this.mensagemCorreios(
-          nomeCliente,
-          remessa,
-          enderecoFormatado,
-          responsavel,
-          setor,
-        );
+        return this.mensagemCorreios(nomeCliente, remessa, enderecoFormatado, responsavel, setor);
       case 'motoboy_letscom':
-        return this.mensagemMotoboy(
-          nomeCliente,
-          remessa,
-          enderecoFormatado,
-          responsavel,
-          setor,
-        );
+        return this.mensagemMotoboy(nomeCliente, remessa, enderecoFormatado, responsavel, setor);
       case 'outros':
       case 'transportadora':
         return this.mensagemOutros(nomeCliente, remessa);

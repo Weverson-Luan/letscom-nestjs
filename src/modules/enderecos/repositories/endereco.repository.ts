@@ -38,9 +38,7 @@ export class EnderecoRepository {
   }) {
     const sortField = SORT_MAP[params.sortBy ?? 'created_at'] ?? 'createdAt';
     const orderBy = { [sortField]: params.order ?? 'desc' };
-    const where = params.tipoEndereco
-      ? { tipoEndereco: params.tipoEndereco }
-      : undefined;
+    const where = params.tipoEndereco ? { tipoEndereco: params.tipoEndereco } : undefined;
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.endereco.findMany({

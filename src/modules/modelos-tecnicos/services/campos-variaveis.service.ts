@@ -1,8 +1,4 @@
-import {
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { resolvePagination } from 'src/shared/database/pagination';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
@@ -25,8 +21,7 @@ export class CamposVariaveisService {
 
   async listar(query: Record<string, unknown>) {
     const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
-    const order =
-      String(query.order ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
+    const order = String(query.order ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
 
     const { data, total } = await this.repository.paginate({
       search: query.search as string | undefined,

@@ -1,10 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Res } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Role } from 'src/shared/constants/roles';
 import { Feature } from 'src/shared/auth/features';
@@ -50,9 +45,7 @@ export class RemessaResponsabilidadeController {
     const errors: Record<string, string[]> = {};
     if (!body.cliente_id || !/^\d+$/.test(String(body.cliente_id))) {
       errors.cliente_id = ['O campo cliente_id é obrigatório!'];
-    } else if (
-      !(await this.prisma.user.findUnique({ where: { id: BigInt(body.cliente_id) } }))
-    ) {
+    } else if (!(await this.prisma.user.findUnique({ where: { id: BigInt(body.cliente_id) } }))) {
       errors.cliente_id = ['O cliente informado não foi encontrado!'];
     }
     if (!body.nome) errors.nome = ['O campo nome é obrigatório!'];

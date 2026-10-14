@@ -5,10 +5,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { buildPagination } from 'src/shared/utils/api-response';
 import { mapEndereco } from '../../enderecos/mappers/endereco.mapper';
 import { EnderecoRepository } from '../../enderecos/repositories/endereco.repository';
-import {
-  CreateEnderecoEntregaDto,
-  UpdateEnderecoEntregaDto,
-} from '../dto/endereco-entrega.dto';
+import { CreateEnderecoEntregaDto, UpdateEnderecoEntregaDto } from '../dto/endereco-entrega.dto';
 
 /** Endereços de entrega = registros em `enderecos` com tipo `entrega`. */
 @Injectable()
@@ -75,9 +72,7 @@ export class EnderecoEntregaService {
       ...(dto.cidade !== undefined ? { cidade: dto.cidade } : {}),
       ...(dto.estado !== undefined ? { estado: dto.estado } : {}),
       ...(dto.cep !== undefined ? { cep: dto.cep } : {}),
-      ...(dto.nome_responsavel !== undefined
-        ? { nomeResponsavel: dto.nome_responsavel }
-        : {}),
+      ...(dto.nome_responsavel !== undefined ? { nomeResponsavel: dto.nome_responsavel } : {}),
       ...(dto.email !== undefined ? { email: dto.email } : {}),
       ...(dto.setor !== undefined ? { setor: dto.setor } : {}),
       ...(dto.telefone !== undefined ? { telefone: dto.telefone } : {}),

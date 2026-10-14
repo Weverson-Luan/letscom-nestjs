@@ -16,8 +16,7 @@ export class TecnologiaService {
 
   async listar(query: Record<string, unknown>) {
     const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
-    const order =
-      String(query.order ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
+    const order = String(query.order ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
 
     const { data, total } = await this.repository.paginate({
       search: query.search as string | undefined,

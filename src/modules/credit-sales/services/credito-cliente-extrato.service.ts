@@ -35,15 +35,8 @@ export class CreditoClienteExtratoService {
    * Registra linha no extrato após o movimento já estar em vendas_creditos.
    * Calcula snapshot do saldo confirmado pós-movimento.
    */
-  async registrarLinha(
-    attrs: RegistrarExtratoInput,
-    tx?: Prisma.TransactionClient,
-  ) {
-    const saldo = await this.creditSaleRepo.saldoConfirmado(
-      attrs.clienteId,
-      attrs.produtoId,
-      tx,
-    );
+  async registrarLinha(attrs: RegistrarExtratoInput, tx?: Prisma.TransactionClient) {
+    const saldo = await this.creditSaleRepo.saldoConfirmado(attrs.clienteId, attrs.produtoId, tx);
 
     const data: Prisma.ExtratoMovimentacaoCreditoClienteCreateInput = {
       cliente: { connect: { id: attrs.clienteId } },
@@ -54,12 +47,8 @@ export class CreditoClienteExtratoService {
       saldoCreditosProdutoAposMovimento: BigInt(Math.max(0, saldo)),
       observacaoNegocio: attrs.observacaoNegocio ?? null,
       detalhesOperacao: attrs.detalhesOperacao ?? undefined,
-      ...(attrs.vendaCreditoId
-        ? { vendaCredito: { connect: { id: attrs.vendaCreditoId } } }
-        : {}),
-      ...(attrs.remessaId
-        ? { remessa: { connect: { id: attrs.remessaId } } }
-        : {}),
+      ...(attrs.vendaCreditoId ? { vendaCredito: { connect: { id: attrs.vendaCreditoId } } } : {}),
+      ...(attrs.remessaId ? { remessa: { connect: { id: attrs.remessaId } } } : {}),
       ...(attrs.userIdResponsavel
         ? { responsavel: { connect: { id: attrs.userIdResponsavel } } }
         : {}),
@@ -71,13 +60,9 @@ export class CreditoClienteExtratoService {
     return this.extratoRepo.create(data);
   }
 
-  async listarPorCliente(
-    clienteId: bigint,
-    query: Record<string, unknown>,
-  ) {
+  async listarPorCliente(clienteId: bigint, query: Record<string, unknown>) {
     const { page, perPage, skip, take } = resolvePagination(query, 15, 100);
-    const order =
-      String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+    const order = String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
 
     const { data, total } = await this.extratoRepo.paginatePorCliente({
       clienteId,
@@ -98,19 +83,13 @@ export class CreditoClienteExtratoService {
     };
   }
 
-  async listarCobranca(
-    clienteId: bigint,
-    query: Record<string, unknown>,
-  ) {
+  async listarCobranca(clienteId: bigint, query: Record<string, unknown>) {
     const { page, perPage, skip, take } = resolvePagination(query, 15, 100);
-    const order =
-      String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+    const order = String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
 
     const filtros = {
       produtoId: query.produto_id ? BigInt(String(query.produto_id)) : undefined,
-      numeroRemessa: query.numero_remessa
-        ? String(query.numero_remessa)
-        : undefined,
+      numeroRemessa: query.numero_remessa ? String(query.numero_remessa) : undefined,
       statusRemessa: query.status_remessa as string | undefined,
       dataInicio: query.data_inicio as string | undefined,
       dataFim: query.data_fim as string | undefined,

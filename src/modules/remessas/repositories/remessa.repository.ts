@@ -70,17 +70,13 @@ export class RemessaRepository {
     const search = this.buildSearch(query.search as string);
     if (search) and.push(search);
 
-    return this.run(
-      where,
-      query,
-      { [(query.sort_by as string) ?? 'createdAt']: (query.order as 'asc' | 'desc') ?? 'desc' },
-    );
+    return this.run(where, query, {
+      [(query.sort_by as string) ?? 'createdAt']: (query.order as 'asc' | 'desc') ?? 'desc',
+    });
   }
 
   async getDisponiveisParaProducao(query: Record<string, unknown>) {
-    const and: Prisma.RemessaWhereInput[] = [
-      { status: 'envio_de_dados', userIdExecutor: null },
-    ];
+    const and: Prisma.RemessaWhereInput[] = [{ status: 'envio_de_dados', userIdExecutor: null }];
     const search = this.buildSearch(query.search as string);
     if (search) and.push(search);
     return this.run({ AND: and }, query, { createdAt: 'asc' });
@@ -128,10 +124,15 @@ export class RemessaRepository {
     ];
     const search = this.buildSearch(query.search as string);
     if (search) and.push(search);
-    return this.run({ AND: and }, query, { createdAt: 'desc' }, {
-      ...LIST_INCLUDE,
-      fotos: true,
-    });
+    return this.run(
+      { AND: and },
+      query,
+      { createdAt: 'desc' },
+      {
+        ...LIST_INCLUDE,
+        fotos: true,
+      },
+    );
   }
 
   async getFinalizadasPorCliente(clienteId: bigint, query: Record<string, unknown>) {

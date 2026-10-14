@@ -12,15 +12,11 @@ export enum TipoOperacaoCreditoCliente {
   AJUSTE_ADMINISTRATIVO = 'ajuste_administrativo',
 }
 
-export const TIPOS_OPERACAO_CREDITO = Object.values(
-  TipoOperacaoCreditoCliente,
-) as string[];
+export const TIPOS_OPERACAO_CREDITO = Object.values(TipoOperacaoCreditoCliente) as string[];
 
 export enum DirecaoMovimentoCreditoCliente {
   ENTRADA = 'entrada',
   SAIDA = 'saida',
 }
 
-export const DIRECOES_MOVIMENTO_CREDITO = Object.values(
-  DirecaoMovimentoCreditoCliente,
-) as string[];
+export const DIRECOES_MOVIMENTO_CREDITO = Object.values(DirecaoMovimentoCreditoCliente) as string[];

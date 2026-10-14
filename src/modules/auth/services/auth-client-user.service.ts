@@ -2,7 +2,6 @@
  * IMPORTS
  */
 
-
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -72,7 +71,6 @@ export class AuthClientUserService {
         email: user.email,
       });
 
-
       const refreshToken = await this.refreshTokenService.issue({
         kind: 'user',
         id: user.id,
@@ -110,7 +108,6 @@ export class AuthClientUserService {
     // credenciais não conferem com users: tenta users_cliente (lança 401 se também falhar)
     return this.authSubordinateUserService.execute(dto);
   }
-
 
   /** lancar o error 422 - UNPROCESSABLE ENTITY */
   private respostaInstabilidade() {

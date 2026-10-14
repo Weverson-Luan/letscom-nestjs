@@ -8,12 +8,7 @@ import { ProdutoUsuarioService } from './services/produto-usuario.service';
 
 @Module({
   controllers: [ProductController, ProdutoUsuarioController],
-  providers: [
-    ProductService,
-    ProductRepository,
-    ProdutoUsuarioService,
-    ProdutoUsuarioRepository,
-  ],
+  providers: [ProductService, ProductRepository, ProdutoUsuarioService, ProdutoUsuarioRepository],
   exports: [ProductService, ProdutoUsuarioService],
 })
 export class ProductsModule {}

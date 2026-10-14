@@ -1,9 +1,4 @@
-import {
-  RemessaLiberadaBalcao,
-  RemessaLiberadaCliente,
-  TipoEntrega,
-  User,
-} from '@prisma/client';
+import { RemessaLiberadaBalcao, RemessaLiberadaCliente, TipoEntrega, User } from '@prisma/client';
 
 type BalcaoWithRels = RemessaLiberadaBalcao & {
   remessa?: unknown;

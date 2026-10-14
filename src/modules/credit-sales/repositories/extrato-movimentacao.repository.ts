@@ -95,9 +95,7 @@ export class ExtratoMovimentacaoRepository {
         ...(filtros.numeroRemessa
           ? { numeroRemessa: { equals: BigInt(filtros.numeroRemessa) } }
           : {}),
-        ...(filtros.statusRemessa
-          ? { situacao: filtros.statusRemessa as any }
-          : {}),
+        ...(filtros.statusRemessa ? { situacao: filtros.statusRemessa as any } : {}),
       },
       NOT: {
         remessa: {

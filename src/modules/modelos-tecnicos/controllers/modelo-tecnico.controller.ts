@@ -11,13 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import {
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -43,10 +37,7 @@ const ROLES_LISTA = [
   Role.SUBORDINADO,
 ] as const;
 
-const ROLES_LISTA_COM_EXPEDICAO = [
-  ...ROLES_LISTA,
-  Role.EXPEDICAO,
-] as const;
+const ROLES_LISTA_COM_EXPEDICAO = [...ROLES_LISTA, Role.EXPEDICAO] as const;
 
 const ROLES_ESCRITA = [Role.ADMIN, Role.PRODUCAO, Role.CLIENTE] as const;
 
@@ -55,12 +46,7 @@ const ROLES_ESCRITA = [Role.ADMIN, Role.PRODUCAO, Role.CLIENTE] as const;
  * reativá-los); o dashboard do cliente continua listando só os ativos.
  */
 const ROLES_GERENCIAM_INATIVOS: string[] = [Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR];
-const ROLES_UPDATE = [
-  Role.ADMIN,
-  Role.PRODUCAO,
-  Role.CONSULTOR,
-  Role.CLIENTE,
-] as const;
+const ROLES_UPDATE = [Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR, Role.CLIENTE] as const;
 
 @ApiTags('modelo-tecnico')
 @ApiBearerAuth()
@@ -79,11 +65,7 @@ export class ModeloTecnicoController {
     const { data, pagination } = await this.service.listar(
       query as unknown as Record<string, unknown>,
     );
-    return ApiResponse.success(
-      'Modelos carregados com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Modelos carregados com sucesso!', data, pagination);
   }
 
   @Get('clientes/:id')
@@ -105,11 +87,7 @@ export class ModeloTecnicoController {
       BigInt(id),
       incluirInativos,
     );
-    return ApiResponse.success(
-      'Modelos carregados com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Modelos carregados com sucesso!', data, pagination);
   }
 
   @Get('cliente/unico/:id')
@@ -160,11 +138,7 @@ export class ModeloTecnicoController {
     @UploadedFiles()
     files: { foto_frente?: MulterFile[]; foto_verso?: MulterFile[] },
   ) {
-    const modelo = await this.service.criar(
-      body,
-      files?.foto_frente?.[0],
-      files?.foto_verso?.[0],
-    );
+    const modelo = await this.service.criar(body, files?.foto_frente?.[0], files?.foto_verso?.[0]);
     return ApiResponse.success(
       'Modelo criado com sucesso!',
       await this.mapper.mapOne(modelo),
@@ -179,10 +153,7 @@ export class ModeloTecnicoController {
   @ApiOperation({ summary: 'Exibe um modelo técnico' })
   async show(@Param('id') id: string) {
     const modelo = await this.service.buscar(BigInt(id));
-    return ApiResponse.success(
-      'Modelo encontrado com sucesso.',
-      await this.mapper.mapOne(modelo),
-    );
+    return ApiResponse.success('Modelo encontrado com sucesso.', await this.mapper.mapOne(modelo));
   }
 
   @Post(':id')
@@ -208,10 +179,7 @@ export class ModeloTecnicoController {
       files?.foto_frente?.[0],
       files?.foto_verso?.[0],
     );
-    return ApiResponse.success(
-      'Modelo atualizado com sucesso.',
-      await this.mapper.mapOne(modelo),
-    );
+    return ApiResponse.success('Modelo atualizado com sucesso.', await this.mapper.mapOne(modelo));
   }
 
   @Patch(':id/inativar')

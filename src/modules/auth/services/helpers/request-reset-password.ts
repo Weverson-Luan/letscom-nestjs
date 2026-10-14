@@ -2,25 +2,26 @@
  * IMPORTS
  */
 
-import { ConfigService } from "@nestjs/config";
-import { BusinessException } from "src/shared/exceptions/business.exception";
-import { handleRandomToken } from "src/shared/utils/random-token";
-import { PasswordResetRepository } from "../../repositories/password-reset.repository";
-import { PrismaService } from "src/shared/prisma/prisma.service";
-import { MailService } from "src/shared/mail/mail.service";
-
-
+import { ConfigService } from '@nestjs/config';
+import { BusinessException } from 'src/shared/exceptions/business.exception';
+import { handleRandomToken } from 'src/shared/utils/random-token';
+import { PasswordResetRepository } from '../../repositories/password-reset.repository';
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { MailService } from 'src/shared/mail/mail.service';
 
 async function requestResetPasswordMappers(
-  repository: PasswordResetRepository, prisma: PrismaService, config: ConfigService, mail: MailService, email: string): Promise<boolean> {
+  repository: PasswordResetRepository,
+  prisma: PrismaService,
+  config: ConfigService,
+  mail: MailService,
+  email: string,
+): Promise<boolean> {
   let nome: string | null = null;
 
   const user = await prisma.user.findUnique({ where: { email } });
 
-
   if (user) {
     nome = user.nome;
-
   } else {
     const userCliente = await prisma.userCliente.findUnique({ where: { email } });
 
@@ -30,7 +31,6 @@ async function requestResetPasswordMappers(
 
     nome = userCliente.nome;
   }
-
 
   const token = handleRandomToken(60);
   await repository.createToken(email, token);
@@ -60,8 +60,7 @@ async function requestResetPasswordMappers(
   return true;
 }
 
-
 /**
  * EXPORTS
  */
-export {requestResetPasswordMappers}
+export { requestResetPasswordMappers };

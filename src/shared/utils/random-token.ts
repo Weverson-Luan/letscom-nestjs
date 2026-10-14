@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomBytes } from 'crypto';
 
 /**
  * IMPORTS
@@ -16,4 +16,4 @@ function handleRandomToken(length = 60): string {
 /**
  * EXPORTS
  */
-export { handleRandomToken}
+export { handleRandomToken };

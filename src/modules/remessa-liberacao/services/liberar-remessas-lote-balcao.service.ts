@@ -121,9 +121,7 @@ export class LiberarRemessasLoteBalcaoService {
     const tipos = await this.prisma.tipoEntregaUser.findMany({
       where: { clienteId: { in: clienteIds } },
     });
-    const tiposPorCliente = new Map(
-      tipos.map((t) => [t.clienteId.toString(), t.tipoEntregaId]),
-    );
+    const tiposPorCliente = new Map(tipos.map((t) => [t.clienteId.toString(), t.tipoEntregaId]));
 
     const validas: LoteItem[] = [];
     const invalidas: LoteItem[] = [];

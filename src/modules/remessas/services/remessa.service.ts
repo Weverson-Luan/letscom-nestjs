@@ -81,20 +81,16 @@ export class RemessaService {
 
     let campoChave: string | null = data.campo_chave ?? null;
 
-
     if ([null, '', 'undefined', 'null'].includes(campoChave as any)) campoChave = null;
 
     if (!data.produto_id) {
-      throw new BusinessException(
-        'Produto de crédito é obrigatório para solicitar esta remessa.',
-      );
+      throw new BusinessException('Produto de crédito é obrigatório para solicitar esta remessa.');
     }
 
     const clienteId = BigInt(data.cliente_id);
     const user = await tx.user.findUnique({ where: { id: clienteId } });
 
     if (!user) throw new BusinessException('Cliente não encontrado.');
-
 
     const qtdSolicitacao = parseInt(String(data.total_solicitacoes), 10);
     const produtoId = BigInt(data.produto_id);
@@ -115,7 +111,8 @@ export class RemessaService {
       where: {
         clienteId,
         produtoId,
-        status: 'confirmado', tipoTransacao: 'entrada',
+        status: 'confirmado',
+        tipoTransacao: 'entrada',
       },
       orderBy: { dataVenda: 'asc' },
     });
@@ -152,7 +149,11 @@ export class RemessaService {
     let qtdZip: number | null = null;
 
     if (csvFile) {
-      dadosCsv = await this.extrairRegistrosPlanilha(csvFile, modelo, String(campoChave).toLowerCase());
+      dadosCsv = await this.extrairRegistrosPlanilha(
+        csvFile,
+        modelo,
+        String(campoChave).toLowerCase(),
+      );
     }
     if (temCargaFoto && zipFile) {
       qtdZip = await this.preScanZip(zipFile, dadosCsv);
@@ -227,7 +228,8 @@ export class RemessaService {
       // cancelamento: apaga arquivos e devolve créditos
       if (data.situacao === 'cancelada' && data.status === 'cancelada') {
         for (const planilha of remessa.planilhas) {
-          if (await this.storage.exists(planilha.filePath)) await this.storage.delete(planilha.filePath);
+          if (await this.storage.exists(planilha.filePath))
+            await this.storage.delete(planilha.filePath);
           await tx.remessaPlanilha.delete({ where: { id: planilha.id } });
         }
         for (const foto of remessa.fotos) {
@@ -345,7 +347,8 @@ export class RemessaService {
       divergencias.push(`total_solicitacoes (${total}) difere da planilha (${qtdCsv})`);
     }
     if (qtdZip !== null) {
-      if (total !== qtdZip) divergencias.push(`total_solicitacoes (${total}) difere do ZIP (${qtdZip})`);
+      if (total !== qtdZip)
+        divergencias.push(`total_solicitacoes (${total}) difere do ZIP (${qtdZip})`);
       if (qtdCsv !== qtdZip) divergencias.push(`planilha (${qtdCsv}) difere do ZIP (${qtdZip})`);
     }
     if (divergencias.length === 0) return;
@@ -397,7 +400,9 @@ export class RemessaService {
     const campos = [...(modelo.camposVariaveis ?? [])].sort((a, b) => a.ordem - b.ordem);
     for (const campo of campos) {
       if (Number(campo.obrigatorio) !== 1 && campo.obrigatorio !== true) continue;
-      const nome = String(campo.nome ?? '').trim().toLowerCase();
+      const nome = String(campo.nome ?? '')
+        .trim()
+        .toLowerCase();
       if (nome !== '') nomes.push(nome);
     }
     return [...new Set(nomes)];

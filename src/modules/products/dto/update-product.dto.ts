@@ -1,15 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { normalizarBooleano } from 'src/shared/utils/boolean-filter';
-import {
-  IsBoolean,
-  IsInt,
-  IsNumber,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 /** Espelha ProductRequest (PUT) — campos opcionais (required removido). */
 export class UpdateProductDto {

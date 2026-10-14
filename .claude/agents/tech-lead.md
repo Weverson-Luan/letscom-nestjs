@@ -70,10 +70,8 @@ Todo comportamento novo ou alterado precisa de teste. Sem teste = BLOQUEADO.
 - Cada teste cria e limpa os próprios dados.
 
 Verifique que os testes existem **e passam**: rode `npm test -- <arquivos alterados>`.
-E2E: você só pode rodar `npm run test:e2e` se o ambiente de teste já estiver no ar
-(`docker ps` mostra `letscom-bd-test`). Nunca rode `npm run test:e2e:docker` / `test:e2e:up`
-(aplicam migration). Se o ambiente não estiver no ar, não bloqueie por isso — devolva ao dev:
-`npm run test:e2e:docker` (passo a passo em `docs/testes.md`).
+E2E: nunca rode `npm run test:e2e` (sobe containers e aplica migration). Não bloqueie por isso —
+devolva ao dev: `npm run test:e2e` (passo a passo em `docs/testes.md`).
 
 ## 3. Nomes (bloqueante)
 
@@ -118,7 +116,7 @@ Quando o diff mexe em `prisma/schema.prisma`:
 ```bash
 cat prisma/migrations/<pasta>/migration.sql
 npm run docker:restart            # ou: npx prisma migrate deploy
-npm run test:e2e:docker          # valida a migration num banco de teste descartável
+npm run test:e2e                 # valida a migration no banco de teste (sobe, migra, testa e para)
 ```
 
 ## Formato da resposta

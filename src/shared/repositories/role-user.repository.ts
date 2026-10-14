@@ -85,12 +85,7 @@ export class RoleUserRepository {
    * @param roleId - O ID do papel
    * @param ativo - Se o papel está ativo
    */
-  attachToUser(
-    db: DbClient,
-    userId: bigint,
-    roleId: bigint,
-    ativo = true,
-  ) {
+  attachToUser(db: DbClient, userId: bigint, roleId: bigint, ativo = true) {
     return db.$executeRaw`
       INSERT INTO role_user (user_id, role_id, ativo)
       VALUES (${userId}, ${roleId}, ${ativo})
@@ -104,12 +99,7 @@ export class RoleUserRepository {
    * @param roleId - O ID do papel
    * @param ativo - Se o papel está ativo
    */
-  attachToUserCliente(
-    db: DbClient,
-    clientSubId: bigint,
-    roleId: bigint,
-    ativo = true,
-  ) {
+  attachToUserCliente(db: DbClient, clientSubId: bigint, roleId: bigint, ativo = true) {
     return db.$executeRaw`
       INSERT INTO role_user (client_sub_id, role_id, ativo)
       VALUES (${clientSubId}, ${roleId}, ${ativo})

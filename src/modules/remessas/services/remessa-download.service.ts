@@ -85,7 +85,10 @@ export class RemessaDownloadService {
       where: { remessaId: remessa.id },
     });
     if (!planilha || !planilha.filePath) {
-      throw new BusinessException('Nenhum arquivo de planilha vinculado a esta remessa!', 200 as any);
+      throw new BusinessException(
+        'Nenhum arquivo de planilha vinculado a esta remessa!',
+        200 as any,
+      );
     }
 
     const content = await this.storage.download(planilha.filePath);
@@ -115,7 +118,7 @@ export class RemessaDownloadService {
     let buffer: Buffer;
     let contentType: string;
     if (ext === 'csv' || ext === 'txt') {
-      buffer = Buffer.from(await workbook.csv.writeBuffer() as ArrayBuffer);
+      buffer = Buffer.from((await workbook.csv.writeBuffer()) as ArrayBuffer);
       contentType = ext === 'csv' ? 'text/csv' : 'text/plain';
     } else {
       buffer = Buffer.from(await workbook.xlsx.writeBuffer());
@@ -143,7 +146,9 @@ export class RemessaDownloadService {
     let colRemessa: number | null = null;
 
     headerRow.eachCell({ includeEmpty: true }, (cell, col) => {
-      const header = String(cell.value ?? '').trim().toLowerCase();
+      const header = String(cell.value ?? '')
+        .trim()
+        .toLowerCase();
       if (header === campoChaveLower) colCampoChave = col;
       if (header === 'remessa') colRemessa = col;
     });

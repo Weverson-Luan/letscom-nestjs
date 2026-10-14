@@ -18,10 +18,7 @@ export class VideoTutorialService {
 
     const exists = await this.storage.exists(path);
     if (!exists) {
-      throw new BusinessException(
-        'Vídeo tutorial não encontrado.',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new BusinessException('Vídeo tutorial não encontrado.', HttpStatus.NOT_FOUND);
     }
 
     const url = await this.storage.getSignedUrl(path);

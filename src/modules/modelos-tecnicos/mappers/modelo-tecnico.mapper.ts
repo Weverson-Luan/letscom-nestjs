@@ -29,9 +29,7 @@ export class ModeloTecnicoMapper {
   }
 
   async mapOne(modelo: ModeloWithRels) {
-    const campos = [...(modelo.camposVariaveis ?? [])].sort(
-      (a, b) => a.ordem - b.ordem,
-    );
+    const campos = [...(modelo.camposVariaveis ?? [])].sort((a, b) => a.ordem - b.ordem);
     const planilhaCampos = campos.map((c) => c.nome);
 
     const [remessasEmAndamento, totalProduzidas] = await Promise.all([

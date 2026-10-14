@@ -2,7 +2,6 @@
  * IMPORTS
  */
 
-
 import { Injectable } from '@nestjs/common';
 
 // services
@@ -14,10 +13,9 @@ import { PasswordResetRepository } from '../repositories/password-reset.reposito
 // shared / exceptions
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 
-// mappers 
+// mappers
 import { resetPassword } from './helpers/reset-password';
 import { validateResetPasswordBody } from './helpers/validade.';
-
 
 /**
  * Espelha PasswordResetController::resetPassword (validação: token,
@@ -45,7 +43,7 @@ export class AuthResetPasswordService {
     }
 
     try {
-      await resetPassword(this.repository, this.prisma,body.token, body.nova_senha )
+      await resetPassword(this.repository, this.prisma, body.token, body.nova_senha);
 
       return { status: 200, body: { code: 200, message: 'Senha alterada com sucesso!' } };
     } catch (error) {
@@ -69,6 +67,4 @@ export class AuthResetPasswordService {
       };
     }
   }
-
-
 }

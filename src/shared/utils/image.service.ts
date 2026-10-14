@@ -11,7 +11,7 @@ import sharp from 'sharp';
  * para JPEG com qualidade 90. Sem redimensionamento dimensional.
  */
 @Injectable()
- class ImageService {
+class ImageService {
   async toJpeg(input: Buffer, quality = 90): Promise<Buffer> {
     return sharp(input).jpeg({ quality }).toBuffer();
   }

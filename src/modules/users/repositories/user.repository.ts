@@ -58,7 +58,8 @@ export class UserRepository {
     skip: number;
     take: number;
   }) {
-    const orderByField = params.sortBy === 'created_at' ? 'createdAt' : (params.sortBy ?? 'createdAt');
+    const orderByField =
+      params.sortBy === 'created_at' ? 'createdAt' : (params.sortBy ?? 'createdAt');
     const order = params.order ?? 'desc';
     const search = params.search ? `%${params.search}%` : null;
 

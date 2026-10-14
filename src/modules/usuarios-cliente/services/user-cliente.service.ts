@@ -46,22 +46,13 @@ export class UserClienteService {
   /** Cria o usuário subordinado + atribui role (transacional). */
   async create(data: Record<string, any>) {
     if (!data.cliente_id) {
-      throw new BusinessException(
-        'O cliente_id é obrigatório.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+      throw new BusinessException('O cliente_id é obrigatório.', HttpStatus.UNPROCESSABLE_ENTITY);
     }
     if (!data.email) {
-      throw new BusinessException(
-        'O e-mail é obrigatório.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+      throw new BusinessException('O e-mail é obrigatório.', HttpStatus.UNPROCESSABLE_ENTITY);
     }
     if (!data.senha) {
-      throw new BusinessException(
-        'A senha é obrigatória.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+      throw new BusinessException('A senha é obrigatória.', HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     const senha = await this.hash.make(String(data.senha));
@@ -116,10 +107,7 @@ export class UserClienteService {
   async update(id: bigint, data: Record<string, any>) {
     const user = await this.repository.findById(id);
     if (!user) {
-      throw new BusinessException(
-        'Usuário não encontrado.',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new BusinessException('Usuário não encontrado.', HttpStatus.NOT_FOUND);
     }
 
     const updateData: Prisma.UserClienteUpdateInput = {};
@@ -135,10 +123,7 @@ export class UserClienteService {
   async delete(id: bigint) {
     const user = await this.repository.findById(id);
     if (!user) {
-      throw new BusinessException(
-        'Usuário não encontrado.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+      throw new BusinessException('Usuário não encontrado.', HttpStatus.UNPROCESSABLE_ENTITY);
     }
     const vinculadas = await this.repository.countRemessasSubordinado(id);
     if (vinculadas > 0) {

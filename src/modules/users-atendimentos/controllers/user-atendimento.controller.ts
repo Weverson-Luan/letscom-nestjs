@@ -1,18 +1,6 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import {
-  CreateUserAtendimentoDto,
-  UpdateUserAtendimentoDto,
-} from '../dto/user-atendimento.dto';
+import { CreateUserAtendimentoDto, UpdateUserAtendimentoDto } from '../dto/user-atendimento.dto';
 import { mapUserAtendimento } from '../mappers/user-atendimento.mapper';
 import { UserAtendimentoService } from '../services/user-atendimento.service';
 import { Feature } from 'src/shared/auth/features';

@@ -7,7 +7,6 @@ import { CreateFullClientService } from './services/create-full-client.service';
 import { UserFeatureFlagService } from './services/user-feature-flag.service';
 import { UserService } from './services/user.service';
 
-
 @Module({
   // A ordem importa: o controller com rotas literais ('dados/feature-flags')
   // é registrado antes do UserController (que tem ':id'), evitando conflito.

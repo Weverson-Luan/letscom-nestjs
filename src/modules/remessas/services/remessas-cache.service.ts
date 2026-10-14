@@ -28,7 +28,8 @@ export class RemessasCacheService {
     const v = await this.cache.getVersion(this.andamentoVerKey(clienteId));
     return `remessas_andamento:${clienteId}:v${v}:${this.suffix(params)}`;
   }
-  invalidarAndamento = (clienteId: number) => this.cache.bumpVersion(this.andamentoVerKey(clienteId));
+  invalidarAndamento = (clienteId: number) =>
+    this.cache.bumpVersion(this.andamentoVerKey(clienteId));
 
   // ---- historico (por cliente) ----
   private historicoVerKey = (clienteId: number) => `remessas_historico_ver:${clienteId}`;
@@ -36,7 +37,8 @@ export class RemessasCacheService {
     const v = await this.cache.getVersion(this.historicoVerKey(clienteId));
     return `remessas_historico:${clienteId}:v${v}:${this.suffix(params)}`;
   }
-  invalidarHistorico = (clienteId: number) => this.cache.bumpVersion(this.historicoVerKey(clienteId));
+  invalidarHistorico = (clienteId: number) =>
+    this.cache.bumpVersion(this.historicoVerKey(clienteId));
 
   // ---- minhas tarefas (por usuário, versão global) ----
   private minhasTarefasVerKey = 'remessas_minhas_tarefas_ver';

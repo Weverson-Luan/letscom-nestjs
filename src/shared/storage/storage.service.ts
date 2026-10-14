@@ -137,11 +137,9 @@ export class StorageService implements OnModuleInit {
   async getSignedUrl(path: string): Promise<string> {
     if (this.usesR2()) {
       const expiresIn = this.config.get<number>('storage.signedUrlExpiration') ?? 900;
-      return getSignedUrl(
-        this.s3!,
-        new GetObjectCommand({ Bucket: this.bucket, Key: path }),
-        { expiresIn },
-      );
+      return getSignedUrl(this.s3!, new GetObjectCommand({ Bucket: this.bucket, Key: path }), {
+        expiresIn,
+      });
     }
     const appUrl = this.config.get<string>('app.url');
     return `${appUrl}/storage/${path}`;

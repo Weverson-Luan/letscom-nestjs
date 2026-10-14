@@ -28,8 +28,7 @@ export class CreditSaleService {
 
   async listar(query: Record<string, unknown>) {
     const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
-    const order =
-      String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+    const order = String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
 
     const { data, total } = await this.repository.paginate({
       search: query.search as string | undefined,
@@ -47,8 +46,7 @@ export class CreditSaleService {
 
   async listarPorCliente(clienteId: bigint, query: Record<string, unknown>) {
     const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
-    const order =
-      String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+    const order = String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
 
     const { data, total } = await this.repository.paginate({
       clienteId,
@@ -108,30 +106,20 @@ export class CreditSaleService {
       where: { id: BigInt(dto.cliente_id), deletedAt: null },
     });
     if (!cliente) {
-      throw new BusinessException(
-        'Cliente não encontrado.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+      throw new BusinessException('Cliente não encontrado.', HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     const produto = await this.prisma.product.findFirst({
       where: { id: BigInt(dto.produto_id), deletedAt: null },
     });
     if (!produto) {
-      throw new BusinessException(
-        'Produto não encontrado.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+      throw new BusinessException('Produto não encontrado.', HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     const role = (user.roles?.[0] ?? '').toLowerCase();
-    const status = ROLES_AUTO_CONFIRM.has(role)
-      ? 'confirmado'
-      : (dto.status ?? 'pendente');
+    const status = ROLES_AUTO_CONFIRM.has(role) ? 'confirmado' : (dto.status ?? 'pendente');
 
-    const executorId = dto.user_id_executor
-      ? BigInt(dto.user_id_executor)
-      : user.id;
+    const executorId = dto.user_id_executor ? BigInt(dto.user_id_executor) : user.id;
 
     return this.prisma.$transaction(async (tx) => {
       const venda = await tx.creditSale.create({
@@ -215,8 +203,7 @@ export class CreditSaleService {
         {
           clienteId: sale.clienteId,
           produtoId: sale.produtoId,
-          tipoOperacao:
-            TipoOperacaoCreditoCliente.ESTORNO_CANCELAMENTO_VENDA_CREDITOS,
+          tipoOperacao: TipoOperacaoCreditoCliente.ESTORNO_CANCELAMENTO_VENDA_CREDITOS,
           direcaoMovimento: DirecaoMovimentoCreditoCliente.SAIDA,
           quantidadeCreditos: Number(sale.quantidadeCreditos),
           vendaCreditoId: sale.id,

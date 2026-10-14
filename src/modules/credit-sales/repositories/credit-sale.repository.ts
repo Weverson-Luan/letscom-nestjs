@@ -42,12 +42,7 @@ export class CreditSaleRepository {
     }
 
     if (params.search) {
-      const statusValues = [
-        'pendente',
-        'confirmado',
-        'cancelada',
-        'cancelado',
-      ] as const;
+      const statusValues = ['pendente', 'confirmado', 'cancelada', 'cancelado'] as const;
       const searchLower = params.search.toLowerCase();
       const statusMatch = statusValues.find((s) => s.includes(searchLower));
       where.OR = [
@@ -119,9 +114,7 @@ export class CreditSaleRepository {
   }
 
   async saldoPorClienteList(clienteId: bigint) {
-    return this.prisma.$queryRaw<
-      { produto_id: bigint; tipo: string; total: number }[]
-    >`
+    return this.prisma.$queryRaw<{ produto_id: bigint; tipo: string; total: number }[]>`
       SELECT
         p.id AS produto_id,
         p.nome AS tipo,

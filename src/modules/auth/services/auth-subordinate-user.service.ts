@@ -44,19 +44,15 @@ export class AuthSubordinateUserService {
   ) {}
 
   async execute(dto: LoginDto) {
-
     // tenta autenticar como usuário subordinado (users_cliente)
     const clienteUser = await this.prisma.userCliente.findFirst({
       where: { email: dto.email },
       include: { clientePrincipal: true },
     });
 
-    const checkPassword = clienteUser
-      ? await this.hash.check(dto.senha, clienteUser.senha)
-      : false;
+    const checkPassword = clienteUser ? await this.hash.check(dto.senha, clienteUser.senha) : false;
 
     if (clienteUser && checkPassword) {
-      
       if (!clienteUser.ativo) {
         throw userDesactiveMappers();
       }
@@ -70,14 +66,12 @@ export class AuthSubordinateUserService {
         ? await getClientConsultantMappers(this.prisma, clientePrincipal.id)
         : null;
 
-
       const token = this.jwtTokenService.createToken({
         sub: clienteUser.id,
         tipo_login: 'subordinado',
         email: clienteUser.email,
         cliente_id: clientePrincipal?.id ?? null,
       });
-
 
       const refreshToken = await this.refreshTokenService.issue({
         kind: 'subordinado',
@@ -87,9 +81,7 @@ export class AuthSubordinateUserService {
         clienteId: clienteUser.clienteId,
       });
 
-      const role = await this.roleUserRepo.findPrimaryRoleForUserCliente(
-        clienteUser.id,
-      );
+      const role = await this.roleUserRepo.findPrimaryRoleForUserCliente(clienteUser.id);
 
       const features = await this.featureGate.listarKeysHabilitadas({
         id: clienteUser.id,
@@ -121,8 +113,7 @@ export class AuthSubordinateUserService {
       {
         code: 401,
         status: 'error',
-        error:
-          'Usuário ou senha inválidos. Verifique suas credenciais e tente novamente!',
+        error: 'Usuário ou senha inválidos. Verifique suas credenciais e tente novamente!',
       },
       HttpStatus.UNAUTHORIZED,
     );

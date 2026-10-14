@@ -1,21 +1,5 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -56,11 +40,7 @@ export class CreditSaleController {
     const { data, pagination } = await this.service.listar(
       query as unknown as Record<string, unknown>,
     );
-    return ApiResponse.success(
-      'Histórico de transações carregadas com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Histórico de transações carregadas com sucesso!', data, pagination);
   }
 
   @Get('cliente/:id')
@@ -68,10 +48,7 @@ export class CreditSaleController {
   @Roles(...ROLES_LEITURA)
   @ApiParam({ name: 'id', description: 'ID do cliente' })
   @ApiOperation({ summary: 'Lista transações de um cliente' })
-  async porCliente(
-    @Param('id') id: string,
-    @Query() query: CreditSaleListQueryDto,
-  ) {
+  async porCliente(@Param('id') id: string, @Query() query: CreditSaleListQueryDto) {
     const { data, pagination } = await this.service.listarPorCliente(
       BigInt(id),
       query as unknown as Record<string, unknown>,
@@ -94,14 +71,8 @@ export class CreditSaleController {
     description: 'Formato da resposta (ex.: list)',
   })
   @ApiOperation({ summary: 'Saldo consolidado de créditos por cliente' })
-  async saldo(
-    @Param('clienteId') clienteId: string,
-    @Query('format') format?: string,
-  ) {
-    const data = await this.service.saldoPorCliente(
-      BigInt(clienteId),
-      format ?? 'list',
-    );
+  async saldo(@Param('clienteId') clienteId: string, @Query('format') format?: string) {
+    const data = await this.service.saldoPorCliente(BigInt(clienteId), format ?? 'list');
     return ApiResponse.success('Créditos consolidados por tipo.', data);
   }
 
@@ -110,10 +81,7 @@ export class CreditSaleController {
   @Roles(...ROLES_LEITURA)
   @ApiParam({ name: 'clienteId', description: 'ID do cliente' })
   @ApiOperation({ summary: 'Extrato de movimentações de crédito do cliente' })
-  async extrato(
-    @Param('clienteId') clienteId: string,
-    @Query() query: CreditoClienteQueryDto,
-  ) {
+  async extrato(@Param('clienteId') clienteId: string, @Query() query: CreditoClienteQueryDto) {
     const { data, pagination } = await this.extratoService.listarPorCliente(
       BigInt(clienteId),
       query as unknown as Record<string, unknown>,
@@ -130,21 +98,14 @@ export class CreditSaleController {
   @Roles(Role.ADMIN, Role.CONSULTOR)
   @ApiParam({ name: 'clienteId', description: 'ID do cliente' })
   @ApiOperation({ summary: 'Cobrança faturável de créditos do cliente' })
-  async cobranca(
-    @Param('clienteId') clienteId: string,
-    @Query() query: CreditoClienteQueryDto,
-  ) {
+  async cobranca(@Param('clienteId') clienteId: string, @Query() query: CreditoClienteQueryDto) {
     const { data, pagination, totais, totais_por_produto } =
       await this.extratoService.listarCobranca(
         BigInt(clienteId),
         query as unknown as Record<string, unknown>,
       );
     return {
-      ...ApiResponse.success(
-        'Cobrança de créditos carregada com sucesso.',
-        data,
-        pagination,
-      ),
+      ...ApiResponse.success('Cobrança de créditos carregada com sucesso.', data, pagination),
       totais,
       totais_por_produto,
     };
@@ -155,10 +116,7 @@ export class CreditSaleController {
   @Roles(...ROLES_ESCRITA)
   @HttpCode(201)
   @ApiOperation({ summary: 'Cria uma venda de créditos' })
-  async store(
-    @Body() body: CreateCreditSaleDto,
-    @CurrentUser() user: AuthUser,
-  ) {
+  async store(@Body() body: CreateCreditSaleDto, @CurrentUser() user: AuthUser) {
     const sale = await this.service.criar(body, user);
     return {
       code: 200,
@@ -184,10 +142,7 @@ export class CreditSaleController {
   @ApiOperation({ summary: 'Detalha uma venda de créditos' })
   async show(@Param('id') id: string) {
     const sale = await this.service.buscar(BigInt(id));
-    return ApiResponse.success(
-      'Venda carregada com sucesso!',
-      mapCreditSale(sale),
-    );
+    return ApiResponse.success('Venda carregada com sucesso!', mapCreditSale(sale));
   }
 
   @Put(':id')

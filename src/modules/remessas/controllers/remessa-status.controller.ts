@@ -9,12 +9,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { RemessaStatusEtapa } from '@prisma/client';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
 import { Feature, MENSAGEM_SEM_PERMISSAO } from 'src/shared/auth/features';
 import { featuresExigidasParaStatus } from 'src/shared/auth/remessa-acao-features';
@@ -74,10 +69,7 @@ export class RemessaStatusController {
     if (!(await this.featureGate.permite(user, featuresExigidasParaStatus(body.status)))) {
       throw new ForbiddenException(MENSAGEM_SEM_PERMISSAO);
     }
-    await this.service.registrarStatus(
-      BigInt(remessaId),
-      body.status as RemessaStatusEtapa,
-    );
+    await this.service.registrarStatus(BigInt(remessaId), body.status as RemessaStatusEtapa);
     return { message: 'Status registrado com sucesso.' };
   }
 

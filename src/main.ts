@@ -27,9 +27,7 @@ import { createWinstonOptions } from './shared/utils/logger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: WinstonModule.createLogger(
-      createWinstonOptions(process.env.LOG_LEVEL ?? 'debug'),
-    ),
+    logger: WinstonModule.createLogger(createWinstonOptions(process.env.LOG_LEVEL ?? 'debug')),
   });
 
   const config = app.get(ConfigService);
@@ -45,7 +43,6 @@ async function bootstrap() {
   // ================================
   app.setGlobalPrefix(context);
 
-
   // ================================
   // arquivos em storage/app ficam acessíveis em /storage/<path> (fora do APP_CONTEXT).
   // ================================
@@ -59,7 +56,7 @@ async function bootstrap() {
   app.useBodyParser('json', { limit: maxUpload });
   app.useBodyParser('urlencoded', { limit: maxUpload, extended: true });
 
-  app.enableCors({ origin: true, credentials: true, });
+  app.enableCors({ origin: true, credentials: true });
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -1,8 +1,4 @@
-import {
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import { resolvePagination } from 'src/shared/database/pagination';
@@ -40,10 +36,7 @@ export class EntregaClienteService {
       where: { id: BigInt(dto.remessa_id), deletedAt: null },
     });
     if (!remessa) {
-      throw new BusinessException(
-        'Remessa não encontrada.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+      throw new BusinessException('Remessa não encontrada.', HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     let imagemProtocolo: string | undefined;

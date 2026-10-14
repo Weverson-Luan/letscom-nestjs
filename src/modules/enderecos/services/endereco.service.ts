@@ -1,8 +1,4 @@
-import {
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, TipoEndereco } from '@prisma/client';
 import { resolvePagination } from 'src/shared/database/pagination';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
@@ -23,8 +19,7 @@ export class EnderecoService {
 
   async listar(query: Record<string, unknown>) {
     const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
-    const order =
-      String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+    const order = String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
 
     const { data, total } = await this.repository.paginate({
       sortBy: (query.sort_by as string) ?? 'created_at',
@@ -71,10 +66,7 @@ export class EnderecoService {
       where: { id: BigInt(dto.user_id), deletedAt: null },
     });
     if (!user) {
-      throw new BusinessException(
-        'Usuário não encontrado.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+      throw new BusinessException('Usuário não encontrado.', HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     const data: Prisma.EnderecoCreateInput = {

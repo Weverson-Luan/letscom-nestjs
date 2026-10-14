@@ -31,10 +31,6 @@ export class DashboardController {
     const { data, pagination } = await this.service.listarAtividades(
       query as unknown as Record<string, unknown>,
     );
-    return ApiResponse.success(
-      'Atividades carregadas com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Atividades carregadas com sucesso!', data, pagination);
   }
 }

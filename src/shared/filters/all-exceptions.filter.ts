@@ -34,11 +34,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
       // Corpo já formatado no estilo Laravel (contém `code`): repassa verbatim,
       // preservando o contrato exato ({ code, message, errors } / { code, status, error }).
-      if (
-        typeof res === 'object' &&
-        res !== null &&
-        'code' in (res as Record<string, unknown>)
-      ) {
+      if (typeof res === 'object' && res !== null && 'code' in (res as Record<string, unknown>)) {
         response.status(statusCode).json(res);
         return;
       }

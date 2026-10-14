@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -46,10 +36,7 @@ export class FeatureFlagController {
   @ApiOperation({ summary: 'Detalha uma feature flag' })
   async show(@Param('id') id: string) {
     const flag = await this.service.buscar(BigInt(id));
-    return ApiResponse.success(
-      'Feature flag carregada com sucesso!',
-      mapFeatureFlag(flag),
-    );
+    return ApiResponse.success('Feature flag carregada com sucesso!', mapFeatureFlag(flag));
   }
 
   @Post()
@@ -57,22 +44,14 @@ export class FeatureFlagController {
   @ApiOperation({ summary: 'Cria uma feature flag' })
   async store(@Body() body: CreateFeatureFlagDto) {
     const flag = await this.service.criar(body);
-    return ApiResponse.success(
-      'Feature flag criada com sucesso!',
-      mapFeatureFlag(flag),
-      null,
-      201,
-    );
+    return ApiResponse.success('Feature flag criada com sucesso!', mapFeatureFlag(flag), null, 201);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Atualiza uma feature flag' })
   async update(@Param('id') id: string, @Body() body: UpdateFeatureFlagDto) {
     const flag = await this.service.atualizar(BigInt(id), body);
-    return ApiResponse.success(
-      'Feature flag atualizada com sucesso!',
-      mapFeatureFlag(flag),
-    );
+    return ApiResponse.success('Feature flag atualizada com sucesso!', mapFeatureFlag(flag));
   }
 
   @Delete(':id')

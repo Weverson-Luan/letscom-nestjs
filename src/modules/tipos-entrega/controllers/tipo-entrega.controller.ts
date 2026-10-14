@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ALL_ROLES } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -17,10 +8,7 @@ import {
   UpdateTipoEntregaDto,
   VincularTipoEntregaDto,
 } from '../dto/tipo-entrega.dto';
-import {
-  mapTipoEntrega,
-  mapTipoEntregaUser,
-} from '../mappers/tipo-entrega.mapper';
+import { mapTipoEntrega, mapTipoEntregaUser } from '../mappers/tipo-entrega.mapper';
 import { TipoEntregaUserService } from '../services/tipo-entrega-user.service';
 import { TipoEntregaService } from '../services/tipo-entrega.service';
 import { Feature, FEATURES_LIBERACAO } from 'src/shared/auth/features';

@@ -1,22 +1,9 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { ApiResponse } from 'src/shared/utils/api-response';
 import { mapEndereco } from '../../enderecos/mappers/endereco.mapper';
-import {
-  CreateEnderecoEntregaDto,
-  UpdateEnderecoEntregaDto,
-} from '../dto/endereco-entrega.dto';
+import { CreateEnderecoEntregaDto, UpdateEnderecoEntregaDto } from '../dto/endereco-entrega.dto';
 import { EnderecoEntregaService } from '../services/endereco-entrega.service';
 import { Feature } from 'src/shared/auth/features';
 import { RequireFeatures } from 'src/shared/decorators/features.decorator';
@@ -34,11 +21,7 @@ export class EnderecoEntregaController {
     const { data, pagination } = await this.service.listar(
       query as unknown as Record<string, unknown>,
     );
-    return ApiResponse.success(
-      'Endereços de entrega carregados com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Endereços de entrega carregados com sucesso!', data, pagination);
   }
 
   @Get(':id')

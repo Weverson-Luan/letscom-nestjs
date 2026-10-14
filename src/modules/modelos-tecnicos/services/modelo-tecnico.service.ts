@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
@@ -34,10 +30,7 @@ export class ModeloTecnicoService {
     const { page, perPage, skip, take } = resolvePagination(query, 10, 100);
     const defaultSort = clienteId ? 'nome_modelo' : 'created_at';
     const defaultOrder = clienteId ? 'asc' : 'desc';
-    const order =
-      String(query.order ?? defaultOrder).toLowerCase() === 'asc'
-        ? 'asc'
-        : 'desc';
+    const order = String(query.order ?? defaultOrder).toLowerCase() === 'asc' ? 'asc' : 'desc';
 
     const { data, total } = await this.repository.paginate({
       clienteId,
@@ -72,12 +65,7 @@ export class ModeloTecnicoService {
   }
 
   async obterUrlImagem(id: bigint, lado: string) {
-    const campo =
-      lado === 'frente'
-        ? 'fotoFrentePath'
-        : lado === 'verso'
-          ? 'fotoVersoPath'
-          : null;
+    const campo = lado === 'frente' ? 'fotoFrentePath' : lado === 'verso' ? 'fotoVersoPath' : null;
 
     if (!campo) {
       throw new BadRequestException('Lado da imagem inválido.');
@@ -109,11 +97,7 @@ export class ModeloTecnicoService {
     };
   }
 
-  async criar(
-    dto: CreateModeloTecnicoDto,
-    fotoFrente?: UploadFile,
-    fotoVerso?: UploadFile,
-  ) {
+  async criar(dto: CreateModeloTecnicoDto, fotoFrente?: UploadFile, fotoVerso?: UploadFile) {
     this.validarFotoObrigatoria(fotoFrente, 'foto_frente');
     this.validarFotoObrigatoria(fotoVerso, 'foto_verso');
     await this.validarFks(dto.cliente_id, dto.produto_id, dto.tecnologia_id);
@@ -273,11 +257,7 @@ export class ModeloTecnicoService {
     }
   }
 
-  private async validarFks(
-    clienteId: number,
-    produtoId: number,
-    tecnologiaId: number,
-  ) {
+  private async validarFks(clienteId: number, produtoId: number, tecnologiaId: number) {
     const [cliente, produto, tecnologia] = await Promise.all([
       this.prisma.user.findFirst({
         where: { id: BigInt(clienteId), deletedAt: null },

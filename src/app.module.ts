@@ -24,7 +24,7 @@ import { ModelosTecnicosModule } from './modules/modelos-tecnicos/modelos-tecnic
 import { ProductsModule } from './modules/products/products.module';
 import { RemessaLiberacaoModule } from './modules/remessa-liberacao/remessa-liberacao.module';
 
-// modules 
+// modules
 import { RemessasModule } from './modules/remessas/remessas.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { UsersModule } from './modules/users/users.module';

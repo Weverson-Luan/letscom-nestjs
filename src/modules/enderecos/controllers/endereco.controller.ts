@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ALL_ROLES } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
@@ -35,11 +25,7 @@ export class EnderecoController {
     const { data, pagination } = await this.service.listar(
       query as unknown as Record<string, unknown>,
     );
-    return ApiResponse.success(
-      'Endereços carregados com sucesso!',
-      data,
-      pagination,
-    );
+    return ApiResponse.success('Endereços carregados com sucesso!', data, pagination);
   }
 
   @Get('usuarios/:id/enderecos-por-tipo')
@@ -50,10 +36,7 @@ export class EnderecoController {
   })
   async porTipo(@Param('id') id: string) {
     const data = await this.service.porTipo(BigInt(id));
-    return ApiResponse.success(
-      'Endereços por tipo carregados com sucesso!',
-      data,
-    );
+    return ApiResponse.success('Endereços por tipo carregados com sucesso!', data);
   }
 
   @Get(':id')
@@ -61,10 +44,7 @@ export class EnderecoController {
   @ApiOperation({ summary: 'Detalha um endereço' })
   async show(@Param('id') id: string) {
     const endereco = await this.service.buscar(BigInt(id));
-    return ApiResponse.success(
-      'Endereço carregado com sucesso!',
-      mapEndereco(endereco),
-    );
+    return ApiResponse.success('Endereço carregado com sucesso!', mapEndereco(endereco));
   }
 
   @Post()
@@ -73,12 +53,7 @@ export class EnderecoController {
   @ApiOperation({ summary: 'Cria um endereço vinculado a um usuário' })
   async store(@Body() body: CreateEnderecoDto) {
     const endereco = await this.service.criar(body);
-    return ApiResponse.success(
-      'Endereço criado com sucesso!',
-      mapEndereco(endereco),
-      null,
-      201,
-    );
+    return ApiResponse.success('Endereço criado com sucesso!', mapEndereco(endereco), null, 201);
   }
 
   @Put(':id')
@@ -86,10 +61,7 @@ export class EnderecoController {
   @ApiOperation({ summary: 'Atualiza um endereço' })
   async update(@Param('id') id: string, @Body() body: UpdateEnderecoDto) {
     const endereco = await this.service.atualizar(BigInt(id), body);
-    return ApiResponse.success(
-      'Endereço atualizado com sucesso!',
-      mapEndereco(endereco),
-    );
+    return ApiResponse.success('Endereço atualizado com sucesso!', mapEndereco(endereco));
   }
 
   @Delete(':id')

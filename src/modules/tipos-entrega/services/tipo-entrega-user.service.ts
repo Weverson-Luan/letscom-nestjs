@@ -39,10 +39,7 @@ export class TipoEntregaUserService {
       throw new NotFoundException('Cliente não encontrado.');
     }
     if (!tipo) {
-      throw new BusinessException(
-        'Tipo de entrega informado não existe.',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new BusinessException('Tipo de entrega informado não existe.', HttpStatus.NOT_FOUND);
     }
   }
 }

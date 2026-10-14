@@ -14,11 +14,7 @@ import { SolicitacaoRemessaService } from './services/solicitacao-remessa.servic
 import { SolicitarRemessaUseCase } from './services/helpers/solicitar-remessa.use-case';
 
 @Module({
-  controllers: [
-    RemessaStatusController,
-    RemessaResponsabilidadeController,
-    RemessaController,
-  ],
+  controllers: [RemessaStatusController, RemessaResponsabilidadeController, RemessaController],
   providers: [
     RemessaService,
     SolicitacaoRemessaService,

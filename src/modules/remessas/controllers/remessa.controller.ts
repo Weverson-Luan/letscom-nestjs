@@ -16,13 +16,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import {
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
 import {
@@ -132,7 +126,11 @@ export class RemessaController {
       );
       return { data: await this.mapper.mapRemessas(items), pagination };
     });
-    return ApiResponse.success('Remessas disponíveis carregadas com sucesso!', payload.data, payload.pagination);
+    return ApiResponse.success(
+      'Remessas disponíveis carregadas com sucesso!',
+      payload.data,
+      payload.pagination,
+    );
   }
 
   @Get('minhas-tarefas')
@@ -148,7 +146,11 @@ export class RemessaController {
       );
       return { data: this.mapper.mapMinhasTarefas(items), pagination };
     });
-    return ApiResponse.success('Minhas remessas carregadas com sucesso!', payload.data, payload.pagination);
+    return ApiResponse.success(
+      'Minhas remessas carregadas com sucesso!',
+      payload.data,
+      payload.pagination,
+    );
   }
 
   @Get('tarefas-expedicoes')
@@ -164,7 +166,11 @@ export class RemessaController {
       );
       return { data: await this.mapper.mapRemessas(items), pagination };
     });
-    return ApiResponse.success('Minhas expedições carregadas com sucesso!', payload.data, payload.pagination);
+    return ApiResponse.success(
+      'Minhas expedições carregadas com sucesso!',
+      payload.data,
+      payload.pagination,
+    );
   }
 
   @Get('tarefas-balcao')
@@ -180,7 +186,11 @@ export class RemessaController {
       );
       return { data: await this.mapper.mapRemessas(items), pagination };
     });
-    return ApiResponse.success('Remessas balcão carregadas com sucesso!', payload.data, payload.pagination);
+    return ApiResponse.success(
+      'Remessas balcão carregadas com sucesso!',
+      payload.data,
+      payload.pagination,
+    );
   }
 
   @Get('cliente/:clienteId/remessas-em-andamento')
@@ -200,7 +210,11 @@ export class RemessaController {
       );
       return { data: await this.mapper.mapRemessas(items, true), pagination };
     });
-    return ApiResponse.success('Remessas em andamento carregadas com sucesso!', payload.data, payload.pagination);
+    return ApiResponse.success(
+      'Remessas em andamento carregadas com sucesso!',
+      payload.data,
+      payload.pagination,
+    );
   }
 
   @Get('cliente/:clienteId/historico')
@@ -220,7 +234,11 @@ export class RemessaController {
       );
       return { data: await this.mapper.mapRemessas(items, true), pagination };
     });
-    return ApiResponse.success('Histórico de remessas carregadas com sucesso!', payload.data, payload.pagination);
+    return ApiResponse.success(
+      'Histórico de remessas carregadas com sucesso!',
+      payload.data,
+      payload.pagination,
+    );
   }
 
   // ---------------------------------------------------------------- DOWNLOADS

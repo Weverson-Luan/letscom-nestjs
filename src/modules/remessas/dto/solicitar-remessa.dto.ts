@@ -31,7 +31,8 @@ export class SolicitarRemessaDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Solicitante (usuário). Obrigatório se `users_solicitante_subordinado_id` não for enviado.',
+    description:
+      'Solicitante (usuário). Obrigatório se `users_solicitante_subordinado_id` não for enviado.',
   })
   @IsOptional()
   @Type(() => Number)

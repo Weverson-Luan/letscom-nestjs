@@ -19,7 +19,6 @@ import { Public } from 'src/shared/decorators/public.decorator';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { LoginDto } from '../dto/login.dto';
 
-
 @ApiTags('auth')
 @Controller()
 export class AuthController {

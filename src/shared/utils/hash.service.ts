@@ -10,10 +10,10 @@ import * as bcrypt from 'bcrypt';
 
 /**
  * Hashing de senha com bcrypt
- * 
+ *
  */
 @Injectable()
- class HashService {
+class HashService {
   private readonly rounds: number;
 
   constructor(config: ConfigService) {

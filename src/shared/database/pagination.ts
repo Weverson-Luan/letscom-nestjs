@@ -15,14 +15,10 @@ export function resolvePagination(
   maxPerPage = 100,
 ): PaginationParams {
   const rawPage = parseInt(String(query.page ?? query.pagina ?? '1'), 10);
-  const rawPerPage = parseInt(
-    String(query.per_page ?? query.perPage ?? defaultPerPage),
-    10,
-  );
+  const rawPerPage = parseInt(String(query.per_page ?? query.perPage ?? defaultPerPage), 10);
 
   const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
-  let perPage =
-    Number.isFinite(rawPerPage) && rawPerPage > 0 ? rawPerPage : defaultPerPage;
+  let perPage = Number.isFinite(rawPerPage) && rawPerPage > 0 ? rawPerPage : defaultPerPage;
   perPage = Math.min(perPage, maxPerPage);
 
   return {
