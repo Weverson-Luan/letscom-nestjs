@@ -70,3 +70,24 @@ export function mapCobrancaLinha(linha: ExtratoWithRels) {
     observacao_negocio: linha.observacaoNegocio,
   };
 }
+
+/** Linha da cobrança vista pelo próprio cliente: mesma estrutura, sem os valores (R$). */
+export function mapearCobrancaLinhaCliente(linha: ExtratoWithRels) {
+  return {
+    id: linha.id,
+    created_at: linha.createdAt,
+    produto_id: linha.produtoId,
+    produto: linha.produto ? { id: linha.produto.id, nome: linha.produto.nome } : null,
+    quantidade_creditos: Number(linha.quantidadeCreditos),
+    remessa_id: linha.remessaId,
+    remessa: linha.remessa
+      ? {
+          id: linha.remessa.id,
+          numero_remessa: linha.remessa.numeroRemessa,
+          situacao: linha.remessa.situacao,
+          status: linha.remessa.status,
+        }
+      : null,
+    observacao_negocio: linha.observacaoNegocio,
+  };
+}

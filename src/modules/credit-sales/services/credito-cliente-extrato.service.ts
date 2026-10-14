@@ -9,6 +9,7 @@ import { buildPagination } from 'src/shared/utils/api-response';
 import { mapCobrancaLinha, mapExtratoLinha } from '../mappers/extrato.mapper';
 import { CreditSaleRepository } from '../repositories/credit-sale.repository';
 import { ExtratoMovimentacaoRepository } from '../repositories/extrato-movimentacao.repository';
+import { montarFiltrosCobranca } from './helpers/montar-filtros-cobranca.helper';
 
 export type RegistrarExtratoInput = {
   clienteId: bigint;
@@ -87,13 +88,7 @@ export class CreditoClienteExtratoService {
     const { page, perPage, skip, take } = resolvePagination(query, 15, 100);
     const order = String(query.order ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
 
-    const filtros = {
-      produtoId: query.produto_id ? BigInt(String(query.produto_id)) : undefined,
-      numeroRemessa: query.numero_remessa ? String(query.numero_remessa) : undefined,
-      statusRemessa: query.status_remessa as string | undefined,
-      dataInicio: query.data_inicio as string | undefined,
-      dataFim: query.data_fim as string | undefined,
-    };
+    const filtros = montarFiltrosCobranca(query);
 
     const [{ data, total }, totais, totaisPorProduto] = await Promise.all([
       this.extratoRepo.paginateCobranca({

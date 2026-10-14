@@ -74,7 +74,7 @@ export class ExtratoMovimentacaoRepository {
     return { data, total };
   }
 
-  /** Base de consumos faturáveis (cobrança). */
+  /** Base de consumos faturáveis (cobrança): remessas não canceladas com produção finalizada. */
   private whereFaturavel(
     clienteId: bigint,
     filtros: {
@@ -92,6 +92,8 @@ export class ExtratoMovimentacaoRepository {
       remessa: {
         situacao: { not: 'cancelada' },
         status: { not: 'cancelada' },
+        // só remessas já faturadas: produção finalizada
+        dataFimProducao: { not: null },
         ...(filtros.numeroRemessa
           ? { numeroRemessa: { equals: BigInt(filtros.numeroRemessa) } }
           : {}),
@@ -164,6 +166,7 @@ export class ExtratoMovimentacaoRepository {
         AND e.remessa_id IS NOT NULL
         AND r.situacao <> 'cancelada'
         AND r.status <> 'cancelada'
+        AND r.data_fim_producao IS NOT NULL
         AND NOT EXISTS (
           SELECT 1 FROM extrato_movimentacoes_creditos_cliente est
           WHERE est.remessa_id = e.remessa_id

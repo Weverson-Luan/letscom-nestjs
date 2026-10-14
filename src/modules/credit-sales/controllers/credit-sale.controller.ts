@@ -10,6 +10,7 @@ import { UpdateCreditSaleDto } from '../dto/update-credit-sale.dto';
 import { mapCreditSale } from '../mappers/credit-sale.mapper';
 import { CreditSaleService } from '../services/credit-sale.service';
 import { CreditoClienteExtratoService } from '../services/credito-cliente-extrato.service';
+import { ListarMinhaCobrancaCreditoService } from '../services/listar-minha-cobranca-credito.service';
 import { Feature } from 'src/shared/auth/features';
 import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
@@ -30,6 +31,7 @@ export class CreditSaleController {
   constructor(
     private readonly service: CreditSaleService,
     private readonly extratoService: CreditoClienteExtratoService,
+    private readonly listarMinhaCobrancaCredito: ListarMinhaCobrancaCreditoService,
   ) {}
 
   @Get()
@@ -102,6 +104,24 @@ export class CreditSaleController {
     const { data, pagination, totais, totais_por_produto } =
       await this.extratoService.listarCobranca(
         BigInt(clienteId),
+        query as unknown as Record<string, unknown>,
+      );
+    return {
+      ...ApiResponse.success('Cobrança de créditos carregada com sucesso.', data, pagination),
+      totais,
+      totais_por_produto,
+    };
+  }
+
+  /** Declarada antes de `:id` para não ser capturada pela rota de detalhe. */
+  @Get('minha-cobranca')
+  @RequireFeatures(Feature.VISUALIZAR_COBRANCA_CREDITO)
+  @Roles(Role.CLIENTE, Role.SUBORDINADO)
+  @ApiOperation({ summary: 'Cobrança de créditos do cliente logado (sem valores)' })
+  async listarMinhaCobranca(@Query() query: CreditoClienteQueryDto, @CurrentUser() user: AuthUser) {
+    const { data, pagination, totais, totais_por_produto } =
+      await this.listarMinhaCobrancaCredito.execute(
+        user,
         query as unknown as Record<string, unknown>,
       );
     return {
