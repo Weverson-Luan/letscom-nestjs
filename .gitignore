@@ -56,6 +56,6 @@ pids
 # Prisma
 prisma/*.db
 
-# Storage local
+# Storage local (só na raiz: sem a "/" inicial ignorava também src/modules/uploads)
 /storage
-uploads/
+/uploads/
