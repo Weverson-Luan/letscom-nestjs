@@ -65,7 +65,7 @@ import { UtilsModule } from './shared/utils/utils.module';
       validate: validateEnv,
     }),
     // Rate limit global: 50 req/min
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 50 }]),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 10 }]),
     // Infraestrutura compartilhada (todos @Global)
     PrismaModule,
     CacheModule,
