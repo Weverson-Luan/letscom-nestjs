@@ -1,0 +1,5 @@
+## e2e fica no CI (sobe MySQL/Redis): aqui roda o que é rápido e não precisa de Docker
+npm run typecheck
+npm test -- --bail
+
+echo "pre-push hook foi executado com sucesso! 🚀"

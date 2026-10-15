@@ -1,0 +1,106 @@
+name: CI - Testes
+
+on:
+  push: ## push feito diretamente para develop ou main
+    branches: ["develop", "main"]
+  pull_request: ## quando PR criada ou atualizada apontando para develop ou main
+    branches: ["develop", "main"]
+  workflow_call: ## permite outro workflow (ex.: deploy) reutilizar este como etapa de testes
+
+## cancela a execução anterior da mesma branch/PR quando chega um push novo
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    name: Lint, tipos, build e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    ## mesmos serviços do docker-compose.test.yml (portas e credenciais do .env.test)
+    services:
+      mysql:
+        image: mysql:8.4
+        ports:
+          - "3308:3306"
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_USER: letscom
+          MYSQL_PASSWORD: letscom
+          MYSQL_DATABASE: letscom_test
+          TZ: America/Sao_Paulo
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -proot --silent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - "6380:6379"
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node ## mesma versão do Dockerfile
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências ## lockfile congelado
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Verificar lint ## sem --fix: no CI só verifica
+        run: npx eslint "{src,apps,libs,test}/**/*.ts"
+
+      - name: Verificar tipos (TypeScript 7)
+        run: npm run typecheck
+
+      - name: Compilar o projeto
+        run: npm run build
+
+      - name: Rodar testes unitários
+        run: npm test -- --ci
+
+      ## o banco do CI é descartável: aqui pode migrar (localmente quem roda é o dev)
+      - name: Aplicar migrations (banco de teste)
+        run: npx dotenv -o -e .env.test -- prisma migrate deploy
+
+      ## chama o jest direto: o `npm run test:e2e` tem pre/post que sobem e param o docker compose,
+      ## e no CI os serviços acima já fazem esse papel
+      - name: Rodar testes e2e
+        run: npx dotenv -o -e .env.test -- jest --config ./test/jest-e2e.json --runInBand --ci
+
+      - name: Avisar no Discord (falha)
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            curl -fsS -H "Content-Type: application/json" -X POST \
+              -d "{\"content\": \"🚨 letscom-api CI falhou em ${GITHUB_REF_NAME} (lint / typecheck / build / testes). Logs: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" \
+              "$DISCORD_WEBHOOK_URL" || true
+          fi
+
+      - name: Avisar no Discord (sucesso)
+        if: success()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            curl -fsS -H "Content-Type: application/json" -X POST \
+              -d "{\"content\": \"✅ letscom-api CI passou em ${GITHUB_REF_NAME}\"}" \
+              "$DISCORD_WEBHOOK_URL" || true
+          fi
