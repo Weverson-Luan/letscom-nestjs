@@ -1,0 +1,56 @@
+import { ClienteAnotacaoTipo } from '@prisma/client';
+import { Role } from 'src/shared/constants/roles';
+
+/** Tipos de registro na linha do tempo do cliente (coluna clientes_anotacoes.tipo). */
+export const TIPOS_ANOTACAO = Object.values(ClienteAnotacaoTipo);
+
+export const MAXIMO_ANEXOS_POR_ANOTACAO = 5;
+export const TAMANHO_MAXIMO_ANEXO_BYTES = 10 * 1024 * 1024;
+export const TAMANHO_MAXIMO_CONTEUDO = 5000;
+
+/** Validação por extensão: o mimetype vem do navegador e não é confiável. */
+export const EXTENSOES_ANEXO_PERMITIDAS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'pdf',
+  'doc',
+  'docx',
+  'xls',
+  'xlsx',
+  'csv',
+  'txt',
+  'zip',
+] as const;
+
+/** Arquivo recebido pelo Multer (memoryStorage). */
+export type ArquivoAnexo = {
+  buffer: Buffer;
+  originalname: string;
+  mimetype?: string;
+  size?: number;
+};
+
+/** Papéis do backoffice que acessam as anotações (o acesso fino é por feature flag). */
+export const PAPEIS_ANOTACOES_CLIENTE = [
+  Role.ADMIN,
+  Role.CONSULTOR,
+  Role.PRODUCAO,
+  Role.RECEPCAO,
+] as const;
+
+/** Papéis do lado do cliente que acessam /minhas-anotacoes. */
+export const PAPEIS_CLIENTE_ANOTACOES = [Role.CLIENTE, Role.SUBORDINADO] as const;
+
+/** Quem escreve a anotação (resolvido a partir do usuário logado). */
+export type AutorAnotacao =
+  | { tipo: 'interno' | 'cliente'; userId: bigint; nome: string }
+  | { tipo: 'subordinado'; subordinadoId: bigint; nome: string };
+
+/** Links do backoffice usados nas notificações. */
+export function montarLinkAnotacoesInterno(clienteId: bigint): string {
+  return `/clientes/${clienteId}`;
+}
+export const LINK_MINHAS_ANOTACOES = '/minhas-anotacoes';

@@ -82,6 +82,22 @@ enum VendaCreditoTipoTransacao {
   saida
 }
 
+enum ClienteAnotacaoTipo {
+  nota
+  ligacao
+  reuniao
+  email
+  whatsapp
+  visita
+  negociacao
+}
+
+enum ClienteAnotacaoAutorTipo {
+  interno
+  cliente
+  subordinado
+}
+
 enum RemessaStatusEtapa {
   envio_de_dados
   em_producao
@@ -129,6 +145,9 @@ model User {
   extratoCliente           ExtratoMovimentacaoCreditoCliente[] @relation("ExtratoCliente")
   extratoResponsavel       ExtratoMovimentacaoCreditoCliente[] @relation("ExtratoResponsavel")
   atendimentos             UserAtendimento[]
+  anotacoesCliente         ClienteAnotacao[]                   @relation("ClienteAnotacaoCliente")
+  anotacoesAutor           ClienteAnotacao[]                   @relation("ClienteAnotacaoAutor")
+  notificacoes             Notificacao[]
 
   @@index([createdAt], map: "users_created_at_index")
   @@map("users")
@@ -145,8 +164,10 @@ model UserCliente {
   createdAt DateTime? @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  clientePrincipal    User      @relation("UserClientePrincipal", fields: [clienteId], references: [id], onDelete: Cascade)
-  remessasSolicitante Remessa[] @relation("RemessaSolicitanteSubordinado")
+  clientePrincipal    User              @relation("UserClientePrincipal", fields: [clienteId], references: [id], onDelete: Cascade)
+  remessasSolicitante Remessa[]         @relation("RemessaSolicitanteSubordinado")
+  anotacoesAutor      ClienteAnotacao[]
+  notificacoes        Notificacao[]
 
   @@map("users_cliente")
 }
@@ -649,4 +670,76 @@ model UserAtendimento {
 
   @@index([userId])
   @@map("users_atendimentos")
+}
+
+// =====================================================================
+// ANOTAÇÕES DE CLIENTE (histórico de conversas/atividades do backoffice)
+// =====================================================================
+
+model ClienteAnotacao {
+  id                 BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId          BigInt                   @map("cliente_id") @db.UnsignedBigInt
+  /// users.id do autor quando autor_tipo = interno ou cliente
+  autorId            BigInt?                  @map("autor_id") @db.UnsignedBigInt
+  /// users_cliente.id do autor quando autor_tipo = subordinado
+  autorSubordinadoId BigInt?                  @map("autor_subordinado_id") @db.UnsignedBigInt
+  autorTipo          ClienteAnotacaoAutorTipo @default(interno) @map("autor_tipo")
+  tipo               ClienteAnotacaoTipo      @default(nota)
+  conteudo           String                   @db.Text
+  editadaEm          DateTime?                @map("editada_em")
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @updatedAt @map("updated_at")
+  deletedAt          DateTime?                @map("deleted_at")
+
+  cliente          User                   @relation("ClienteAnotacaoCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  autor            User?                  @relation("ClienteAnotacaoAutor", fields: [autorId], references: [id], onDelete: Restrict)
+  autorSubordinado UserCliente?           @relation(fields: [autorSubordinadoId], references: [id], onDelete: SetNull)
+  anexos           ClienteAnotacaoAnexo[]
+  notificacoes     Notificacao[]
+
+  @@index([clienteId, deletedAt, createdAt], map: "clientes_anotacoes_cliente_timeline_index")
+  @@index([autorId], map: "clientes_anotacoes_autor_id_index")
+  @@index([autorSubordinadoId], map: "clientes_anotacoes_autor_subordinado_id_index")
+  @@map("clientes_anotacoes")
+}
+
+model ClienteAnotacaoAnexo {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  anotacaoId   BigInt   @map("anotacao_id") @db.UnsignedBigInt
+  nomeOriginal String   @map("nome_original")
+  filePath     String   @map("file_path") @db.VarChar(500)
+  mimeType     String?  @map("mime_type")
+  tamanhoBytes Int      @map("tamanho_bytes") @db.UnsignedInt
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  anotacao ClienteAnotacao @relation(fields: [anotacaoId], references: [id], onDelete: Cascade)
+
+  @@index([anotacaoId], map: "clientes_anotacoes_anexos_anotacao_id_index")
+  @@map("clientes_anotacoes_anexos")
+}
+
+// =====================================================================
+// NOTIFICAÇÕES (sino do backoffice) — destinatário é users OU users_cliente
+// =====================================================================
+
+model Notificacao {
+  id                        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  destinatarioUserId        BigInt?   @map("destinatario_user_id") @db.UnsignedBigInt
+  destinatarioSubordinadoId BigInt?   @map("destinatario_subordinado_id") @db.UnsignedBigInt
+  tipo                      String    @db.VarChar(50)
+  titulo                    String
+  mensagem                  String    @db.VarChar(500)
+  link                      String?   @db.VarChar(500)
+  anotacaoId                BigInt?   @map("anotacao_id") @db.UnsignedBigInt
+  lidaEm                    DateTime? @map("lida_em")
+  createdAt                 DateTime  @default(now()) @map("created_at")
+
+  destinatarioUser        User?            @relation(fields: [destinatarioUserId], references: [id], onDelete: Cascade)
+  destinatarioSubordinado UserCliente?     @relation(fields: [destinatarioSubordinadoId], references: [id], onDelete: Cascade)
+  anotacao                ClienteAnotacao? @relation(fields: [anotacaoId], references: [id], onDelete: Cascade)
+
+  @@index([destinatarioUserId, lidaEm, createdAt], map: "notificacoes_user_caixa_index")
+  @@index([destinatarioSubordinadoId, lidaEm, createdAt], map: "notificacoes_subordinado_caixa_index")
+  @@index([anotacaoId], map: "notificacoes_anotacao_id_index")
+  @@map("notificacoes")
 }

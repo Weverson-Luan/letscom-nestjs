@@ -18,6 +18,8 @@ export const Feature = {
   ACESSAR_MODELOS_CLIENTE: 'acessar_modelos_cliente',
   ACESSAR_REMESSAS_ANDAMENTO: 'acessar_remessas_andamento',
   ACESSAR_HISTORICO_REMESSAS: 'acessar_historico_remessas',
+  ACESSAR_CONVERSA_CLIENTE: 'acessar_conversa_cliente',
+  ACESSAR_NOTIFICACOES: 'acessar_notificacoes',
 
   // BACKOFFICE CROPIX
   ACESSAR_ATIVIDADES: 'acessar_atividades',
@@ -31,6 +33,12 @@ export const Feature = {
   EDITAR_CLIENTE: 'editar_cliente',
   INATIVAR_CLIENTE: 'inativar_cliente',
   GERENCIAR_CREDITOS_CLIENTE: 'gerenciar_creditos_cliente',
+
+  // ANOTACOES DE CLIENTE (histórico de conversas/atividades)
+  VISUALIZAR_ANOTACOES_CLIENTE: 'visualizar_anotacoes_cliente',
+  REGISTRAR_ANOTACOES_CLIENTE: 'registrar_anotacoes_cliente',
+  /** Cliente/subordinado: ver e responder as anotações da própria empresa no backoffice. */
+  RESPONDER_ANOTACOES_CLIENTE: 'responder_anotacoes_cliente',
 
   // USUARIOS INTERNOS (backoffice: consultor, producao, recepcao)
   GERENCIAR_USUARIOS_INTERNOS: 'gerenciar_usuarios_internos',
