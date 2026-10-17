@@ -98,6 +98,17 @@ enum ClienteAnotacaoAutorTipo {
   subordinado
 }
 
+enum ConversaParticipantePapel {
+  dono
+  convidado
+}
+
+enum ConversaParticipanteStatus {
+  pendente
+  aceito
+  recusado
+}
+
 enum RemessaStatusEtapa {
   envio_de_dados
   em_producao
@@ -148,6 +159,9 @@ model User {
   anotacoesCliente         ClienteAnotacao[]                   @relation("ClienteAnotacaoCliente")
   anotacoesAutor           ClienteAnotacao[]                   @relation("ClienteAnotacaoAutor")
   notificacoes             Notificacao[]
+  conversasCliente         ConversaParticipante[]              @relation("ConversaParticipanteCliente")
+  conversasParticipante    ConversaParticipante[]              @relation("ConversaParticipanteUser")
+  conversasConvitesFeitos  ConversaParticipante[]              @relation("ConversaParticipanteConvidadoPorUser")
 
   @@index([createdAt], map: "users_created_at_index")
   @@map("users")
@@ -164,10 +178,12 @@ model UserCliente {
   createdAt DateTime? @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  clientePrincipal    User              @relation("UserClientePrincipal", fields: [clienteId], references: [id], onDelete: Cascade)
-  remessasSolicitante Remessa[]         @relation("RemessaSolicitanteSubordinado")
-  anotacoesAutor      ClienteAnotacao[]
-  notificacoes        Notificacao[]
+  clientePrincipal        User                   @relation("UserClientePrincipal", fields: [clienteId], references: [id], onDelete: Cascade)
+  remessasSolicitante     Remessa[]              @relation("RemessaSolicitanteSubordinado")
+  anotacoesAutor          ClienteAnotacao[]
+  notificacoes            Notificacao[]
+  conversasParticipante   ConversaParticipante[] @relation("ConversaParticipanteSubordinado")
+  conversasConvitesFeitos ConversaParticipante[] @relation("ConversaParticipanteConvidadoPorSubordinado")
 
   @@map("users_cliente")
 }
@@ -731,15 +747,51 @@ model Notificacao {
   mensagem                  String    @db.VarChar(500)
   link                      String?   @db.VarChar(500)
   anotacaoId                BigInt?   @map("anotacao_id") @db.UnsignedBigInt
+  /// convite (conversa_participantes.id) quando tipo = convite_conversa
+  participanteId            BigInt?   @map("participante_id") @db.UnsignedBigInt
   lidaEm                    DateTime? @map("lida_em")
   createdAt                 DateTime  @default(now()) @map("created_at")
 
-  destinatarioUser        User?            @relation(fields: [destinatarioUserId], references: [id], onDelete: Cascade)
-  destinatarioSubordinado UserCliente?     @relation(fields: [destinatarioSubordinadoId], references: [id], onDelete: Cascade)
-  anotacao                ClienteAnotacao? @relation(fields: [anotacaoId], references: [id], onDelete: Cascade)
+  destinatarioUser        User?                 @relation(fields: [destinatarioUserId], references: [id], onDelete: Cascade)
+  destinatarioSubordinado UserCliente?          @relation(fields: [destinatarioSubordinadoId], references: [id], onDelete: Cascade)
+  anotacao                ClienteAnotacao?      @relation(fields: [anotacaoId], references: [id], onDelete: Cascade)
+  participante            ConversaParticipante? @relation(fields: [participanteId], references: [id], onDelete: Cascade)
 
   @@index([destinatarioUserId, lidaEm, createdAt], map: "notificacoes_user_caixa_index")
   @@index([destinatarioSubordinadoId, lidaEm, createdAt], map: "notificacoes_subordinado_caixa_index")
   @@index([anotacaoId], map: "notificacoes_anotacao_id_index")
+  @@index([participanteId], map: "notificacoes_participante_id_index")
   @@map("notificacoes")
+}
+
+/// Quem participa da conversa do cliente (uma conversa por cliente). Os dois donos são o operador
+/// que iniciou e a pessoa do cliente com quem ele iniciou; os demais entram por convite aceito.
+/// Exatamente um entre user_id (users) e subordinado_id (users_cliente) é preenchido.
+model ConversaParticipante {
+  id                        BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId                 BigInt                     @map("cliente_id") @db.UnsignedBigInt
+  userId                    BigInt?                    @map("user_id") @db.UnsignedBigInt
+  subordinadoId             BigInt?                    @map("subordinado_id") @db.UnsignedBigInt
+  papel                     ConversaParticipantePapel  @default(convidado)
+  status                    ConversaParticipanteStatus @default(pendente)
+  convidadoPorUserId        BigInt?                    @map("convidado_por_user_id") @db.UnsignedBigInt
+  convidadoPorSubordinadoId BigInt?                    @map("convidado_por_subordinado_id") @db.UnsignedBigInt
+  respondidoEm              DateTime?                  @map("respondido_em")
+  createdAt                 DateTime                   @default(now()) @map("created_at")
+  updatedAt                 DateTime                   @updatedAt @map("updated_at")
+
+  cliente                 User          @relation("ConversaParticipanteCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  user                    User?         @relation("ConversaParticipanteUser", fields: [userId], references: [id], onDelete: Cascade)
+  subordinado             UserCliente?  @relation("ConversaParticipanteSubordinado", fields: [subordinadoId], references: [id], onDelete: Cascade)
+  convidadoPorUser        User?         @relation("ConversaParticipanteConvidadoPorUser", fields: [convidadoPorUserId], references: [id], onDelete: SetNull)
+  convidadoPorSubordinado UserCliente?  @relation("ConversaParticipanteConvidadoPorSubordinado", fields: [convidadoPorSubordinadoId], references: [id], onDelete: SetNull)
+  notificacoes            Notificacao[]
+
+  @@unique([clienteId, userId], map: "conversa_participantes_cliente_user_unique")
+  @@unique([clienteId, subordinadoId], map: "conversa_participantes_cliente_subordinado_unique")
+  @@index([userId], map: "conversa_participantes_user_id_index")
+  @@index([subordinadoId], map: "conversa_participantes_subordinado_id_index")
+  @@index([convidadoPorUserId], map: "conversa_participantes_convidado_por_user_id_index")
+  @@index([convidadoPorSubordinadoId], map: "conversa_participantes_convidado_por_subordinado_id_index")
+  @@map("conversa_participantes")
 }

@@ -30,6 +30,7 @@ describe('NotificacaoRepository', () => {
     const where = { destinatarioUserId: 7n, lidaEm: null };
     expect(prisma.notificacao.findMany).toHaveBeenCalledWith({
       where,
+      include: { participante: { select: { id: true, status: true } } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       skip: 10,
       take: 10,
@@ -64,6 +65,14 @@ describe('NotificacaoRepository', () => {
 
     expect(prisma.notificacao.count).toHaveBeenCalledWith({
       where: { destinatarioUserId: 7n, lidaEm: null },
+    });
+  });
+
+  it('marca como lidas só as não lidas do convite', async () => {
+    await repository.marcarLidasDoParticipante(60n);
+    expect(prisma.notificacao.updateMany).toHaveBeenCalledWith({
+      where: { participanteId: 60n, lidaEm: null },
+      data: { lidaEm: expect.any(Date) },
     });
   });
 });

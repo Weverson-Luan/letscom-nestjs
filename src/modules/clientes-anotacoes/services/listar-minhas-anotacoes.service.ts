@@ -6,18 +6,23 @@ import { ListarAnotacoesClienteQueryDto } from '../dto/listar-anotacoes-cliente-
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
 import { mapearAnotacaoCliente } from '../mappers/anotacao-cliente.mapper';
 import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaAcessoService } from './conversa-acesso.service';
 import { extrairClienteIdDoUsuario } from './helpers/resolver-usuario-anotacao.helper';
 
-/** Conversa da empresa do cliente logado (cliente principal ou subordinado): todo o histórico. */
+/** Conversa da empresa do cliente logado (dono ou convidado com convite aceito): todo o histórico. */
 @Injectable()
 export class ListarMinhasAnotacoesService {
-  constructor(private readonly repository: ClienteAnotacaoRepository) {}
+  constructor(
+    private readonly repository: ClienteAnotacaoRepository,
+    private readonly acesso: ConversaAcessoService,
+  ) {}
 
   async execute(query: ListarAnotacoesClienteQueryDto, usuario: AuthUser) {
     const clienteId = extrairClienteIdDoUsuario(usuario);
     if (!clienteId || !(await this.repository.ehClienteAtivo(clienteId))) {
       throw new ClienteNaoEncontradoException();
     }
+    await this.acesso.garantirAcesso(clienteId, usuario);
 
     const { page, perPage, skip, take } = resolvePagination(
       query as unknown as Record<string, unknown>,

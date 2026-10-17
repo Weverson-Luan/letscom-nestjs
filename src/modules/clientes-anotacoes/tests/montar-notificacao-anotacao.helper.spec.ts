@@ -55,4 +55,26 @@ describe('montarNotificacaoAnotacao', () => {
       }).mensagem,
     ).toBe('Maria: Enviou 3 anexos.');
   });
+
+  it('equipe → outro interno participante aponta para a tela do cliente', () => {
+    expect(
+      montarNotificacaoAnotacao({
+        ...base,
+        autorTipo: 'interno',
+        conteudo: 'Ok',
+        destino: 'interno',
+      }),
+    ).toMatchObject({ titulo: 'Nova mensagem na conversa com Empresa X', link: '/clientes/5' });
+  });
+
+  it('cliente → outro participante do lado do cliente aponta para /minhas-anotacoes', () => {
+    expect(
+      montarNotificacaoAnotacao({
+        ...base,
+        autorTipo: 'subordinado',
+        conteudo: 'Ok',
+        destino: 'cliente',
+      }),
+    ).toMatchObject({ titulo: 'Nova mensagem na conversa', link: '/minhas-anotacoes' });
+  });
 });

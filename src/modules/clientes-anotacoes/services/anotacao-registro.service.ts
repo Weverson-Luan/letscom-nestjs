@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { ClienteAnotacaoTipo } from '@prisma/client';
-import { DestinatarioNotificacao } from 'src/modules/notificacoes/notificacoes.constants';
+import { ClienteAnotacaoTipo, Prisma } from '@prisma/client';
 import { NotificacaoEmissorService } from 'src/modules/notificacoes/services/notificacao-emissor.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { v4 as uuidv4 } from 'uuid';
-import { ArquivoAnexo, AutorAnotacao } from '../clientes-anotacoes.constants';
+import { ArquivoAnexo, AutorAnotacao, PessoaConversa } from '../clientes-anotacoes.constants';
 import {
   AnotacaoComRelacoes,
   ClienteAnotacaoRepository,
 } from '../repositories/cliente-anotacao.repository';
+import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
 import { montarNotificacaoAnotacao } from './helpers/montar-notificacao-anotacao.helper';
+import { ladoDoParticipante } from './helpers/participante-conversa.helper';
 import { montarCaminhoAnexo, validarNovaAnotacao } from './helpers/validar-anexos-anotacao.helper';
 
 type DadosRegistro = {
@@ -19,11 +20,13 @@ type DadosRegistro = {
   tipo: ClienteAnotacaoTipo;
   conteudo?: string;
   arquivos: ArquivoAnexo[];
+  /** Roda na transação antes de gravar (ex.: registrar os donos ao iniciar a conversa). */
+  antesDeGravar?: (tx: Prisma.TransactionClient) => Promise<void>;
 };
 
 /**
  * Service técnico compartilhado por quem escreve na conversa (equipe ou cliente):
- * valida, sobe anexos, grava anotação + anexos + notificações do outro lado numa
+ * valida, sobe anexos, grava anotação + anexos + notificações dos participantes numa
  * transação e, se algo falhar, apaga do storage o que já tinha subido.
  * Não valida se o cliente existe — isso é de cada caso de uso.
  */
@@ -32,6 +35,7 @@ export class AnotacaoRegistroService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly repository: ClienteAnotacaoRepository,
+    private readonly participanteRepository: ConversaParticipanteRepository,
     private readonly storage: StorageService,
     private readonly notificacaoEmissor: NotificacaoEmissorService,
   ) {}
@@ -40,10 +44,7 @@ export class AnotacaoRegistroService {
     const conteudo = dados.conteudo?.trim() ?? '';
     validarNovaAnotacao(conteudo, dados.arquivos);
 
-    const [destinatarios, clienteNome] = await Promise.all([
-      this.buscarDestinatarios(dados.clienteId, dados.autor),
-      this.repository.buscarNomeCliente(dados.clienteId),
-    ]);
+    const clienteNome = await this.repository.buscarNomeCliente(dados.clienteId);
 
     const anexos = dados.arquivos.map((arquivo) => ({
       arquivo,
@@ -58,6 +59,8 @@ export class AnotacaoRegistroService {
       }
 
       return await this.prisma.$transaction(async (tx) => {
+        await dados.antesDeGravar?.(tx);
+
         const criada = await this.repository.criar(
           {
             clienteId: dados.clienteId,
@@ -83,19 +86,23 @@ export class AnotacaoRegistroService {
           );
         }
 
-        await this.notificacaoEmissor.emitir(
-          destinatarios,
-          montarNotificacaoAnotacao({
-            anotacaoId: criada.id,
-            clienteId: dados.clienteId,
-            clienteNome,
-            autorTipo: dados.autor.tipo,
-            autorNome: dados.autor.nome,
-            conteudo,
-            quantidadeAnexos: anexos.length,
-          }),
-          tx,
-        );
+        const destinatarios = await this.buscarDestinatarios(dados.clienteId, dados.autor, tx);
+        for (const destino of ['interno', 'cliente'] as const) {
+          await this.notificacaoEmissor.emitir(
+            destinatarios[destino],
+            montarNotificacaoAnotacao({
+              anotacaoId: criada.id,
+              clienteId: dados.clienteId,
+              clienteNome,
+              autorTipo: dados.autor.tipo,
+              autorNome: dados.autor.nome,
+              conteudo,
+              quantidadeAnexos: anexos.length,
+              destino,
+            }),
+            tx,
+          );
+        }
 
         return (await this.repository.buscarPorId(
           dados.clienteId,
@@ -109,21 +116,32 @@ export class AnotacaoRegistroService {
     }
   }
 
-  /** Avisa sempre "o outro lado" da conversa; quem escreveu nunca é notificado. */
+  /**
+   * Avisa os participantes com convite aceito (cada lado com o seu link); quem escreveu nunca
+   * é notificado. Admin fora da lista de participantes não recebe.
+   */
   private async buscarDestinatarios(
     clienteId: bigint,
     autor: AutorAnotacao,
-  ): Promise<DestinatarioNotificacao[]> {
-    if (autor.tipo === 'interno') {
-      const { clienteUserId, subordinadoIds } =
-        await this.repository.buscarIdsLadoCliente(clienteId);
-      return [
-        ...(clienteUserId ? [{ userId: clienteUserId }] : []),
-        ...subordinadoIds.map((subordinadoId) => ({ subordinadoId })),
-      ];
+    tx: Prisma.TransactionClient,
+  ): Promise<Record<'interno' | 'cliente', PessoaConversa[]>> {
+    const participantes = await this.participanteRepository.listarAceitosAtivos(clienteId, tx);
+    const destinatarios: Record<'interno' | 'cliente', PessoaConversa[]> = {
+      interno: [],
+      cliente: [],
+    };
+    for (const participante of participantes) {
+      const ehAutor =
+        'subordinadoId' in autor
+          ? participante.subordinadoId === autor.subordinadoId
+          : participante.userId === autor.userId;
+      if (ehAutor) continue;
+      destinatarios[ladoDoParticipante(participante, clienteId)].push(
+        participante.subordinadoId !== null
+          ? { subordinadoId: participante.subordinadoId }
+          : { userId: participante.userId as bigint },
+      );
     }
-
-    const internos = await this.repository.buscarIdsInternosDaConversa(clienteId);
-    return internos.map((userId) => ({ userId }));
+    return destinatarios;
   }
 }

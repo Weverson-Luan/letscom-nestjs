@@ -1,11 +1,14 @@
 import { Test } from '@nestjs/testing';
+import { SemAcessoConversaException } from '../exceptions/sem-acesso-conversa.exception';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
 import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaAcessoService } from '../services/conversa-acesso.service';
 import { ListarMinhasAnotacoesService } from '../services/listar-minhas-anotacoes.service';
 import { criarAnotacaoFake, criarUsuarioLogadoFake } from './fixtures';
 
 describe('ListarMinhasAnotacoesService', () => {
   const repository = { ehClienteAtivo: jest.fn(), paginar: jest.fn() };
+  const acesso = { garantirAcesso: jest.fn() };
   let service: ListarMinhasAnotacoesService;
   const subordinado = criarUsuarioLogadoFake({
     id: 3n,
@@ -20,9 +23,15 @@ describe('ListarMinhasAnotacoesService', () => {
       providers: [
         ListarMinhasAnotacoesService,
         { provide: ClienteAnotacaoRepository, useValue: repository },
+        { provide: ConversaAcessoService, useValue: acesso },
       ],
     }).compile();
     service = moduleRef.get(ListarMinhasAnotacoesService);
+    acesso.garantirAcesso.mockResolvedValue({
+      participante: null,
+      iniciada: true,
+      semDonoInterno: false,
+    });
     repository.ehClienteAtivo.mockResolvedValue(true);
     repository.paginar.mockResolvedValue({ data: [criarAnotacaoFake()], total: 1 });
   });
@@ -55,6 +64,16 @@ describe('ListarMinhasAnotacoesService', () => {
     await expect(service.execute({}, subordinado)).rejects.toBeInstanceOf(
       ClienteNaoEncontradoException,
     );
+    expect(repository.paginar).not.toHaveBeenCalled();
+  });
+
+  it('lança 403 para quem do lado do cliente não participa, sem paginar', async () => {
+    acesso.garantirAcesso.mockRejectedValue(new SemAcessoConversaException());
+
+    await expect(service.execute({}, subordinado)).rejects.toBeInstanceOf(
+      SemAcessoConversaException,
+    );
+    expect(acesso.garantirAcesso).toHaveBeenCalledWith(5n, subordinado);
     expect(repository.paginar).not.toHaveBeenCalled();
   });
 });

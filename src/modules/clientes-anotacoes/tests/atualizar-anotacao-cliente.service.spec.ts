@@ -1,15 +1,18 @@
 import { Test } from '@nestjs/testing';
+import { SemAcessoConversaException } from '../exceptions/sem-acesso-conversa.exception';
 import { HttpStatus } from '@nestjs/common';
 import { AnotacaoClienteInvalidaException } from '../exceptions/anotacao-cliente-invalida.exception';
 import { AnotacaoClienteNaoEncontradaException } from '../exceptions/anotacao-cliente-nao-encontrada.exception';
 import { SemPermissaoAnotacaoClienteException } from '../exceptions/sem-permissao-anotacao-cliente.exception';
 import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaAcessoService } from '../services/conversa-acesso.service';
 import { AtualizarAnotacaoClienteService } from '../services/atualizar-anotacao-cliente.service';
 import { criarAnexoFake, criarAnotacaoFake, criarUsuarioLogadoFake } from './fixtures';
 
 describe('AtualizarAnotacaoClienteService', () => {
   const repository = { buscarPorId: jest.fn(), atualizar: jest.fn() };
   const usuario = criarUsuarioLogadoFake();
+  const acesso = { garantirAcesso: jest.fn() };
   let service: AtualizarAnotacaoClienteService;
 
   beforeEach(async () => {
@@ -19,9 +22,15 @@ describe('AtualizarAnotacaoClienteService', () => {
       providers: [
         AtualizarAnotacaoClienteService,
         { provide: ClienteAnotacaoRepository, useValue: repository },
+        { provide: ConversaAcessoService, useValue: acesso },
       ],
     }).compile();
     service = moduleRef.get(AtualizarAnotacaoClienteService);
+    acesso.garantirAcesso.mockResolvedValue({
+      participante: null,
+      iniciada: true,
+      semDonoInterno: false,
+    });
     repository.buscarPorId.mockResolvedValue(criarAnotacaoFake());
     repository.atualizar.mockResolvedValue(
       criarAnotacaoFake({ conteudo: 'Novo', editadaEm: new Date() }),
@@ -88,5 +97,14 @@ describe('AtualizarAnotacaoClienteService', () => {
     await expect(promessa).rejects.toBeInstanceOf(SemPermissaoAnotacaoClienteException);
     await expect(promessa).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
     expect(repository.atualizar).not.toHaveBeenCalled();
+  });
+
+  it('lança 403 para quem não participa da conversa, sem buscar a anotação', async () => {
+    acesso.garantirAcesso.mockRejectedValue(new SemAcessoConversaException());
+
+    await expect(service.execute(5n, 30n, { conteudo: 'x' }, usuario)).rejects.toBeInstanceOf(
+      SemAcessoConversaException,
+    );
+    expect(repository.buscarPorId).not.toHaveBeenCalled();
   });
 });

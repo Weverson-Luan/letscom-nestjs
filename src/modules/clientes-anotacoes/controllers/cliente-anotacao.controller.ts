@@ -125,11 +125,13 @@ export class ClienteAnotacaoController {
     @Param('clienteId', ParseIntPipe) clienteId: number,
     @Param('id', ParseIntPipe) id: number,
     @Param('anexoId', ParseIntPipe) anexoId: number,
+    @CurrentUser() usuario: AuthUser,
   ) {
     const { conteudo, disposicao, mimeType } = await this.baixarAnexo.execute(
       BigInt(clienteId),
       BigInt(id),
       BigInt(anexoId),
+      usuario,
     );
     return new StreamableFile(conteudo, {
       type: mimeType,

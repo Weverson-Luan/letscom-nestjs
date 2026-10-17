@@ -44,6 +44,23 @@ export const PAPEIS_ANOTACOES_CLIENTE = [
 /** Papéis do lado do cliente que acessam /minhas-anotacoes. */
 export const PAPEIS_CLIENTE_ANOTACOES = [Role.CLIENTE, Role.SUBORDINADO] as const;
 
+/** Pessoa na conversa: usuário da tabela users (interno ou cliente principal) OU subordinado. */
+export type PessoaConversa = { userId: bigint } | { subordinadoId: bigint };
+
+/** Lado da conversa: equipe Letscom ou empresa do cliente (principal e subordinados). */
+export type LadoConversa = 'interno' | 'cliente';
+
+/** Papéis que respondem convites de conversa (equipe e lado do cliente). */
+export const PAPEIS_CONVITE_CONVERSA = [
+  ...PAPEIS_ANOTACOES_CLIENTE,
+  ...PAPEIS_CLIENTE_ANOTACOES,
+] as const;
+
+/** Papéis internos que podem ser convidados para a conversa. */
+export const PAPEIS_INTERNOS_CONVIDAVEIS = PAPEIS_ANOTACOES_CLIENTE;
+
+export const MAXIMO_CANDIDATOS_CONVITE = 50;
+
 /** Quem escreve a anotação (resolvido a partir do usuário logado). */
 export type AutorAnotacao =
   | { tipo: 'interno' | 'cliente'; userId: bigint; nome: string }

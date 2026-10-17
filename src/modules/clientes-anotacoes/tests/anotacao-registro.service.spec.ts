@@ -4,6 +4,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { AnotacaoClienteInvalidaException } from '../exceptions/anotacao-cliente-invalida.exception';
 import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
 import { AnotacaoRegistroService } from '../services/anotacao-registro.service';
 import { criarAnexoFake, criarAnotacaoFake, criarArquivoFake } from './fixtures';
 
@@ -17,9 +18,8 @@ describe('AnotacaoRegistroService', () => {
     criarAnexos: jest.fn(),
     buscarPorId: jest.fn(),
     buscarNomeCliente: jest.fn(),
-    buscarIdsInternosDaConversa: jest.fn(),
-    buscarIdsLadoCliente: jest.fn(),
   };
+  const participanteRepository = { listarAceitosAtivos: jest.fn() };
   const storage = { put: jest.fn(), delete: jest.fn() };
   const emissor = { emitir: jest.fn() };
   let service: AnotacaoRegistroService;
@@ -34,6 +34,7 @@ describe('AnotacaoRegistroService', () => {
         AnotacaoRegistroService,
         { provide: PrismaService, useValue: prisma },
         { provide: ClienteAnotacaoRepository, useValue: repository },
+        { provide: ConversaParticipanteRepository, useValue: participanteRepository },
         { provide: StorageService, useValue: storage },
         { provide: NotificacaoEmissorService, useValue: emissor },
       ],
@@ -42,14 +43,17 @@ describe('AnotacaoRegistroService', () => {
     repository.criar.mockResolvedValue({ id: 30n });
     repository.buscarPorId.mockResolvedValue(criarAnotacaoFake());
     repository.buscarNomeCliente.mockResolvedValue('Empresa X');
-    repository.buscarIdsLadoCliente.mockResolvedValue({
-      clienteUserId: 5n,
-      subordinadoIds: [3n, 4n],
-    });
-    repository.buscarIdsInternosDaConversa.mockResolvedValue([7n, 8n]);
+    // participantes aceitos: operador (7), outro interno (8), cliente principal (5), subordinados 3 e 4
+    participanteRepository.listarAceitosAtivos.mockResolvedValue([
+      { userId: 7n, subordinadoId: null },
+      { userId: 8n, subordinadoId: null },
+      { userId: 5n, subordinadoId: null },
+      { userId: null, subordinadoId: 3n },
+      { userId: null, subordinadoId: 4n },
+    ]);
   });
 
-  it('equipe escreve: grava anotação e notifica cliente e subordinados na mesma transação', async () => {
+  it('equipe escreve: grava anotação e notifica os demais participantes de cada lado na transação', async () => {
     const resultado = await service.registrar({
       clienteId: 5n,
       autor: autorInterno,
@@ -69,6 +73,15 @@ describe('AnotacaoRegistroService', () => {
       },
       tx,
     );
+    expect(participanteRepository.listarAceitosAtivos).toHaveBeenCalledWith(5n, tx);
+    expect(emissor.emitir).toHaveBeenCalledWith(
+      [{ userId: 8n }],
+      expect.objectContaining({
+        titulo: 'Nova mensagem na conversa com Empresa X',
+        link: '/clientes/5',
+      }),
+      tx,
+    );
     expect(emissor.emitir).toHaveBeenCalledWith(
       [{ userId: 5n }, { subordinadoId: 3n }, { subordinadoId: 4n }],
       {
@@ -80,29 +93,40 @@ describe('AnotacaoRegistroService', () => {
       },
       tx,
     );
-    expect(repository.buscarIdsInternosDaConversa).not.toHaveBeenCalled();
     expect(storage.put).not.toHaveBeenCalled();
     expect(resultado).toEqual(criarAnotacaoFake());
   });
 
-  it('cliente principal inativo não é notificado, só os subordinados', async () => {
-    repository.buscarIdsLadoCliente.mockResolvedValue({
-      clienteUserId: null,
-      subordinadoIds: [3n],
+  it('roda o gancho de início na transação antes de gravar e notifica quem ele registrou', async () => {
+    participanteRepository.listarAceitosAtivos.mockResolvedValue([]);
+    const ordem: string[] = [];
+    const antesDeGravar = jest.fn(async () => {
+      ordem.push('gancho');
+      participanteRepository.listarAceitosAtivos.mockResolvedValue([
+        { userId: 7n, subordinadoId: null },
+        { userId: null, subordinadoId: 3n },
+      ]);
+    });
+    repository.criar.mockImplementation(async () => {
+      ordem.push('criar');
+      return { id: 30n };
     });
 
     await service.registrar({
       clienteId: 5n,
       autor: autorInterno,
       tipo: 'nota',
-      conteudo: 'x',
+      conteudo: 'Olá',
       arquivos: [],
+      antesDeGravar,
     });
 
+    expect(antesDeGravar).toHaveBeenCalledWith(tx);
+    expect(ordem).toEqual(['gancho', 'criar']);
     expect(emissor.emitir).toHaveBeenCalledWith([{ subordinadoId: 3n }], expect.anything(), tx);
   });
 
-  it('subordinado escreve: grava como subordinado, sobe anexo e notifica a equipe da conversa', async () => {
+  it('subordinado escreve: grava, sobe anexo e notifica a equipe e o resto do lado do cliente', async () => {
     repository.buscarPorId.mockResolvedValue(criarAnotacaoFake({ anexos: [criarAnexoFake()] }));
     const arquivo = criarArquivoFake();
 
@@ -144,7 +168,11 @@ describe('AnotacaoRegistroService', () => {
       }),
       tx,
     );
-    expect(repository.buscarIdsLadoCliente).not.toHaveBeenCalled();
+    expect(emissor.emitir).toHaveBeenCalledWith(
+      [{ userId: 5n }, { subordinadoId: 4n }],
+      expect.objectContaining({ titulo: 'Nova mensagem na conversa', link: '/minhas-anotacoes' }),
+      tx,
+    );
   });
 
   it('recusa anotação vazia sem tocar em storage ou banco', async () => {

@@ -1,6 +1,17 @@
 import { Module } from '@nestjs/common';
 import { NotificacoesModule } from '../notificacoes/notificacoes.module';
+import { ConversaParticipanteController } from './controllers/conversa-participante.controller';
+import { ConviteConversaController } from './controllers/convite-conversa.controller';
 import { MinhaAnotacaoController } from './controllers/minha-anotacao.controller';
+import { MinhaConversaParticipanteController } from './controllers/minha-conversa-participante.controller';
+import { ConversaParticipanteRepository } from './repositories/conversa-participante.repository';
+import { AceitarConviteConversaService } from './services/aceitar-convite-conversa.service';
+import { ConversaAcessoService } from './services/conversa-acesso.service';
+import { ConvidarParticipanteConversaService } from './services/convidar-participante-conversa.service';
+import { ListarCandidatosConviteConversaService } from './services/listar-candidatos-convite-conversa.service';
+import { ListarParticipantesConversaService } from './services/listar-participantes-conversa.service';
+import { RecusarConviteConversaService } from './services/recusar-convite-conversa.service';
+import { RemoverParticipanteConversaService } from './services/remover-participante-conversa.service';
 import { AnotacaoRegistroService } from './services/anotacao-registro.service';
 import { BaixarAnexoMinhaAnotacaoService } from './services/baixar-anexo-minha-anotacao.service';
 import { ListarMinhasAnotacoesService } from './services/listar-minhas-anotacoes.service';
@@ -23,6 +34,9 @@ import { RemoverAnotacaoClienteService } from './services/remover-anotacao-clien
     ClienteResumoAnotacoesController,
     ClienteAnotacaoController,
     MinhaAnotacaoController,
+    ConversaParticipanteController,
+    MinhaConversaParticipanteController,
+    ConviteConversaController,
   ],
   providers: [
     ListarClientesAnotacoesService,
@@ -36,6 +50,14 @@ import { RemoverAnotacaoClienteService } from './services/remover-anotacao-clien
     ResponderAnotacoesClienteService,
     BaixarAnexoMinhaAnotacaoService,
     AnotacaoRegistroService,
+    ConversaAcessoService,
+    ListarParticipantesConversaService,
+    ListarCandidatosConviteConversaService,
+    ConvidarParticipanteConversaService,
+    RemoverParticipanteConversaService,
+    AceitarConviteConversaService,
+    RecusarConviteConversaService,
+    ConversaParticipanteRepository,
     ClienteAnotacaoRepository,
     ClienteResumoAnotacoesRepository,
   ],

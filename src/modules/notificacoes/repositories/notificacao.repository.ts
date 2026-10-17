@@ -23,6 +23,7 @@ export class NotificacaoRepository {
     const [data, total] = await Promise.all([
       this.prisma.notificacao.findMany({
         where,
+        include: { participante: { select: { id: true, status: true } } },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: params.skip,
         take: params.take,
@@ -43,6 +44,14 @@ export class NotificacaoRepository {
   marcarLida(id: bigint, tx?: Prisma.TransactionClient) {
     return (tx ?? this.prisma).notificacao.update({
       where: { id },
+      data: { lidaEm: new Date() },
+    });
+  }
+
+  /** Notificações não lidas de um convite de conversa (quem recebeu já respondeu). */
+  marcarLidasDoParticipante(participanteId: bigint, tx?: Prisma.TransactionClient) {
+    return (tx ?? this.prisma).notificacao.updateMany({
+      where: { participanteId, lidaEm: null },
       data: { lidaEm: new Date() },
     });
   }

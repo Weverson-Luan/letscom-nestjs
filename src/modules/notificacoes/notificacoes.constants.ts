@@ -1,6 +1,8 @@
 /** Valores da coluna notificacoes.tipo (VARCHAR para novos tipos não exigirem migration). */
 export const TIPOS_NOTIFICACAO = {
   ANOTACAO_CLIENTE: 'anotacao_cliente',
+  /** Convite para participar da conversa do cliente (aceitar/recusar pela notificação). */
+  CONVITE_CONVERSA: 'convite_conversa',
 } as const;
 
 export type TipoNotificacao = (typeof TIPOS_NOTIFICACAO)[keyof typeof TIPOS_NOTIFICACAO];
@@ -14,6 +16,7 @@ export type DadosNotificacao = {
   mensagem: string;
   link?: string | null;
   anotacaoId?: bigint | null;
+  participanteId?: bigint | null;
 };
 
 export const TAMANHO_MAXIMO_MENSAGEM_NOTIFICACAO = 500;

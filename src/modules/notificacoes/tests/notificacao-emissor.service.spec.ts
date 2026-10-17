@@ -43,6 +43,7 @@ describe('NotificacaoEmissorService', () => {
           mensagem: 'Mensagem',
           link: '/clientes/5',
           anotacaoId: 30n,
+          participanteId: null,
         },
         {
           destinatarioUserId: null,
@@ -52,10 +53,23 @@ describe('NotificacaoEmissorService', () => {
           mensagem: 'Mensagem',
           link: '/clientes/5',
           anotacaoId: 30n,
+          participanteId: null,
         },
       ],
       tx,
     );
+  });
+
+  it('grava o convite vinculado à notificação', async () => {
+    await service.emitir([{ subordinadoId: 3n }], {
+      tipo: 'convite_conversa',
+      titulo: 'Convite para conversa',
+      mensagem: 'Operador convidou você.',
+      participanteId: 9n,
+    });
+
+    const [linha] = repository.criarVarias.mock.calls[0][0];
+    expect(linha).toMatchObject({ tipo: 'convite_conversa', participanteId: 9n, anotacaoId: null });
   });
 
   it('não grava nada sem destinatários', async () => {
@@ -74,6 +88,6 @@ describe('NotificacaoEmissorService', () => {
     expect(linha.mensagem).toHaveLength(500);
     expect(linha.mensagem.endsWith('\u2026')).toBe(true);
     expect(linha.titulo).toHaveLength(191);
-    expect(linha).toMatchObject({ link: null, anotacaoId: null });
+    expect(linha).toMatchObject({ link: null, anotacaoId: null, participanteId: null });
   });
 });

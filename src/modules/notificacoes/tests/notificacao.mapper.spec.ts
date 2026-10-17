@@ -11,9 +11,21 @@ describe('mapearNotificacao', () => {
       mensagem: 'Compras: Ok',
       link: '/clientes/5',
       anotacao_id: 30n,
+      convite: null,
       lida: false,
       lida_em: null,
       created_at: notificacao.createdAt,
+    });
+  });
+
+  it('expõe id e status do convite nas notificações de convite', () => {
+    const notificacao = {
+      ...criarNotificacaoFake({ tipo: 'convite_conversa', anotacaoId: null, participanteId: 9n }),
+      participante: { id: 9n, status: 'pendente' as const },
+    };
+    expect(mapearNotificacao(notificacao)).toMatchObject({
+      tipo: 'convite_conversa',
+      convite: { id: 9n, status: 'pendente' },
     });
   });
 

@@ -1,4 +1,5 @@
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
+import { ClienteNaoEncontradoException } from '../../exceptions/cliente-nao-encontrado.exception';
 import { AutorAnotacao } from '../../clientes-anotacoes.constants';
 
 function montarNomeExibicao(usuario: AuthUser): string {
@@ -21,4 +22,11 @@ export function montarAutorCliente(usuario: AuthUser): AutorAnotacao {
 export function extrairClienteIdDoUsuario(usuario: AuthUser): bigint | null {
   if (usuario.tipoLogin === 'subordinado') return usuario.clienteId ?? null;
   return usuario.id;
+}
+
+/** Empresa do usuário do lado do cliente; sem empresa vinculada é 404. */
+export function exigirClienteIdDoUsuario(usuario: AuthUser): bigint {
+  const clienteId = extrairClienteIdDoUsuario(usuario);
+  if (!clienteId) throw new ClienteNaoEncontradoException();
+  return clienteId;
 }

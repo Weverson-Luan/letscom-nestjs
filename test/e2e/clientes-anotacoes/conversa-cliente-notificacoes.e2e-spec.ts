@@ -12,6 +12,8 @@ import { limparBanco } from '../helpers/limpar-banco';
 
 const MINHAS = `${PREFIXO_API}/minhas-anotacoes`;
 const NOTIFICACOES = `${PREFIXO_API}/notificacoes`;
+const MENSAGEM_SEM_ACESSO =
+  'Você não participa desta conversa. Peça um convite a quem iniciou a conversa.';
 const PAPEIS_INTERNOS = [Role.ADMIN, Role.CONSULTOR, Role.PRODUCAO, Role.RECEPCAO];
 
 describe('Conversa com o cliente e notificações (e2e)', () => {
@@ -129,24 +131,25 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
     });
   });
 
-  it('equipe escreve → cliente e subordinado são notificados e veem tudo', async () => {
+  it('equipe inicia com o subordinado → só ele é notificado e vê tudo; o principal fica de fora', async () => {
     const { consultor, cliente, sub } = await prepararCenario();
 
     const criada = await request(app.getHttpServer())
       .post(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
       .set('Authorization', `Bearer ${consultor.token}`)
       .field('conteudo', 'Segue a proposta.')
+      .field('subordinado_id', String(sub.subordinado.id))
       .attach('anexos', Buffer.from('%PDF'), 'proposta.pdf');
     expect(criada.status).toBe(201);
 
     const notificacoes = await prisma.notificacao.findMany({ orderBy: { id: 'asc' } });
     expect(notificacoes).toEqual([
       expect.objectContaining({
-        destinatarioUserId: cliente.usuario.id,
+        destinatarioSubordinadoId: sub.subordinado.id,
+        destinatarioUserId: null,
         link: '/minhas-anotacoes',
         titulo: 'Nova mensagem da equipe Letscom',
       }),
-      expect.objectContaining({ destinatarioSubordinadoId: sub.subordinado.id }),
     ]);
 
     const lista = await request(app.getHttpServer())
@@ -175,13 +178,27 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       .get(`${NOTIFICACOES}/nao-lidas/contagem`)
       .set('Authorization', `Bearer ${sub.token}`);
     expect(contagem.body.data).toEqual({ nao_lidas: 1 });
+
+    // o cliente principal não é participante: sem convite não lê nem baixa
+    const principal = await request(app.getHttpServer())
+      .get(MINHAS)
+      .set('Authorization', `Bearer ${cliente.token}`);
+    const principalAnexo = await request(app.getHttpServer())
+      .get(`${MINHAS}/${criada.body.data.id}/anexos/${anexo.id}`)
+      .set('Authorization', `Bearer ${cliente.token}`);
+    expect(principal.status).toBe(403);
+    expect(principal.body.message).toBe(MENSAGEM_SEM_ACESSO);
+    expect(principalAnexo.status).toBe(403);
   });
 
-  it('subordinado responde → consultor vinculado e participantes são notificados', async () => {
+  it('subordinado responde → só os participantes aceitos são notificados (não o consultor vinculado)', async () => {
     const { consultor, outroInterno, cliente, sub } = await prepararCenario();
-    await prisma.clienteAnotacao.create({
-      data: { clienteId: cliente.usuario.id, autorId: outroInterno.usuario.id, conteudo: 'oi' },
-    });
+    const iniciada = await request(app.getHttpServer())
+      .post(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
+      .set('Authorization', `Bearer ${outroInterno.token}`)
+      .field('conteudo', 'oi')
+      .field('subordinado_id', String(sub.subordinado.id));
+    expect(iniciada.status).toBe(201);
 
     const resposta = await request(app.getHttpServer())
       .post(MINHAS)
@@ -213,23 +230,38 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       autorSubordinadoId: sub.subordinado.id,
     });
 
-    const destinatarios = (
-      await prisma.notificacao.findMany({ where: { anotacaoId: gravada!.id } })
-    ).map((n) => n.destinatarioUserId);
-    expect(destinatarios.sort()).toEqual([consultor.usuario.id, outroInterno.usuario.id].sort());
+    const notificacoes = await prisma.notificacao.findMany({ where: { anotacaoId: gravada!.id } });
+    expect(notificacoes).toEqual([
+      expect.objectContaining({
+        destinatarioUserId: outroInterno.usuario.id,
+        titulo: `${cliente.usuario.nome} respondeu`,
+        link: `/clientes/${cliente.usuario.id}`,
+      }),
+    ]);
 
     const internoVe = await request(app.getHttpServer())
       .get(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
-      .set('Authorization', `Bearer ${consultor.token}`);
+      .set('Authorization', `Bearer ${outroInterno.token}`);
     expect(internoVe.body.data[0]).toMatchObject({
       autor: { tipo: 'subordinado' },
       pode_editar: false,
       pode_excluir: false,
     });
+
+    // o consultor vinculado ao cliente não participa da conversa iniciada por outro operador
+    const consultorVe = await request(app.getHttpServer())
+      .get(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
+      .set('Authorization', `Bearer ${consultor.token}`);
+    expect(consultorVe.status).toBe(403);
   });
 
-  it('cliente principal responde → gravado como cliente e consultor notificado', async () => {
+  it('cliente principal responde → gravado como cliente e o dono interno notificado', async () => {
     const { consultor, cliente } = await prepararCenario();
+    const iniciada = await request(app.getHttpServer())
+      .post(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
+      .set('Authorization', `Bearer ${consultor.token}`)
+      .field('conteudo', 'Podemos faturar?');
+    expect(iniciada.status).toBe(201);
 
     const resposta = await request(app.getHttpServer())
       .post(MINHAS)
@@ -246,11 +278,14 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
     });
     expect(gravada).toMatchObject({ autorTipo: 'cliente', autorId: cliente.usuario.id });
 
-    const notificacao = await prisma.notificacao.findFirst({ where: { anotacaoId: gravada!.id } });
-    expect(notificacao).toMatchObject({
-      destinatarioUserId: consultor.usuario.id,
-      link: `/clientes/${cliente.usuario.id}`,
-    });
+    const notificacoes = await prisma.notificacao.findMany({ where: { anotacaoId: gravada!.id } });
+    expect(notificacoes).toEqual([
+      expect.objectContaining({
+        destinatarioUserId: consultor.usuario.id,
+        titulo: `${cliente.usuario.nome} respondeu`,
+        link: `/clientes/${cliente.usuario.id}`,
+      }),
+    ]);
 
     const contagem = await request(app.getHttpServer())
       .get(`${NOTIFICACOES}/nao-lidas/contagem`)

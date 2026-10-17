@@ -105,52 +105,6 @@ export class ClienteAnotacaoRepository {
     return cliente?.nome ?? null;
   }
 
-  /**
-   * Equipe interna a avisar quando o cliente escreve: consultores vinculados
-   * (cliente_consultor) + internos que já escreveram na conversa. Só usuários ativos.
-   */
-  async buscarIdsInternosDaConversa(clienteId: bigint): Promise<bigint[]> {
-    const [consultores, participantes] = await Promise.all([
-      this.prisma.clienteConsultor.findMany({
-        where: { clienteId, consultor: { ativo: true, deletedAt: null } },
-        select: { consultorId: true },
-      }),
-      this.prisma.clienteAnotacao.findMany({
-        where: {
-          clienteId,
-          autorTipo: 'interno',
-          deletedAt: null,
-          autor: { ativo: true, deletedAt: null },
-        },
-        distinct: ['autorId'],
-        select: { autorId: true },
-      }),
-    ]);
-    const ids = [
-      ...consultores.map((linha) => linha.consultorId),
-      ...participantes.map((linha) => linha.autorId).filter((id): id is bigint => id !== null),
-    ];
-    return [...new Map(ids.map((id) => [id.toString(), id])).values()];
-  }
-
-  /** Lado do cliente a avisar quando a equipe escreve: cliente principal + subordinados ativos. */
-  async buscarIdsLadoCliente(clienteId: bigint) {
-    const [cliente, subordinados] = await Promise.all([
-      this.prisma.user.findFirst({
-        where: { id: clienteId, ativo: true, deletedAt: null },
-        select: { id: true },
-      }),
-      this.prisma.userCliente.findMany({
-        where: { clienteId, ativo: true },
-        select: { id: true },
-      }),
-    ]);
-    return {
-      clienteUserId: cliente?.id ?? null,
-      subordinadoIds: subordinados.map((subordinado) => subordinado.id),
-    };
-  }
-
   buscarAnexo(clienteId: bigint, anotacaoId: bigint, anexoId: bigint) {
     return this.prisma.clienteAnotacaoAnexo.findFirst({
       where: { id: anexoId, anotacaoId, anotacao: { clienteId, deletedAt: null } },

@@ -38,6 +38,7 @@ export class NotificacaoEmissorService {
         mensagem,
         link: dados.link ?? null,
         anotacaoId: dados.anotacaoId ?? null,
+        participanteId: dados.participanteId ?? null,
       })),
       tx,
     );

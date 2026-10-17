@@ -89,42 +89,6 @@ describe('ClienteAnotacaoRepository', () => {
     });
   });
 
-  it('busca internos da conversa: consultores + participantes ativos, sem repetir', async () => {
-    prisma.clienteConsultor.findMany.mockResolvedValue([{ consultorId: 7n }, { consultorId: 9n }]);
-    prisma.clienteAnotacao.findMany.mockResolvedValue([{ autorId: 7n }, { autorId: 8n }]);
-
-    await expect(repository.buscarIdsInternosDaConversa(5n)).resolves.toEqual([7n, 9n, 8n]);
-    expect(prisma.clienteConsultor.findMany).toHaveBeenCalledWith({
-      where: { clienteId: 5n, consultor: { ativo: true, deletedAt: null } },
-      select: { consultorId: true },
-    });
-    expect(prisma.clienteAnotacao.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          clienteId: 5n,
-          autorTipo: 'interno',
-          deletedAt: null,
-          autor: { ativo: true, deletedAt: null },
-        },
-        distinct: ['autorId'],
-      }),
-    );
-  });
-
-  it('busca lado do cliente: principal ativo e subordinados ativos', async () => {
-    prisma.user.findFirst.mockResolvedValue(null);
-    prisma.userCliente.findMany.mockResolvedValue([{ id: 3n }]);
-
-    await expect(repository.buscarIdsLadoCliente(5n)).resolves.toEqual({
-      clienteUserId: null,
-      subordinadoIds: [3n],
-    });
-    expect(prisma.userCliente.findMany).toHaveBeenCalledWith({
-      where: { clienteId: 5n, ativo: true },
-      select: { id: true },
-    });
-  });
-
   it('busca o nome do cliente ou null', async () => {
     prisma.user.findUnique.mockResolvedValueOnce({ nome: 'Empresa X' }).mockResolvedValueOnce(null);
 

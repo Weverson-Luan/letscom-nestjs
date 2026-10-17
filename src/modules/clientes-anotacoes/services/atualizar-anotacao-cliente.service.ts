@@ -6,12 +6,16 @@ import { AnotacaoClienteNaoEncontradaException } from '../exceptions/anotacao-cl
 import { SemPermissaoAnotacaoClienteException } from '../exceptions/sem-permissao-anotacao-cliente.exception';
 import { mapearAnotacaoCliente } from '../mappers/anotacao-cliente.mapper';
 import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaAcessoService } from './conversa-acesso.service';
 import { podeEditarAnotacao } from './helpers/permissoes-anotacao.helper';
 
 /** Edita texto e/ou tipo da anotação. Só o autor; marca `editada_em`. */
 @Injectable()
 export class AtualizarAnotacaoClienteService {
-  constructor(private readonly repository: ClienteAnotacaoRepository) {}
+  constructor(
+    private readonly repository: ClienteAnotacaoRepository,
+    private readonly acesso: ConversaAcessoService,
+  ) {}
 
   async execute(
     clienteId: bigint,
@@ -19,6 +23,7 @@ export class AtualizarAnotacaoClienteService {
     dados: AtualizarAnotacaoClienteDto,
     usuario: AuthUser,
   ) {
+    await this.acesso.garantirAcesso(clienteId, usuario);
     const anotacao = await this.repository.buscarPorId(clienteId, id);
     if (!anotacao) throw new AnotacaoClienteNaoEncontradaException();
     if (!podeEditarAnotacao(anotacao, usuario)) {

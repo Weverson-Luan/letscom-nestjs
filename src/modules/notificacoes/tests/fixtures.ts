@@ -23,6 +23,7 @@ export function criarNotificacaoFake(sobrescrever: Partial<Notificacao> = {}): N
     mensagem: 'Compras: Ok',
     link: '/clientes/5',
     anotacaoId: 30n,
+    participanteId: null,
     lidaEm: null,
     createdAt: new Date('2026-10-16T12:00:00.000Z'),
     ...sobrescrever,

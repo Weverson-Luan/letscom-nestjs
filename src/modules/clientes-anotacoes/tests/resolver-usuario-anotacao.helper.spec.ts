@@ -1,4 +1,6 @@
+import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
 import {
+  exigirClienteIdDoUsuario,
   extrairClienteIdDoUsuario,
   montarAutorCliente,
   montarAutorInterno,
@@ -36,5 +38,19 @@ describe('resolver usuário da anotação', () => {
     expect(extrairClienteIdDoUsuario(criarUsuarioLogadoFake({ id: 5n }))).toBe(5n);
     expect(extrairClienteIdDoUsuario(subordinado)).toBe(5n);
     expect(extrairClienteIdDoUsuario({ ...subordinado, clienteId: undefined })).toBeNull();
+  });
+
+  it('exige a empresa: principal usa o próprio id, subordinado a do vínculo, sem vínculo é 404', () => {
+    expect(exigirClienteIdDoUsuario(criarUsuarioLogadoFake({ id: 5n, roles: ['cliente'] }))).toBe(
+      5n,
+    );
+    expect(
+      exigirClienteIdDoUsuario(criarUsuarioLogadoFake({ tipoLogin: 'subordinado', clienteId: 5n })),
+    ).toBe(5n);
+    expect(() =>
+      exigirClienteIdDoUsuario(
+        criarUsuarioLogadoFake({ tipoLogin: 'subordinado', clienteId: null }),
+      ),
+    ).toThrow(ClienteNaoEncontradoException);
   });
 });

@@ -1,6 +1,8 @@
 import { AnotacaoClienteInvalidaException } from '../exceptions/anotacao-cliente-invalida.exception';
 import {
+  corrigirNomeArquivo,
   extrairExtensao,
+  normalizarNomesAnexos,
   montarCaminhoAnexo,
   validarAnexosAnotacao,
 } from '../services/helpers/validar-anexos-anotacao.helper';
@@ -59,5 +61,28 @@ describe('montarCaminhoAnexo', () => {
     expect(montarCaminhoAnexo(5n, 'Proposta Final.PDF', 'abc-123')).toBe(
       'clientes/5/anotacoes/abc-123.pdf',
     );
+  });
+});
+
+describe('corrigirNomeArquivo / normalizarNomesAnexos', () => {
+  // como o busboy entrega um nome UTF-8 lido como latin1
+  const comoLatin1 = (nome: string) => Buffer.from(nome, 'utf8').toString('latin1');
+
+  it('recupera acentos de nome UTF-8 lido como latin1', () => {
+    expect(comoLatin1('orçamento.pdf')).toBe('orÃ§amento.pdf');
+    expect(corrigirNomeArquivo(comoLatin1('orçamento.pdf'))).toBe('orçamento.pdf');
+    expect(corrigirNomeArquivo(comoLatin1('relatório ção.xlsx'))).toBe('relatório ção.xlsx');
+  });
+
+  it('mantém nomes ASCII e nomes que não formam UTF-8 válido', () => {
+    expect(corrigirNomeArquivo('proposta.pdf')).toBe('proposta.pdf');
+    // "é" isolado em latin1 (0xE9) não é UTF-8 válido: fica como veio
+    expect(corrigirNomeArquivo('café.pdf')).toBe('café.pdf');
+  });
+
+  it('corrige o nome de cada anexo sem alterar o conteúdo', () => {
+    const arquivo = criarArquivoFake({ originalname: comoLatin1('orçamento.pdf') });
+    const [normalizado] = normalizarNomesAnexos([arquivo]);
+    expect(normalizado).toEqual({ ...arquivo, originalname: 'orçamento.pdf' });
   });
 });

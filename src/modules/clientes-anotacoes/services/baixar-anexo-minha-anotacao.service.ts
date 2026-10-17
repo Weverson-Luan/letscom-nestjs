@@ -3,20 +3,23 @@ import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { AnexoAnotacaoNaoEncontradoException } from '../exceptions/anexo-anotacao-nao-encontrado.exception';
 import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaAcessoService } from './conversa-acesso.service';
 import { montarContentDisposition } from './helpers/montar-content-disposition.helper';
 import { extrairClienteIdDoUsuario } from './helpers/resolver-usuario-anotacao.helper';
 
-/** Download de anexo pelo cliente: só de anotações da própria empresa. */
+/** Download de anexo pelo cliente: só de anotações da própria empresa e se participa da conversa. */
 @Injectable()
 export class BaixarAnexoMinhaAnotacaoService {
   constructor(
     private readonly repository: ClienteAnotacaoRepository,
     private readonly storage: StorageService,
+    private readonly acesso: ConversaAcessoService,
   ) {}
 
   async execute(anotacaoId: bigint, anexoId: bigint, usuario: AuthUser) {
     const clienteId = extrairClienteIdDoUsuario(usuario);
     if (!clienteId) throw new AnexoAnotacaoNaoEncontradoException();
+    await this.acesso.garantirAcesso(clienteId, usuario);
 
     const anexo = await this.repository.buscarAnexo(clienteId, anotacaoId, anexoId);
     if (!anexo) throw new AnexoAnotacaoNaoEncontradoException();

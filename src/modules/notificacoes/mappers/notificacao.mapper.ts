@@ -1,6 +1,11 @@
-import { Notificacao } from '@prisma/client';
+import { ConversaParticipanteStatus, Notificacao } from '@prisma/client';
 
-export function mapearNotificacao(notificacao: Notificacao) {
+type NotificacaoComConvite = Notificacao & {
+  participante?: { id: bigint; status: ConversaParticipanteStatus } | null;
+};
+
+/** `convite` vem preenchido nas notificações de convite: o front mostra aceitar/recusar se pendente. */
+export function mapearNotificacao(notificacao: NotificacaoComConvite) {
   return {
     id: notificacao.id,
     tipo: notificacao.tipo,
@@ -8,6 +13,9 @@ export function mapearNotificacao(notificacao: Notificacao) {
     mensagem: notificacao.mensagem,
     link: notificacao.link,
     anotacao_id: notificacao.anotacaoId,
+    convite: notificacao.participante
+      ? { id: notificacao.participante.id, status: notificacao.participante.status }
+      : null,
     lida: notificacao.lidaEm !== null,
     lida_em: notificacao.lidaEm,
     created_at: notificacao.createdAt,

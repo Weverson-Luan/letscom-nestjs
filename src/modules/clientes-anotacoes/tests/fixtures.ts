@@ -2,6 +2,8 @@ import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { ArquivoAnexo } from '../clientes-anotacoes.constants';
 import { AnotacaoComRelacoes } from '../repositories/cliente-anotacao.repository';
 import { LinhaResumoCliente } from '../repositories/cliente-resumo-anotacoes.repository';
+import { ParticipanteComPessoa } from '../repositories/conversa-participante.repository';
+import { DonoConversa } from '../services/helpers/participante-conversa.helper';
 
 export function criarUsuarioLogadoFake(sobrescrever: Partial<AuthUser> = {}): AuthUser {
   return {
@@ -71,6 +73,53 @@ export function criarLinhaResumoFake(
     ativo: 1,
     total_anotacoes: 3n,
     ultima_anotacao_em: new Date('2026-10-10T12:00:00.000Z'),
+    ...sobrescrever,
+  };
+}
+
+/** Participante interno (operador 7) dono da conversa do cliente 5, com convite aceito. */
+export function criarParticipanteFake(
+  sobrescrever: Partial<ParticipanteComPessoa> = {},
+): ParticipanteComPessoa {
+  return {
+    id: 60n,
+    clienteId: 5n,
+    userId: 7n,
+    subordinadoId: null,
+    papel: 'dono',
+    status: 'aceito',
+    convidadoPorUserId: null,
+    convidadoPorSubordinadoId: null,
+    respondidoEm: new Date('2026-10-10T12:00:00.000Z'),
+    createdAt: new Date('2026-10-10T12:00:00.000Z'),
+    updatedAt: new Date('2026-10-10T12:00:00.000Z'),
+    user: { id: 7n, nome: 'Operador', email: 'operador@letscom.com' },
+    subordinado: null,
+    ...sobrescrever,
+  };
+}
+
+/** Subordinado 3 do cliente 5 como participante. */
+export function criarParticipanteSubordinadoFake(
+  sobrescrever: Partial<ParticipanteComPessoa> = {},
+): ParticipanteComPessoa {
+  return criarParticipanteFake({
+    id: 61n,
+    userId: null,
+    subordinadoId: 3n,
+    user: null,
+    subordinado: { id: 3n, nome: 'Compras', email: 'compras@cliente.test' },
+    ...sobrescrever,
+  });
+}
+
+/** Dono como vem de `listarDonos` (operador 7 ativo, por padrão). */
+export function criarDonoFake(sobrescrever: Partial<DonoConversa> = {}): DonoConversa {
+  return {
+    id: 1n,
+    userId: 7n,
+    subordinadoId: null,
+    user: { ativo: true, deletedAt: null },
     ...sobrescrever,
   };
 }
