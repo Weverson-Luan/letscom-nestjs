@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, RemessaStatusEtapa } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { RemessaStatusRepository } from '../repositories/remessa-status.repository';
+import { AutorStatus, extrairAutorStatus } from './helpers/remessa-status-autor.helper';
 import { RemessasCacheService } from './remessas-cache.service';
 
 /**
@@ -16,20 +17,30 @@ export class RemessaStatusService {
     private readonly cache: RemessasCacheService,
   ) {}
 
-  /** Versão transacional (sem cache) para uso dentro do fluxo de solicitação. */
+  /**
+   * Versão transacional (sem cache) para uso dentro do fluxo de solicitação.
+   * `userId` = usuário interno que fez a mudança (nulo quando não há um em `users`).
+   */
   async registrarStatusTx(
     tx: Prisma.TransactionClient,
     remessaId: bigint,
     status: RemessaStatusEtapa,
+    userId: bigint | null = null,
   ): Promise<void> {
     if (await this.repository.exists(remessaId, status, tx)) return;
 
-    await this.repository.create({ remessaId, status, dataStatus: new Date() }, tx);
+    await this.repository.create({ remessaId, status, dataStatus: new Date(), userId }, tx);
     await tx.remessa.update({ where: { id: remessaId }, data: { status } });
   }
 
   /** Versão standalone: transação própria + invalidação de cache. */
-  async registrarStatus(remessaId: bigint, status: RemessaStatusEtapa): Promise<void> {
+  async registrarStatus(
+    remessaId: bigint,
+    status: RemessaStatusEtapa,
+    autor: AutorStatus | null = null,
+  ): Promise<void> {
+    const userId = extrairAutorStatus(autor);
+
     const remessa = await this.prisma.remessa.findUnique({
       where: { id: remessaId },
       select: { clienteId: true },
@@ -39,7 +50,7 @@ export class RemessaStatusService {
     if (await this.repository.exists(remessaId, status)) return;
 
     await this.prisma.$transaction(async (tx) => {
-      await this.repository.create({ remessaId, status, dataStatus: new Date() }, tx);
+      await this.repository.create({ remessaId, status, dataStatus: new Date(), userId }, tx);
       await tx.remessa.update({ where: { id: remessaId }, data: { status } });
     });
 

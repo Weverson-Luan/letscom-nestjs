@@ -63,15 +63,19 @@ export class DashboardRepository {
     }
 
     const statusLogs = await this.prisma.remessaStatus.findMany({
-      include: { remessa: { select: { id: true, numeroRemessa: true } } },
+      include: {
+        remessa: { select: { id: true, numeroRemessa: true } },
+        usuario: { select: { nome: true } },
+      },
       orderBy: { dataStatus: 'desc' },
       take: limit,
     });
     for (const log of statusLogs) {
       const numero = log.remessa?.numeroRemessa?.toString() ?? String(log.remessaId);
+      const autor = log.usuario?.nome ? ` por ${log.usuario.nome}` : '';
       atividades.push({
         tipo: 'status_alterado',
-        descricao: `Remessa #${numero} avançou para ${log.status}.`,
+        descricao: `Remessa #${numero} avançou para ${log.status}${autor}.`,
         created_at: log.dataStatus,
       });
     }

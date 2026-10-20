@@ -65,6 +65,7 @@ export class SolicitacaoRemessaService {
             tx,
             criada.id,
             data.status as RemessaStatusEtapa,
+            data.user_id_solicitante_remessa ? BigInt(data.user_id_solicitante_remessa) : null,
           );
 
           return criada;

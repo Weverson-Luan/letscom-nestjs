@@ -154,6 +154,7 @@ model User {
   remessasConsultor        Remessa[]                           @relation("RemessaConsultor")
   remessasSolicitante      Remessa[]                           @relation("RemessaSolicitante")
   remessasExecutor         Remessa[]                           @relation("RemessaExecutor")
+  remessasStatusAlterados  RemessaStatus[]                     @relation("RemessaStatusUsuario")
   remessaFotos             RemessaFoto[]
   remessaPlanilhas         RemessaPlanilha[]
   vendasCliente            CreditSale[]                        @relation("VendaCliente")
@@ -480,11 +481,15 @@ model RemessaStatus {
   remessaId  BigInt             @map("remessa_id") @db.UnsignedBigInt
   status     RemessaStatusEtapa
   dataStatus DateTime           @default(now()) @map("data_status")
+  /// quem registrou a mudança (usuário interno); nulo no legado e em ações de subordinado
+  userId     BigInt?            @map("user_id") @db.UnsignedBigInt
   createdAt  DateTime?          @default(now()) @map("created_at")
   updatedAt  DateTime?          @updatedAt @map("updated_at")
 
   remessa Remessa @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  usuario User?   @relation("RemessaStatusUsuario", fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([userId], map: "remessas_status_user_id_index")
   @@map("remessas_status")
 }
 
