@@ -12,12 +12,14 @@ describe('ClienteCompromissoRepository', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    clienteCompromissoAnexo: { createMany: jest.fn(), findFirst: jest.fn() },
   };
   const repository = new ClienteCompromissoRepository(prisma as unknown as PrismaService);
   const include = {
     autor: { select: { id: true, nome: true } },
     responsavel: { select: { id: true, nome: true } },
     responsavelSubordinado: { select: { id: true, nome: true, email: true } },
+    anexos: { orderBy: { id: 'asc' } },
   };
 
   beforeEach(() => jest.clearAllMocks());
@@ -139,6 +141,33 @@ describe('ClienteCompromissoRepository', () => {
     expect(prisma.clienteCompromisso.update).toHaveBeenCalledWith({
       where: { id: 1n },
       data: { deletedAt: expect.any(Date) },
+    });
+  });
+
+  it('cria anexos em lote usando a transação quando informada', async () => {
+    const tx = { clienteCompromissoAnexo: { createMany: jest.fn() } };
+    const anexos = [
+      {
+        compromissoId: 1n,
+        nomeOriginal: 'a.pdf',
+        filePath: 'clientes/5/agenda/compromissos/u.pdf',
+        mimeType: 'application/pdf',
+        tamanhoBytes: 3,
+      },
+    ];
+
+    await repository.criarAnexos(anexos, tx as unknown as Prisma.TransactionClient);
+    await repository.criarAnexos(anexos);
+
+    expect(tx.clienteCompromissoAnexo.createMany).toHaveBeenCalledWith({ data: anexos });
+    expect(prisma.clienteCompromissoAnexo.createMany).toHaveBeenCalledWith({ data: anexos });
+  });
+
+  it('busca anexo restrito ao compromisso, ao cliente e a compromisso não excluído', async () => {
+    await repository.buscarAnexo(5n, 1n, 40n);
+
+    expect(prisma.clienteCompromissoAnexo.findFirst).toHaveBeenCalledWith({
+      where: { id: 40n, compromissoId: 1n, compromisso: { clienteId: 5n, deletedAt: null } },
     });
   });
 });

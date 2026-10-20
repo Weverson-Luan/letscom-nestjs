@@ -4,6 +4,7 @@ import { MinhaAgendaController } from './controllers/minha-agenda.controller';
 import { ClienteCompromissoRepository } from './repositories/cliente-compromisso.repository';
 import { ResponsavelCompromissoRepository } from './repositories/responsavel-compromisso.repository';
 import { AtualizarCompromissoClienteService } from './services/atualizar-compromisso-cliente.service';
+import { BaixarAnexoCompromissoClienteService } from './services/baixar-anexo-compromisso-cliente.service';
 import { CriarCompromissoClienteService } from './services/criar-compromisso-cliente.service';
 import { ListarCompromissosClienteService } from './services/listar-compromissos-cliente.service';
 import { ListarMinhaAgendaService } from './services/listar-minha-agenda.service';
@@ -20,6 +21,7 @@ import { ValidacaoResponsavelCompromissoService } from './services/validacao-res
     RemoverCompromissoClienteService,
     ListarResponsaveisCompromissoService,
     ListarMinhaAgendaService,
+    BaixarAnexoCompromissoClienteService,
     ValidacaoResponsavelCompromissoService,
     ClienteCompromissoRepository,
     ResponsavelCompromissoRepository,

@@ -9,19 +9,29 @@ import {
   Post,
   Put,
   Query,
+  StreamableFile,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Feature } from 'src/shared/auth/features';
 import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { ApiResponse } from 'src/shared/utils/api-response';
-import { PAPEIS_AGENDA_INTERNO } from '../clientes-agenda.constants';
+import {
+  ArquivoAnexo,
+  MAXIMO_ANEXOS_POR_COMPROMISSO,
+  PAPEIS_AGENDA_INTERNO,
+  TAMANHO_MAXIMO_ANEXO_BYTES,
+} from '../clientes-agenda.constants';
 import { AtualizarCompromissoClienteDto } from '../dto/atualizar-compromisso-cliente.dto';
 import { CriarCompromissoClienteDto } from '../dto/criar-compromisso-cliente.dto';
 import { ListarAgendaQueryDto } from '../dto/listar-agenda-query.dto';
 import { ListarResponsaveisQueryDto } from '../dto/listar-responsaveis-query.dto';
 import { AtualizarCompromissoClienteService } from '../services/atualizar-compromisso-cliente.service';
+import { BaixarAnexoCompromissoClienteService } from '../services/baixar-anexo-compromisso-cliente.service';
 import { CriarCompromissoClienteService } from '../services/criar-compromisso-cliente.service';
 import { ListarCompromissosClienteService } from '../services/listar-compromissos-cliente.service';
 import { ListarResponsaveisCompromissoService } from '../services/listar-responsaveis-compromisso.service';
@@ -40,6 +50,7 @@ export class AgendaClienteController {
     private readonly atualizarCompromisso: AtualizarCompromissoClienteService,
     private readonly removerCompromisso: RemoverCompromissoClienteService,
     private readonly listarResponsaveisService: ListarResponsaveisCompromissoService,
+    private readonly baixarAnexo: BaixarAnexoCompromissoClienteService,
   ) {}
 
   @Get()
@@ -72,13 +83,27 @@ export class AgendaClienteController {
   @Post()
   @HttpCode(201)
   @RequireFeatures(Feature.GERENCIAR_AGENDA_CLIENTE)
-  @ApiOperation({ summary: 'Cria um compromisso na agenda do cliente' })
+  @ApiConsumes('application/json', 'multipart/form-data')
+  @UseInterceptors(
+    FilesInterceptor('anexos', MAXIMO_ANEXOS_POR_COMPROMISSO, {
+      limits: { fileSize: TAMANHO_MAXIMO_ANEXO_BYTES },
+    }),
+  )
+  @ApiOperation({
+    summary: 'Cria um compromisso na agenda do cliente (anexos opcionais no campo `anexos`)',
+  })
   async criar(
     @Param('clienteId', ParseIntPipe) clienteId: number,
     @Body() body: CriarCompromissoClienteDto,
     @CurrentUser() usuario: AuthUser,
+    @UploadedFiles() arquivos?: ArquivoAnexo[],
   ) {
-    const data = await this.criarCompromisso.execute(BigInt(clienteId), body, usuario);
+    const data = await this.criarCompromisso.execute(
+      BigInt(clienteId),
+      body,
+      usuario,
+      arquivos ?? [],
+    );
     return ApiResponse.success('Compromisso criado com sucesso!', data, null, 201);
   }
 
@@ -105,5 +130,27 @@ export class AgendaClienteController {
   ) {
     await this.removerCompromisso.execute(BigInt(clienteId), BigInt(id));
     return ApiResponse.success('Compromisso excluído com sucesso!', null);
+  }
+
+  @Get(':id/anexos/:anexoId')
+  @RequireFeatures(Feature.VISUALIZAR_AGENDA_CLIENTE)
+  @ApiParam({ name: 'id', description: 'ID do compromisso' })
+  @ApiParam({ name: 'anexoId', description: 'ID do anexo' })
+  @ApiOperation({ summary: 'Baixa um anexo do compromisso' })
+  async baixar(
+    @Param('clienteId', ParseIntPipe) clienteId: number,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('anexoId', ParseIntPipe) anexoId: number,
+  ) {
+    const { conteudo, disposicao, mimeType } = await this.baixarAnexo.execute(
+      BigInt(clienteId),
+      BigInt(id),
+      BigInt(anexoId),
+    );
+    return new StreamableFile(conteudo, {
+      type: mimeType,
+      disposition: disposicao,
+      length: conteudo.length,
+    });
   }
 }

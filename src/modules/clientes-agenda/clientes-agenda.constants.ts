@@ -22,3 +22,31 @@ export const POR_PAGINA_PADRAO_AGENDA = 20;
 export const POR_PAGINA_MAXIMO_AGENDA = 50;
 
 export const NOME_USUARIO_REMOVIDO = 'Usuário removido';
+
+export const MAXIMO_ANEXOS_POR_COMPROMISSO = 5;
+export const TAMANHO_MAXIMO_ANEXO_BYTES = 10 * 1024 * 1024;
+
+/** Validação por extensão: o mimetype vem do navegador e não é confiável. */
+export const EXTENSOES_ANEXO_PERMITIDAS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'pdf',
+  'doc',
+  'docx',
+  'xls',
+  'xlsx',
+  'csv',
+  'txt',
+  'zip',
+] as const;
+
+/** Arquivo recebido pelo Multer (memoryStorage). */
+export type ArquivoAnexo = {
+  buffer: Buffer;
+  originalname: string;
+  mimetype?: string;
+  size?: number;
+};

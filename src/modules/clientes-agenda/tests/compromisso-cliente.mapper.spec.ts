@@ -3,7 +3,7 @@ import {
   mapearCompromissoCliente,
   mapearCompromissoInterno,
 } from '../mappers/compromisso-cliente.mapper';
-import { criarCompromissoFake } from './fixtures';
+import { criarAnexoCompromissoFake, criarCompromissoFake } from './fixtures';
 
 describe('mapearCompromissoInterno', () => {
   const antes = new Date('2026-10-20T00:00:00.000Z');
@@ -23,9 +23,36 @@ describe('mapearCompromissoInterno', () => {
       atrasado: false,
       autor: { id: 7n, nome: 'Operador' },
       responsavel: { tipo: 'interno', id: 8n, nome: 'Consultor' },
+      anexos: [],
       created_at: new Date('2026-10-19T12:00:00.000Z'),
       updated_at: new Date('2026-10-19T12:00:00.000Z'),
     });
+  });
+
+  it('inclui os anexos na ordem recebida, sem expor o caminho no storage', () => {
+    const compromisso = criarCompromissoFake({
+      anexos: [
+        criarAnexoCompromissoFake(),
+        criarAnexoCompromissoFake({ id: 41n, nomeOriginal: 'foto.png', mimeType: null }),
+      ],
+    });
+
+    expect(mapearCompromissoInterno(compromisso, antes).anexos).toEqual([
+      {
+        id: 40n,
+        nome: 'orçamento.pdf',
+        mime_type: 'application/pdf',
+        tamanho_bytes: 3,
+        created_at: new Date('2026-10-19T12:00:00.000Z'),
+      },
+      {
+        id: 41n,
+        nome: 'foto.png',
+        mime_type: null,
+        tamanho_bytes: 3,
+        created_at: new Date('2026-10-19T12:00:00.000Z'),
+      },
+    ]);
   });
 
   it('marca atrasado quando pendente e a data já passou', () => {
@@ -101,14 +128,15 @@ describe('mapearCompromissoInterno', () => {
 });
 
 describe('mapearCompromissoCliente', () => {
-  it('omite visivel_cliente e autor, mantendo o responsável', () => {
+  it('omite visivel_cliente, autor e anexos, mantendo o responsável', () => {
     const resultado = mapearCompromissoCliente(
-      criarCompromissoFake(),
+      criarCompromissoFake({ anexos: [criarAnexoCompromissoFake()] }),
       new Date('2026-10-20T00:00:00.000Z'),
     );
 
     expect(resultado).not.toHaveProperty('visivel_cliente');
     expect(resultado).not.toHaveProperty('autor');
+    expect(resultado).not.toHaveProperty('anexos');
     expect(resultado).toEqual(
       expect.objectContaining({
         id: 1n,

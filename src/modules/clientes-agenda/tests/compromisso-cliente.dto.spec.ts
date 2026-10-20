@@ -66,6 +66,75 @@ describe('CriarCompromissoClienteDto', () => {
   });
 });
 
+describe('CriarCompromissoClienteDto via multipart/form-data (tudo chega como texto)', () => {
+  const valido = { titulo: 'Reunião', agendado_para: '2026-10-21T14:00:00.000Z' };
+
+  it('converte ids numéricos em texto', () => {
+    const { instancia, campos } = validar(CriarCompromissoClienteDto, {
+      ...valido,
+      responsavel_id: '8',
+      tipo: 'reuniao',
+    });
+    expect(campos).toEqual([]);
+    expect(instancia.responsavel_id).toBe(8);
+    const sub = validar(CriarCompromissoClienteDto, { ...valido, responsavel_subordinado_id: '3' });
+    expect(sub.campos).toEqual([]);
+    expect(sub.instancia.responsavel_subordinado_id).toBe(3);
+  });
+
+  it.each([
+    ['true', true],
+    ['false', false],
+    ['1', true],
+    ['0', false],
+  ])('visivel_cliente %p vira %p', (texto, esperado) => {
+    const { instancia, campos } = validar(CriarCompromissoClienteDto, {
+      ...valido,
+      visivel_cliente: texto,
+    });
+    expect(campos).toEqual([]);
+    expect(instancia.visivel_cliente).toBe(esperado);
+  });
+
+  it('campos opcionais vazios são tratados como ausentes', () => {
+    const { instancia, campos } = validar(CriarCompromissoClienteDto, {
+      ...valido,
+      tipo: '',
+      descricao: '',
+      responsavel_id: '',
+      responsavel_subordinado_id: '',
+      visivel_cliente: '',
+    });
+    expect(campos).toEqual([]);
+    expect(instancia.tipo).toBeUndefined();
+    expect(instancia.responsavel_id).toBeUndefined();
+    expect(instancia.responsavel_subordinado_id).toBeUndefined();
+    expect(instancia.visivel_cliente).toBeUndefined();
+  });
+
+  it('continua rejeitando texto inválido', () => {
+    expect(
+      validar(CriarCompromissoClienteDto, {
+        ...valido,
+        responsavel_id: 'abc',
+        visivel_cliente: 'talvez',
+        tipo: 'almoco',
+      }).campos,
+    ).toEqual(expect.arrayContaining(['responsavel_id', 'visivel_cliente', 'tipo']));
+  });
+
+  it('JSON continua igual: números e booleanos nativos', () => {
+    const { instancia, campos } = validar(CriarCompromissoClienteDto, {
+      ...valido,
+      responsavel_id: 8,
+      visivel_cliente: false,
+    });
+    expect(campos).toEqual([]);
+    expect(instancia.responsavel_id).toBe(8);
+    expect(instancia.visivel_cliente).toBe(false);
+  });
+});
+
 describe('AtualizarCompromissoClienteDto', () => {
   it('aceita corpo vazio', () => {
     expect(validar(AtualizarCompromissoClienteDto, {}).campos).toEqual([]);

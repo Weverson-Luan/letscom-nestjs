@@ -9,3 +9,12 @@ export function aparar({ value }: TransformFnParams): unknown {
 export function foiInformado(_objeto: object, valor: unknown): boolean {
   return valor !== undefined;
 }
+
+/**
+ * Campo opcional vindo vazio (comum em multipart/form-data, onde tudo chega como texto)
+ * é tratado como ausente. Lê o valor original (`obj[key]`) porque a conversão implícita
+ * do ValidationPipe já transformou "" em 0/false antes do @Transform.
+ */
+export function vazioComoAusente({ value, obj, key }: TransformFnParams): unknown {
+  return (obj as Record<string, unknown>)[key] === '' ? undefined : value;
+}

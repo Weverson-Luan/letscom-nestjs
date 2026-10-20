@@ -186,6 +186,7 @@ describe('Agenda do cliente — rotas internas (e2e)', () => {
         atrasado: expect.any(Boolean),
         autor: { id: Number(autorId), nome: consultor.usuario.nome },
         responsavel: { tipo: 'interno', id: Number(autorId), nome: consultor.usuario.nome },
+        anexos: [],
         created_at: expect.any(String),
         updated_at: expect.any(String),
       });
@@ -283,6 +284,7 @@ describe('Agenda do cliente — rotas internas (e2e)', () => {
           visivel_cliente: false,
           autor: { id: Number(consultor.usuario.id), nome: consultor.usuario.nome },
           responsavel: null,
+          anexos: [],
         }),
       );
 

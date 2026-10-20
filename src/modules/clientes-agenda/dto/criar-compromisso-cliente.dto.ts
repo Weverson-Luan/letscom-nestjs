@@ -14,8 +14,12 @@ import {
 } from 'class-validator';
 import { normalizarBooleano } from 'src/shared/utils/boolean-filter';
 import { TAMANHO_MAXIMO_DESCRICAO, TAMANHO_MAXIMO_TITULO } from '../clientes-agenda.constants';
-import { aparar } from './transformacoes-compromisso.helper';
+import { aparar, vazioComoAusente } from './transformacoes-compromisso.helper';
 
+/**
+ * Aceita JSON ou multipart/form-data (com arquivos no campo `anexos`). No multipart os campos
+ * chegam como texto: "8" vira 8, "true"/"false" viram booleano e "" é tratado como ausente.
+ */
 export class CriarCompromissoClienteDto {
   @ApiProperty({ example: 'Apresentar proposta', maxLength: TAMANHO_MAXIMO_TITULO })
   @Transform(aparar)
@@ -28,6 +32,7 @@ export class CriarCompromissoClienteDto {
 
   @ApiPropertyOptional({ enum: ClienteCompromissoTipo, default: ClienteCompromissoTipo.nota })
   @IsOptional()
+  @Transform(vazioComoAusente)
   @IsEnum(ClienteCompromissoTipo, { message: 'Tipo de compromisso inválido.' })
   tipo?: ClienteCompromissoTipo;
 
@@ -53,6 +58,7 @@ export class CriarCompromissoClienteDto {
     description: 'users.id de um usuário interno ativo ou do próprio cliente',
   })
   @IsOptional()
+  @Transform(vazioComoAusente)
   @IsInt({ message: 'Responsável inválido.' })
   @IsPositive({ message: 'Responsável inválido.' })
   responsavel_id?: number;
@@ -63,13 +69,17 @@ export class CriarCompromissoClienteDto {
       'users_cliente.id de um subordinado ativo do cliente (exclusivo com responsavel_id)',
   })
   @IsOptional()
+  @Transform(vazioComoAusente)
   @IsInt({ message: 'Responsável inválido.' })
   @IsPositive({ message: 'Responsável inválido.' })
   responsavel_subordinado_id?: number;
 
   @ApiPropertyOptional({ example: false, default: false })
   @IsOptional()
-  @Transform(({ obj, key }) => normalizarBooleano((obj as Record<string, unknown>)[key]))
+  @Transform(({ obj, key }) => {
+    const valor = (obj as Record<string, unknown>)[key];
+    return valor === '' ? undefined : normalizarBooleano(valor);
+  })
   @IsBoolean({ message: 'O campo visivel_cliente deve ser verdadeiro ou falso.' })
   visivel_cliente?: boolean;
 }

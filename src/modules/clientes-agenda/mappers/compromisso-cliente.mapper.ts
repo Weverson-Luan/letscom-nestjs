@@ -45,6 +45,17 @@ function mapearResponsavel(compromisso: CompromissoComRelacoes) {
   };
 }
 
+/** Anexos (ordenados por id asc no repository); só a equipe interna vê. */
+function mapearAnexos(compromisso: CompromissoComRelacoes) {
+  return compromisso.anexos.map((anexo) => ({
+    id: anexo.id,
+    nome: anexo.nomeOriginal,
+    mime_type: anexo.mimeType,
+    tamanho_bytes: anexo.tamanhoBytes,
+    created_at: anexo.createdAt,
+  }));
+}
+
 /** Compromisso visto pela equipe (backoffice). */
 export function mapearCompromissoInterno(compromisso: CompromissoComRelacoes, agora = new Date()) {
   return {
@@ -53,12 +64,13 @@ export function mapearCompromissoInterno(compromisso: CompromissoComRelacoes, ag
     atrasado: ehAtrasado(compromisso, agora),
     autor: mapearUsuario(compromisso.autorId, compromisso.autor),
     responsavel: mapearResponsavel(compromisso),
+    anexos: mapearAnexos(compromisso),
     created_at: compromisso.createdAt,
     updated_at: compromisso.updatedAt,
   };
 }
 
-/** Compromisso visto pelo cliente (/minha-agenda): sem `visivel_cliente` e sem `autor`. */
+/** Compromisso visto pelo cliente (/minha-agenda): sem `visivel_cliente`, `autor` e `anexos`. */
 export function mapearCompromissoCliente(compromisso: CompromissoComRelacoes, agora = new Date()) {
   return {
     ...mapearBase(compromisso),

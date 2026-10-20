@@ -7,6 +7,7 @@ const INCLUIR_RELACOES = {
   autor: { select: { id: true, nome: true } },
   responsavel: { select: { id: true, nome: true } },
   responsavelSubordinado: { select: { id: true, nome: true, email: true } },
+  anexos: { orderBy: { id: 'asc' } },
 } satisfies Prisma.ClienteCompromissoInclude;
 
 export type CompromissoComRelacoes = Prisma.ClienteCompromissoGetPayload<{
@@ -111,7 +112,25 @@ export class ClienteCompromissoRepository {
     });
   }
 
-  /** Exclusão lógica: o compromisso continua no banco para auditoria. */
+  criarAnexos(
+    data: Prisma.ClienteCompromissoAnexoCreateManyInput[],
+    tx?: Prisma.TransactionClient,
+  ) {
+    return (tx ?? this.prisma).clienteCompromissoAnexo.createMany({ data });
+  }
+
+  /** Anexo do compromisso do cliente; compromisso excluído (deleted_at) não é encontrado. */
+  buscarAnexo(clienteId: bigint, compromissoId: bigint, anexoId: bigint) {
+    return this.prisma.clienteCompromissoAnexo.findFirst({
+      where: {
+        id: anexoId,
+        compromissoId,
+        compromisso: { clienteId, deletedAt: null },
+      },
+    });
+  }
+
+  /** Exclusão lógica: o compromisso e os anexos continuam no banco/storage para auditoria. */
   remover(id: bigint, tx?: Prisma.TransactionClient) {
     return (tx ?? this.prisma).clienteCompromisso.update({
       where: { id },

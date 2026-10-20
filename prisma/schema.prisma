@@ -839,14 +839,31 @@ model ClienteCompromisso {
   updatedAt                DateTime                 @updatedAt @map("updated_at")
   deletedAt                DateTime?                @map("deleted_at")
 
-  cliente                User         @relation("ClienteCompromissoCliente", fields: [clienteId], references: [id], onDelete: Cascade)
-  autor                  User         @relation("ClienteCompromissoAutor", fields: [autorId], references: [id], onDelete: Restrict)
-  responsavel            User?        @relation("ClienteCompromissoResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
-  responsavelSubordinado UserCliente? @relation("ClienteCompromissoResponsavelSubordinado", fields: [responsavelSubordinadoId], references: [id], onDelete: SetNull)
+  cliente                User                      @relation("ClienteCompromissoCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  autor                  User                      @relation("ClienteCompromissoAutor", fields: [autorId], references: [id], onDelete: Restrict)
+  responsavel            User?                     @relation("ClienteCompromissoResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelSubordinado UserCliente?              @relation("ClienteCompromissoResponsavelSubordinado", fields: [responsavelSubordinadoId], references: [id], onDelete: SetNull)
+  anexos                 ClienteCompromissoAnexo[]
 
   @@index([clienteId, deletedAt, agendadoPara], map: "clientes_compromissos_cliente_agenda_index")
   @@index([responsavelId, status, agendadoPara], map: "clientes_compromissos_responsavel_index")
   @@index([autorId], map: "clientes_compromissos_autor_id_index")
   @@index([responsavelSubordinadoId], map: "clientes_compromissos_responsavel_subordinado_id_index")
   @@map("clientes_compromissos")
+}
+
+/// Arquivos anexados na criação do compromisso (só a equipe interna vê/baixa).
+model ClienteCompromissoAnexo {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  compromissoId BigInt   @map("compromisso_id") @db.UnsignedBigInt
+  nomeOriginal  String   @map("nome_original")
+  filePath      String   @map("file_path") @db.VarChar(500)
+  mimeType      String?  @map("mime_type")
+  tamanhoBytes  Int      @map("tamanho_bytes") @db.UnsignedInt
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  compromisso ClienteCompromisso @relation(fields: [compromissoId], references: [id], onDelete: Cascade)
+
+  @@index([compromissoId], map: "clientes_compromissos_anexos_compromisso_id_index")
+  @@map("clientes_compromissos_anexos")
 }
