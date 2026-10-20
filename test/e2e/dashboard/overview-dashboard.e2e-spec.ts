@@ -81,6 +81,7 @@ describe('Dashboard — GET /dashboard/overview (e2e)', () => {
 
     expect(resposta.status).toBe(200);
     expect(resposta.body.data).toMatchObject({ taxa_sucesso: 75, remessas_canceladas: 1 });
+    expect(resposta.body.data).not.toHaveProperty('atividades_recentes');
   });
 
   it('devolve zero canceladas quando não há remessas', async () => {

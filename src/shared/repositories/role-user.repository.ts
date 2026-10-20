@@ -123,24 +123,4 @@ export class RoleUserRepository {
         ${onlyActiveUsers ? Prisma.sql`AND u.ativo = 1` : Prisma.empty}
     `.then((rows) => Number(rows[0]?.total ?? 0));
   }
-
-  /**
-   * Encontra os IDs dos usuários clientes recentes
-   * @param limit - O limite de usuários a serem encontrados
-   * @returns Os IDs dos usuários clientes recentes
-   */
-  async findRecentClientUserIds(limit: number): Promise<bigint[]> {
-    const rows = await this.prisma.$queryRaw<{ id: bigint }[]>`
-      SELECT u.id
-      FROM users u
-      INNER JOIN role_user ru ON ru.user_id = u.id AND ru.ativo = 1
-      INNER JOIN roles r ON r.id = ru.role_id
-      WHERE LOWER(r.nome) = 'cliente'
-        AND u.ativo = 1
-        AND u.deleted_at IS NULL
-      ORDER BY u.created_at DESC
-      LIMIT ${limit}
-    `;
-    return rows.map((row) => row.id);
-  }
 }
