@@ -8,13 +8,12 @@ describe('DashboardService', () => {
     calcularTaxaSucesso: jest.fn(),
     listarAtividadesRecentes: jest.fn(),
   };
-  const activityLogRepo = { listar: jest.fn() };
 
   let service: DashboardService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new DashboardService(repository as never, activityLogRepo as never);
+    service = new DashboardService(repository as never);
   });
 
   it('agrega métricas do overview de crachás', async () => {
@@ -70,38 +69,5 @@ describe('DashboardService', () => {
     expect(result.fotos_processadas).toBe(0);
     expect(result.taxa_sucesso).toBe(0);
     expect(result.atividades_recentes).toEqual([]);
-  });
-
-  it('lista atividades com paginação mapeada', async () => {
-    const createdAt = new Date('2026-09-01T12:00:00.000Z');
-    activityLogRepo.listar.mockResolvedValue({
-      data: [
-        {
-          id: BigInt(1),
-          userId: BigInt(10),
-          userNome: 'Operador',
-          userTipo: 'user',
-          evento: 'remessa.solicitar',
-          metodo: 'POST',
-          rota: '/remessas/solicitar',
-          statusCode: 201,
-          ip: '127.0.0.1',
-          userAgent: 'jest',
-          payload: null,
-          createdAt,
-        },
-      ],
-      pagination: { page: 1, perPage: 20, total: 1 },
-    });
-
-    const result = await service.listarAtividades({ page: 1 });
-
-    expect(result.data[0]).toMatchObject({
-      id: BigInt(1),
-      evento: 'remessa.solicitar',
-      rota: '/remessas/solicitar',
-      status_code: 201,
-    });
-    expect(result.pagination).toEqual({ page: 1, perPage: 20, total: 1 });
   });
 });

@@ -1,15 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { mapActivityLog } from '../mappers/activity-log.mapper';
-import { ActivityLogRepository } from '../repositories/activity-log.repository';
 import { DashboardRepository } from '../repositories/dashboard.repository';
 
-/** Espelha DashboardService + ActivityLogService (listagem). */
+/** Espelha DashboardService. */
 @Injectable()
 export class DashboardService {
-  constructor(
-    private readonly repository: DashboardRepository,
-    private readonly activityLogRepo: ActivityLogRepository,
-  ) {}
+  constructor(private readonly repository: DashboardRepository) {}
 
   async overview() {
     const [
@@ -32,14 +27,6 @@ export class DashboardService {
       fotos_processadas: fotosProcessadas,
       taxa_sucesso: taxaSucesso,
       atividades_recentes: atividadesRecentes,
-    };
-  }
-
-  async listarAtividades(query: Record<string, unknown>) {
-    const { data, pagination } = await this.activityLogRepo.listar(query);
-    return {
-      data: data.map(mapActivityLog),
-      pagination,
     };
   }
 }

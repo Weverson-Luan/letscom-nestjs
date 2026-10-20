@@ -23,7 +23,6 @@ export const Feature = {
   ACESSAR_NOTIFICACOES: 'acessar_notificacoes',
 
   // BACKOFFICE CROPIX
-  ACESSAR_ATIVIDADES: 'acessar_atividades',
   ACESSAR_PRODUTOS: 'acessar_produtos',
   ACESSAR_TECNOLOGIAS: 'acessar_tecnologias',
   ACESSAR_FEATURE_FLAGS: 'acessar_feature_flags',

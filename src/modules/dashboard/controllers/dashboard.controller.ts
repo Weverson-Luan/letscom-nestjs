@@ -1,9 +1,8 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { ApiResponse } from 'src/shared/utils/api-response';
-import { DashboardAtividadesQueryDto } from '../dto/atividades-query.dto';
 import { DashboardService } from '../services/dashboard.service';
 import { Feature } from 'src/shared/auth/features';
 import { RequireFeatures } from 'src/shared/decorators/features.decorator';
@@ -21,16 +20,5 @@ export class DashboardController {
   async overview() {
     const data = await this.service.overview();
     return ApiResponse.success('Overview carregado com sucesso', data);
-  }
-
-  @Get('atividades')
-  @RequireFeatures(Feature.ACESSAR_ATIVIDADES)
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Lista activity logs (auditoria)' })
-  async atividades(@Query() query: DashboardAtividadesQueryDto) {
-    const { data, pagination } = await this.service.listarAtividades(
-      query as unknown as Record<string, unknown>,
-    );
-    return ApiResponse.success('Atividades carregadas com sucesso!', data, pagination);
   }
 }

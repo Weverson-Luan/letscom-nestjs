@@ -806,7 +806,6 @@ async function seedRemessaResponsabilidade() {
  */
 async function seedFeatureFlags() {
   const flags: { key: string; nome: string; descricao: string; tipoUsuario?: string }[] = [
-    { key: 'acessar_atividades', nome: 'Acessar Atividades (Cropix)', descricao: 'Permite acessar a tela de atividades no Backoffice Cropix.' },
     { key: 'acessar_produtos', nome: 'Acessar Produtos (Cropix)', descricao: 'Permite acessar a tela de produtos no Backoffice Cropix.' },
     { key: 'acessar_tecnologias', nome: 'Acessar Tecnologias (Cropix)', descricao: 'Permite acessar a tela de tecnologias no Backoffice Cropix.' },
     { key: 'acessar_feature_flags', nome: 'Acessar Feature Flags (Cropix)', descricao: 'Permite acessar o gerenciamento de feature flags no Backoffice Cropix.' },
