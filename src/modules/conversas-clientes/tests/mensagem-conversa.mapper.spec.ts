@@ -1,14 +1,13 @@
-import { mapearAnotacaoCliente } from '../mappers/anotacao-cliente.mapper';
-import { criarAnexoFake, criarAnotacaoFake, criarUsuarioLogadoFake } from './fixtures';
+import { mapearMensagemConversa } from '../mappers/mensagem-conversa.mapper';
+import { criarAnexoFake, criarMensagemFake, criarUsuarioLogadoFake } from './fixtures';
 
-describe('mapearAnotacaoCliente', () => {
+describe('mapearMensagemConversa', () => {
   it('mapeia para snake_case com autor, anexos e permissões do autor interno', () => {
-    const anotacao = criarAnotacaoFake({ anexos: [criarAnexoFake()] });
+    const mensagem = criarMensagemFake({ anexos: [criarAnexoFake()] });
 
-    expect(mapearAnotacaoCliente(anotacao, criarUsuarioLogadoFake())).toEqual({
+    expect(mapearMensagemConversa(mensagem, criarUsuarioLogadoFake())).toEqual({
       id: 30n,
       cliente_id: 5n,
-      tipo: 'ligacao',
       conteudo: 'Cliente pediu orçamento.',
       autor: { id: 7n, nome: 'Operador', tipo: 'interno' },
       eh_minha: true,
@@ -16,15 +15,15 @@ describe('mapearAnotacaoCliente', () => {
       editada_em: null,
       pode_editar: true,
       pode_excluir: true,
-      created_at: anotacao.createdAt,
-      updated_at: anotacao.updatedAt,
+      created_at: mensagem.createdAt,
+      updated_at: mensagem.updatedAt,
       anexos: [
         {
           id: 40n,
           nome_original: 'orçamento.pdf',
           mime_type: 'application/pdf',
           tamanho_bytes: 2048,
-          created_at: anotacao.createdAt,
+          created_at: mensagem.createdAt,
         },
       ],
     });
@@ -32,8 +31,8 @@ describe('mapearAnotacaoCliente', () => {
 
   it('não expõe file_path e calcula permissões para outro usuário', () => {
     const editadaEm = new Date('2026-10-11T00:00:00.000Z');
-    const resposta = mapearAnotacaoCliente(
-      criarAnotacaoFake({ editadaEm, anexos: [criarAnexoFake()] }),
+    const resposta = mapearMensagemConversa(
+      criarMensagemFake({ editadaEm, anexos: [criarAnexoFake()] }),
       criarUsuarioLogadoFake({ id: 99n }),
     );
 
@@ -50,7 +49,7 @@ describe('mapearAnotacaoCliente', () => {
   });
 
   it('usa nome (ou e-mail) do subordinado e marca como minha para ele', () => {
-    const anotacao = criarAnotacaoFake({
+    const mensagem = criarMensagemFake({
       autorId: null,
       autor: null,
       autorTipo: 'subordinado',
@@ -59,7 +58,7 @@ describe('mapearAnotacaoCliente', () => {
     });
     const subordinado = criarUsuarioLogadoFake({ id: 3n, tipoLogin: 'subordinado', clienteId: 5n });
 
-    expect(mapearAnotacaoCliente(anotacao, subordinado)).toMatchObject({
+    expect(mapearMensagemConversa(mensagem, subordinado)).toMatchObject({
       autor: { id: 3n, nome: 'compras@empresax.com', tipo: 'subordinado' },
       eh_minha: true,
       pode_editar: false,
@@ -68,7 +67,7 @@ describe('mapearAnotacaoCliente', () => {
   });
 
   it('mostra "Usuário removido" quando o autor foi apagado', () => {
-    const anotacao = criarAnotacaoFake({
+    const mensagem = criarMensagemFake({
       autorId: null,
       autor: null,
       autorTipo: 'subordinado',
@@ -76,7 +75,7 @@ describe('mapearAnotacaoCliente', () => {
       autorSubordinado: null,
     });
 
-    expect(mapearAnotacaoCliente(anotacao, criarUsuarioLogadoFake()).autor).toEqual({
+    expect(mapearMensagemConversa(mensagem, criarUsuarioLogadoFake()).autor).toEqual({
       id: null,
       nome: 'Usuário removido',
       tipo: 'subordinado',

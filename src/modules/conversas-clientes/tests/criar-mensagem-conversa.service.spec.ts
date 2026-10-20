@@ -1,21 +1,21 @@
 import { Test } from '@nestjs/testing';
-import { AnotacaoClienteInvalidaException } from '../exceptions/anotacao-cliente-invalida.exception';
+import { MensagemConversaInvalidaException } from '../exceptions/mensagem-conversa-invalida.exception';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
 import { ParticipanteConversaInvalidoException } from '../exceptions/participante-conversa-invalido.exception';
 import { SemAcessoConversaException } from '../exceptions/sem-acesso-conversa.exception';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
-import { AnotacaoRegistroService } from '../services/anotacao-registro.service';
+import { MensagemRegistroService } from '../services/mensagem-registro.service';
 import { ConversaAcessoService } from '../services/conversa-acesso.service';
-import { CriarAnotacaoClienteService } from '../services/criar-anotacao-cliente.service';
+import { CriarMensagemConversaService } from '../services/criar-mensagem-conversa.service';
 import {
-  criarAnotacaoFake,
+  criarMensagemFake,
   criarArquivoFake,
   criarDonoFake,
   criarUsuarioLogadoFake,
 } from './fixtures';
 
-describe('CriarAnotacaoClienteService', () => {
+describe('CriarMensagemConversaService', () => {
   const tx = { marcador: 'tx' };
   const repository = { ehClienteAtivo: jest.fn() };
   const participanteRepository = {
@@ -29,7 +29,7 @@ describe('CriarAnotacaoClienteService', () => {
   const acesso = { garantirAcesso: jest.fn() };
   const registro = { registrar: jest.fn() };
   const usuario = criarUsuarioLogadoFake();
-  let service: CriarAnotacaoClienteService;
+  let service: CriarMensagemConversaService;
 
   /** Executa o gancho `antesDeGravar` que o service passou ao registro. */
   async function rodarGancho() {
@@ -41,14 +41,14 @@ describe('CriarAnotacaoClienteService', () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
       providers: [
-        CriarAnotacaoClienteService,
-        { provide: ClienteAnotacaoRepository, useValue: repository },
+        CriarMensagemConversaService,
+        { provide: ConversaMensagemRepository, useValue: repository },
         { provide: ConversaParticipanteRepository, useValue: participanteRepository },
         { provide: ConversaAcessoService, useValue: acesso },
-        { provide: AnotacaoRegistroService, useValue: registro },
+        { provide: MensagemRegistroService, useValue: registro },
       ],
     }).compile();
-    service = moduleRef.get(CriarAnotacaoClienteService);
+    service = moduleRef.get(CriarMensagemConversaService);
     repository.ehClienteAtivo.mockResolvedValue(true);
     acesso.garantirAcesso.mockResolvedValue({
       participante: { status: 'aceito' },
@@ -58,10 +58,10 @@ describe('CriarAnotacaoClienteService', () => {
     participanteRepository.listarDonos.mockResolvedValue([]);
     participanteRepository.buscarDaPessoa.mockResolvedValue(null);
     participanteRepository.ehSubordinadoAtivoDoCliente.mockResolvedValue(true);
-    registro.registrar.mockResolvedValue(criarAnotacaoFake());
+    registro.registrar.mockResolvedValue(criarMensagemFake());
   });
 
-  it('participante registra como autor interno com tipo padrão nota, sem gancho de início', async () => {
+  it('participante registra como autor interno, sem gancho de início', async () => {
     const arquivo = criarArquivoFake();
 
     const resultado = await service.execute(5n, { conteudo: 'Ligou' }, [arquivo], usuario);
@@ -70,7 +70,6 @@ describe('CriarAnotacaoClienteService', () => {
     expect(registro.registrar).toHaveBeenCalledWith({
       clienteId: 5n,
       autor: { tipo: 'interno', userId: 7n, nome: 'Operador' },
-      tipo: 'nota',
       conteudo: 'Ligou',
       arquivos: [arquivo],
       antesDeGravar: undefined,
@@ -78,17 +77,11 @@ describe('CriarAnotacaoClienteService', () => {
     expect(resultado).toMatchObject({ id: 30n, eh_minha: true, pode_editar: true });
   });
 
-  it('respeita o tipo informado e usa o e-mail quando o usuário não tem nome', async () => {
-    await service.execute(
-      5n,
-      { conteudo: 'x', tipo: 'reuniao' },
-      [],
-      criarUsuarioLogadoFake({ nome: null }),
-    );
+  it('usa o e-mail quando o usuário não tem nome', async () => {
+    await service.execute(5n, { conteudo: 'x' }, [], criarUsuarioLogadoFake({ nome: null }));
 
     expect(registro.registrar).toHaveBeenCalledWith(
       expect.objectContaining({
-        tipo: 'reuniao',
         autor: { tipo: 'interno', userId: 7n, nome: 'operador@letscom.com' },
       }),
     );
@@ -220,9 +213,9 @@ describe('CriarAnotacaoClienteService', () => {
     expect(registro.registrar).not.toHaveBeenCalled();
   });
 
-  it('recusa anotação vazia antes de consultar o banco', async () => {
+  it('recusa mensagem vazia antes de consultar o banco', async () => {
     await expect(service.execute(5n, { conteudo: '  ' }, [], usuario)).rejects.toBeInstanceOf(
-      AnotacaoClienteInvalidaException,
+      MensagemConversaInvalidaException,
     );
     expect(repository.ehClienteAtivo).not.toHaveBeenCalled();
   });
@@ -230,7 +223,7 @@ describe('CriarAnotacaoClienteService', () => {
   it('recusa anexo inválido antes de consultar o banco', async () => {
     await expect(
       service.execute(5n, {}, [criarArquivoFake({ originalname: 'a.exe' })], usuario),
-    ).rejects.toBeInstanceOf(AnotacaoClienteInvalidaException);
+    ).rejects.toBeInstanceOf(MensagemConversaInvalidaException);
     expect(repository.ehClienteAtivo).not.toHaveBeenCalled();
   });
 

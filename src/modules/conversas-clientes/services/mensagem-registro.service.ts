@@ -1,23 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { ClienteAnotacaoTipo, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { NotificacaoEmissorService } from 'src/modules/notificacoes/services/notificacao-emissor.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { v4 as uuidv4 } from 'uuid';
-import { ArquivoAnexo, AutorAnotacao, PessoaConversa } from '../clientes-anotacoes.constants';
+import { ArquivoAnexo, AutorMensagem, PessoaConversa } from '../conversas-clientes.constants';
 import {
-  AnotacaoComRelacoes,
-  ClienteAnotacaoRepository,
-} from '../repositories/cliente-anotacao.repository';
+  MensagemComRelacoes,
+  ConversaMensagemRepository,
+} from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
-import { montarNotificacaoAnotacao } from './helpers/montar-notificacao-anotacao.helper';
+import { montarNotificacaoMensagem } from './helpers/montar-notificacao-mensagem.helper';
 import { ladoDoParticipante } from './helpers/participante-conversa.helper';
-import { montarCaminhoAnexo, validarNovaAnotacao } from './helpers/validar-anexos-anotacao.helper';
+import { montarCaminhoAnexo, validarNovaMensagem } from './helpers/validar-anexos-mensagem.helper';
 
 type DadosRegistro = {
   clienteId: bigint;
-  autor: AutorAnotacao;
-  tipo: ClienteAnotacaoTipo;
+  autor: AutorMensagem;
   conteudo?: string;
   arquivos: ArquivoAnexo[];
   /** Roda na transação antes de gravar (ex.: registrar os donos ao iniciar a conversa). */
@@ -26,23 +25,23 @@ type DadosRegistro = {
 
 /**
  * Service técnico compartilhado por quem escreve na conversa (equipe ou cliente):
- * valida, sobe anexos, grava anotação + anexos + notificações dos participantes numa
+ * valida, sobe anexos, grava mensagem + anexos + notificações dos participantes numa
  * transação e, se algo falhar, apaga do storage o que já tinha subido.
  * Não valida se o cliente existe — isso é de cada caso de uso.
  */
 @Injectable()
-export class AnotacaoRegistroService {
+export class MensagemRegistroService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly repository: ClienteAnotacaoRepository,
+    private readonly repository: ConversaMensagemRepository,
     private readonly participanteRepository: ConversaParticipanteRepository,
     private readonly storage: StorageService,
     private readonly notificacaoEmissor: NotificacaoEmissorService,
   ) {}
 
-  async registrar(dados: DadosRegistro): Promise<AnotacaoComRelacoes> {
+  async registrar(dados: DadosRegistro): Promise<MensagemComRelacoes> {
     const conteudo = dados.conteudo?.trim() ?? '';
-    validarNovaAnotacao(conteudo, dados.arquivos);
+    validarNovaMensagem(conteudo, dados.arquivos);
 
     const clienteNome = await this.repository.buscarNomeCliente(dados.clienteId);
 
@@ -67,7 +66,6 @@ export class AnotacaoRegistroService {
             autorTipo: dados.autor.tipo,
             autorId: 'userId' in dados.autor ? dados.autor.userId : null,
             autorSubordinadoId: 'subordinadoId' in dados.autor ? dados.autor.subordinadoId : null,
-            tipo: dados.tipo,
             conteudo,
           },
           tx,
@@ -76,7 +74,7 @@ export class AnotacaoRegistroService {
         if (anexos.length > 0) {
           await this.repository.criarAnexos(
             anexos.map(({ arquivo, caminho }) => ({
-              anotacaoId: criada.id,
+              mensagemId: criada.id,
               nomeOriginal: arquivo.originalname,
               filePath: caminho,
               mimeType: arquivo.mimetype ?? null,
@@ -90,8 +88,8 @@ export class AnotacaoRegistroService {
         for (const destino of ['interno', 'cliente'] as const) {
           await this.notificacaoEmissor.emitir(
             destinatarios[destino],
-            montarNotificacaoAnotacao({
-              anotacaoId: criada.id,
+            montarNotificacaoMensagem({
+              mensagemId: criada.id,
               clienteId: dados.clienteId,
               clienteNome,
               autorTipo: dados.autor.tipo,
@@ -108,7 +106,7 @@ export class AnotacaoRegistroService {
           dados.clienteId,
           criada.id,
           tx,
-        )) as AnotacaoComRelacoes;
+        )) as MensagemComRelacoes;
       });
     } catch (erro) {
       await Promise.allSettled(enviados.map((caminho) => this.storage.delete(caminho)));
@@ -122,7 +120,7 @@ export class AnotacaoRegistroService {
    */
   private async buscarDestinatarios(
     clienteId: bigint,
-    autor: AutorAnotacao,
+    autor: AutorMensagem,
     tx: Prisma.TransactionClient,
   ): Promise<Record<'interno' | 'cliente', PessoaConversa[]>> {
     const participantes = await this.participanteRepository.listarAceitosAtivos(clienteId, tx);

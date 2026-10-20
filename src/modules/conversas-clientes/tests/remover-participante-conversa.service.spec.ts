@@ -27,15 +27,31 @@ describe('RemoverParticipanteConversaService', () => {
     service = moduleRef.get(RemoverParticipanteConversaService);
     repository.buscarDaPessoa.mockResolvedValue(criarParticipanteFake());
     repository.buscarPorId.mockResolvedValue(
-      criarParticipanteSubordinadoFake({ papel: 'convidado' }),
+      criarParticipanteSubordinadoFake({ papel: 'convidado', status: 'pendente' }),
     );
   });
 
-  it('dono remove convidado', async () => {
+  it.each(['pendente', 'recusado'] as const)('dono cancela convite %s', async (status) => {
+    repository.buscarPorId.mockResolvedValue(
+      criarParticipanteSubordinadoFake({ papel: 'convidado', status }),
+    );
     await service.execute(5n, 61n, usuario);
     expect(repository.buscarDaPessoa).toHaveBeenCalledWith(5n, { userId: 7n });
     expect(repository.remover).toHaveBeenCalledWith(61n);
   });
+
+  it.each(['aceito', 'inativo'] as const)(
+    '400 para participante %s: deve ser inativado, não removido',
+    async (status) => {
+      repository.buscarPorId.mockResolvedValue(
+        criarParticipanteSubordinadoFake({ papel: 'convidado', status }),
+      );
+      await expect(service.execute(5n, 61n, usuario)).rejects.toThrow(
+        'Quem já participa da conversa não é removido: inative o acesso.',
+      );
+      expect(repository.remover).not.toHaveBeenCalled();
+    },
+  );
 
   it('404 para participante inexistente ou de outra conversa', async () => {
     repository.buscarPorId.mockResolvedValueOnce(null);
@@ -43,7 +59,7 @@ describe('RemoverParticipanteConversaService', () => {
       ParticipanteConversaNaoEncontradoException,
     );
     repository.buscarPorId.mockResolvedValueOnce(
-      criarParticipanteSubordinadoFake({ clienteId: 6n, papel: 'convidado' }),
+      criarParticipanteSubordinadoFake({ clienteId: 6n, papel: 'convidado', status: 'pendente' }),
     );
     await expect(service.execute(5n, 61n, usuario)).rejects.toBeInstanceOf(
       ParticipanteConversaNaoEncontradoException,
@@ -61,7 +77,7 @@ describe('RemoverParticipanteConversaService', () => {
   it('dono do lado do cliente não remove a equipe', async () => {
     repository.buscarDaPessoa.mockResolvedValue(criarParticipanteSubordinadoFake());
     repository.buscarPorId.mockResolvedValue(
-      criarParticipanteFake({ id: 62n, userId: 8n, papel: 'convidado' }),
+      criarParticipanteFake({ id: 62n, userId: 8n, papel: 'convidado', status: 'pendente' }),
     );
     await expect(service.execute(5n, 62n, usuario)).rejects.toBeInstanceOf(
       SemPermissaoConviteConversaException,

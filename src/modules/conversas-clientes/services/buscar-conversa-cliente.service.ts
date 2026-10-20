@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
-import { mapearResumoClienteAnotacoes } from '../mappers/resumo-cliente-anotacoes.mapper';
-import { ClienteResumoAnotacoesRepository } from '../repositories/cliente-resumo-anotacoes.repository';
+import { mapearResumoConversaCliente } from '../mappers/resumo-conversa-cliente.mapper';
+import { ConversaClienteResumoRepository } from '../repositories/conversa-cliente-resumo.repository';
 
-/** Cabeçalho da tela de anotações de um cliente. */
+/** Cabeçalho da tela de mensagens de um cliente. */
 @Injectable()
-export class BuscarClienteAnotacoesService {
-  constructor(private readonly repository: ClienteResumoAnotacoesRepository) {}
+export class BuscarConversaClienteService {
+  constructor(private readonly repository: ConversaClienteResumoRepository) {}
 
   async execute(clienteId: bigint) {
     const linha = await this.repository.buscarPorId(clienteId);
     if (!linha) throw new ClienteNaoEncontradoException();
-    return mapearResumoClienteAnotacoes(linha);
+    return mapearResumoConversaCliente(linha);
   }
 }

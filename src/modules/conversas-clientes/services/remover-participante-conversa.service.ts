@@ -1,19 +1,30 @@
+/**
+ * IMPORTS
+ */
+
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { AuthUser } from 'src/shared/decorators/current-user.decorator';
+
+// repositories
+import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
+
+// exceptions
 import { ParticipanteConversaInvalidoException } from '../exceptions/participante-conversa-invalido.exception';
 import { ParticipanteConversaNaoEncontradoException } from '../exceptions/participante-conversa-nao-encontrado.exception';
-import { SemPermissaoConviteConversaException } from '../exceptions/sem-permissao-convite-conversa.exception';
-import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
+
+// helpers / conversa
 import {
-  ladoDoParticipante,
   montarPessoaDoUsuario,
   validarDonoConversa,
+  validarGestaoParticipante,
 } from './helpers/participante-conversa.helper';
 
+// shared / decorators
+import { AuthUser } from 'src/shared/decorators/current-user.decorator';
+
 /**
- * Um dos donos tira um convidado (ou cancela o convite pendente). Os donos não saem; o dono do
- * lado do cliente só remove pessoas da própria empresa.
+ * Um dos donos cancela um convite (pendente ou recusado). Quem já participa não é removido:
+ * tem o acesso inativado, para poder voltar depois (InativarParticipanteConversaService).
  */
 @Injectable()
 export class RemoverParticipanteConversaService {
@@ -24,22 +35,16 @@ export class RemoverParticipanteConversaService {
       await this.repository.buscarDaPessoa(clienteId, montarPessoaDoUsuario(usuario)),
     );
 
-    const participante = await this.repository.buscarPorId(participanteId);
-    // de outra conversa é 404: não revela que o id existe
-    if (!participante || participante.clienteId !== clienteId) {
-      throw new ParticipanteConversaNaoEncontradoException();
-    }
-    if (participante.papel === 'dono') {
+    const participante = validarGestaoParticipante({
+      dono,
+      participante: await this.repository.buscarPorId(participanteId),
+      clienteId,
+      acao: 'remover',
+    });
+
+    if (participante.status === 'aceito' || participante.status === 'inativo') {
       throw new ParticipanteConversaInvalidoException(
-        'Não é possível remover quem iniciou a conversa.',
-      );
-    }
-    if (
-      ladoDoParticipante(dono, clienteId) === 'cliente' &&
-      ladoDoParticipante(participante, clienteId) === 'interno'
-    ) {
-      throw new SemPermissaoConviteConversaException(
-        'Você só pode remover pessoas da sua empresa.',
+        'Quem já participa da conversa não é removido: inative o acesso.',
       );
     }
 

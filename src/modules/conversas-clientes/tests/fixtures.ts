@@ -1,7 +1,7 @@
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { ArquivoAnexo } from '../clientes-anotacoes.constants';
-import { AnotacaoComRelacoes } from '../repositories/cliente-anotacao.repository';
-import { LinhaResumoCliente } from '../repositories/cliente-resumo-anotacoes.repository';
+import { ArquivoAnexo } from '../conversas-clientes.constants';
+import { MensagemComRelacoes } from '../repositories/conversa-mensagem.repository';
+import { LinhaResumoCliente } from '../repositories/conversa-cliente-resumo.repository';
 import { ParticipanteComPessoa } from '../repositories/conversa-participante.repository';
 import { DonoConversa } from '../services/helpers/participante-conversa.helper';
 
@@ -17,16 +17,15 @@ export function criarUsuarioLogadoFake(sobrescrever: Partial<AuthUser> = {}): Au
   };
 }
 
-export function criarAnotacaoFake(
-  sobrescrever: Partial<AnotacaoComRelacoes> = {},
-): AnotacaoComRelacoes {
+export function criarMensagemFake(
+  sobrescrever: Partial<MensagemComRelacoes> = {},
+): MensagemComRelacoes {
   return {
     id: 30n,
     clienteId: 5n,
     autorId: 7n,
     autorSubordinadoId: null,
     autorTipo: 'interno',
-    tipo: 'ligacao',
     conteudo: 'Cliente pediu orçamento.',
     editadaEm: null,
     createdAt: new Date('2026-10-10T12:00:00.000Z'),
@@ -42,9 +41,9 @@ export function criarAnotacaoFake(
 export function criarAnexoFake() {
   return {
     id: 40n,
-    anotacaoId: 30n,
+    mensagemId: 30n,
     nomeOriginal: 'orçamento.pdf',
-    filePath: 'clientes/5/anotacoes/uuid.pdf',
+    filePath: 'clientes/5/conversa/mensagens/uuid.pdf',
     mimeType: 'application/pdf',
     tamanhoBytes: 2048,
     createdAt: new Date('2026-10-10T12:00:00.000Z'),
@@ -71,8 +70,8 @@ export function criarLinhaResumoFake(
     telefone: '11988887777',
     documento: '12345678000199',
     ativo: 1,
-    total_anotacoes: 3n,
-    ultima_anotacao_em: new Date('2026-10-10T12:00:00.000Z'),
+    total_mensagens: 3n,
+    ultima_mensagem_em: new Date('2026-10-10T12:00:00.000Z'),
     ...sobrescrever,
   };
 }
@@ -91,6 +90,7 @@ export function criarParticipanteFake(
     convidadoPorUserId: null,
     convidadoPorSubordinadoId: null,
     respondidoEm: new Date('2026-10-10T12:00:00.000Z'),
+    inativadoEm: null,
     createdAt: new Date('2026-10-10T12:00:00.000Z'),
     updatedAt: new Date('2026-10-10T12:00:00.000Z'),
     user: { id: 7n, nome: 'Operador', email: 'operador@letscom.com' },

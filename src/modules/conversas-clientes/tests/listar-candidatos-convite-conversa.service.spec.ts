@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
 import { SemPermissaoConviteConversaException } from '../exceptions/sem-permissao-convite-conversa.exception';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
 import { ListarCandidatosConviteConversaService } from '../services/listar-candidatos-convite-conversa.service';
 import {
@@ -18,7 +18,7 @@ describe('ListarCandidatosConviteConversaService', () => {
     listarDonos: jest.fn(),
     buscarDaPessoa: jest.fn(),
   };
-  const anotacaoRepository = { ehClienteAtivo: jest.fn() };
+  const mensagemRepository = { ehClienteAtivo: jest.fn() };
   const usuario = criarUsuarioLogadoFake();
   const subordinado = criarUsuarioLogadoFake({ tipoLogin: 'subordinado', id: 3n, clienteId: 5n });
   let service: ListarCandidatosConviteConversaService;
@@ -29,11 +29,11 @@ describe('ListarCandidatosConviteConversaService', () => {
       providers: [
         ListarCandidatosConviteConversaService,
         { provide: ConversaParticipanteRepository, useValue: repository },
-        { provide: ClienteAnotacaoRepository, useValue: anotacaoRepository },
+        { provide: ConversaMensagemRepository, useValue: mensagemRepository },
       ],
     }).compile();
     service = moduleRef.get(ListarCandidatosConviteConversaService);
-    anotacaoRepository.ehClienteAtivo.mockResolvedValue(true);
+    mensagemRepository.ehClienteAtivo.mockResolvedValue(true);
     repository.listarDonos.mockResolvedValue([criarDonoFake()]);
     repository.listarCandidatosLadoCliente.mockResolvedValue([
       { user_id: 5n, subordinado_id: null, nome: 'Empresa X', email: 'x@x.com' },
@@ -97,7 +97,7 @@ describe('ListarCandidatosConviteConversaService', () => {
   });
 
   it('404 quando o id não é de um cliente ativo (não vaza dados de interno/admin)', async () => {
-    anotacaoRepository.ehClienteAtivo.mockResolvedValue(false);
+    mensagemRepository.ehClienteAtivo.mockResolvedValue(false);
 
     await expect(service.execute(8n, undefined, usuario)).rejects.toBeInstanceOf(
       ClienteNaoEncontradoException,

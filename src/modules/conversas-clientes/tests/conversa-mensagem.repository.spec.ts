@@ -1,23 +1,23 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 
-describe('ClienteAnotacaoRepository', () => {
+describe('ConversaMensagemRepository', () => {
   const prisma = {
     $queryRaw: jest.fn(),
     user: { findUnique: jest.fn(), findFirst: jest.fn() },
     userCliente: { findMany: jest.fn() },
     clienteConsultor: { findMany: jest.fn() },
-    clienteAnotacao: {
+    conversaMensagem: {
       findMany: jest.fn(),
       count: jest.fn(),
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
-    clienteAnotacaoAnexo: { createMany: jest.fn(), findFirst: jest.fn() },
+    conversaMensagemAnexo: { createMany: jest.fn(), findFirst: jest.fn() },
   };
-  const repository = new ClienteAnotacaoRepository(prisma as unknown as PrismaService);
+  const repository = new ConversaMensagemRepository(prisma as unknown as PrismaService);
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -39,18 +39,17 @@ describe('ClienteAnotacaoRepository', () => {
   });
 
   it('pagina ignorando excluídas, com filtros e da mais recente para a mais antiga', async () => {
-    prisma.clienteAnotacao.findMany.mockResolvedValue([]);
-    prisma.clienteAnotacao.count.mockResolvedValue(0);
+    prisma.conversaMensagem.findMany.mockResolvedValue([]);
+    prisma.conversaMensagem.count.mockResolvedValue(0);
 
-    await repository.paginar({ clienteId: 5n, tipo: 'email', search: 'prazo', skip: 20, take: 20 });
+    await repository.paginar({ clienteId: 5n, search: 'prazo', skip: 20, take: 20 });
 
     const where = {
       clienteId: 5n,
       deletedAt: null,
-      tipo: 'email',
       conteudo: { contains: 'prazo' },
     };
-    expect(prisma.clienteAnotacao.findMany).toHaveBeenCalledWith(
+    expect(prisma.conversaMensagem.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -58,34 +57,60 @@ describe('ClienteAnotacaoRepository', () => {
         take: 20,
       }),
     );
-    expect(prisma.clienteAnotacao.count).toHaveBeenCalledWith({ where });
+    expect(prisma.conversaMensagem.count).toHaveBeenCalledWith({ where });
   });
 
   it('busca por id restrita ao cliente e usa a transação quando informada', async () => {
-    const tx = { clienteAnotacao: { findFirst: jest.fn() } };
+    const tx = { conversaMensagem: { findFirst: jest.fn() } };
 
     await repository.buscarPorId(5n, 30n, tx as unknown as Prisma.TransactionClient);
 
-    expect(tx.clienteAnotacao.findFirst).toHaveBeenCalledWith(
+    expect(tx.conversaMensagem.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 30n, clienteId: 5n, deletedAt: null } }),
     );
-    expect(prisma.clienteAnotacao.findFirst).not.toHaveBeenCalled();
+    expect(prisma.conversaMensagem.findFirst).not.toHaveBeenCalled();
   });
 
   it('remove de forma lógica preenchendo deleted_at', async () => {
     await repository.remover(30n);
 
-    expect(prisma.clienteAnotacao.update).toHaveBeenCalledWith({
+    expect(prisma.conversaMensagem.update).toHaveBeenCalledWith({
       where: { id: 30n },
       data: { deletedAt: expect.any(Date) },
     });
   });
 
-  it('busca anexo só de anotação ativa do mesmo cliente', async () => {
+  it('pagina só a partir de visivelDesde quando informado', async () => {
+    prisma.conversaMensagem.findMany.mockResolvedValue([]);
+    prisma.conversaMensagem.count.mockResolvedValue(0);
+    const visivelDesde = new Date('2026-10-15T09:00:00.000Z');
+
+    await repository.paginar({ clienteId: 5n, visivelDesde, skip: 0, take: 20 });
+
+    expect(prisma.conversaMensagem.count).toHaveBeenCalledWith({
+      where: { clienteId: 5n, deletedAt: null, createdAt: { gte: visivelDesde } },
+    });
+  });
+
+  it('busca anexo só de mensagem a partir de visivelDesde quando informado', async () => {
+    const visivelDesde = new Date('2026-10-15T09:00:00.000Z');
+
+    await repository.buscarAnexo(5n, 30n, 40n, visivelDesde);
+
+    expect(prisma.conversaMensagemAnexo.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 40n,
+        mensagemId: 30n,
+        mensagem: { clienteId: 5n, deletedAt: null, createdAt: { gte: visivelDesde } },
+      },
+    });
+  });
+
+  it('busca anexo só de mensagem ativa do mesmo cliente', async () => {
     await repository.buscarAnexo(5n, 30n, 40n);
 
-    expect(prisma.clienteAnotacaoAnexo.findFirst).toHaveBeenCalledWith({
-      where: { id: 40n, anotacaoId: 30n, anotacao: { clienteId: 5n, deletedAt: null } },
+    expect(prisma.conversaMensagemAnexo.findFirst).toHaveBeenCalledWith({
+      where: { id: 40n, mensagemId: 30n, mensagem: { clienteId: 5n, deletedAt: null } },
     });
   });
 

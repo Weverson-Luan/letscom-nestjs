@@ -1,35 +1,50 @@
+/**
+ * IMPORTS
+ */
+
 import { Injectable } from '@nestjs/common';
-import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { ArquivoAnexo } from '../clientes-anotacoes.constants';
-import { ResponderAnotacoesClienteDto } from '../dto/responder-anotacoes-cliente.dto';
-import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
-import { mapearAnotacaoCliente } from '../mappers/anotacao-cliente.mapper';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+
+// repositories
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaNaoIniciadaException } from '../exceptions/conversa-nao-iniciada.exception';
-import { AnotacaoRegistroService } from './anotacao-registro.service';
+
+// services
+import { MensagemRegistroService } from './mensagem-registro.service';
 import { ConversaAcessoService } from './conversa-acesso.service';
+
+// mappers / conversa
+import { mapearMensagemConversa } from '../mappers/mensagem-conversa.mapper';
+
+// helpers
 import {
   extrairClienteIdDoUsuario,
   montarAutorCliente,
-} from './helpers/resolver-usuario-anotacao.helper';
+} from './helpers/resolver-usuario-conversa.helper';
 import {
   normalizarNomesAnexos,
-  validarNovaAnotacao,
-} from './helpers/validar-anexos-anotacao.helper';
+  validarNovaMensagem,
+} from './helpers/validar-anexos-mensagem.helper';
+
+import { AuthUser } from 'src/shared/decorators/current-user.decorator';
+import { ArquivoAnexo } from '../conversas-clientes.constants';
+
+// typings
+import { ResponderConversaClienteDto } from '../dto/responder-conversa-cliente.dto';
+import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
 
 /** Participante do lado do cliente escreve na conversa já iniciada pela equipe (notifica os demais). */
 @Injectable()
-export class ResponderAnotacoesClienteService {
+export class ResponderConversaClienteService {
   constructor(
-    private readonly repository: ClienteAnotacaoRepository,
+    private readonly repository: ConversaMensagemRepository,
     private readonly acesso: ConversaAcessoService,
-    private readonly registro: AnotacaoRegistroService,
+    private readonly registro: MensagemRegistroService,
   ) {}
 
-  async execute(dados: ResponderAnotacoesClienteDto, arquivos: ArquivoAnexo[], usuario: AuthUser) {
+  async execute(dados: ResponderConversaClienteDto, arquivos: ArquivoAnexo[], usuario: AuthUser) {
     const anexos = normalizarNomesAnexos(arquivos);
     // validação antecipada (o registro valida de novo): evita consultar o banco à toa
-    validarNovaAnotacao(dados.conteudo, anexos);
+    validarNovaMensagem(dados.conteudo, anexos);
 
     const clienteId = extrairClienteIdDoUsuario(usuario);
     if (!clienteId || !(await this.repository.ehClienteAtivo(clienteId))) {
@@ -38,13 +53,12 @@ export class ResponderAnotacoesClienteService {
     const acesso = await this.acesso.garantirAcesso(clienteId, usuario);
     if (!acesso.iniciada) throw new ConversaNaoIniciadaException();
 
-    const anotacao = await this.registro.registrar({
+    const mensagem = await this.registro.registrar({
       clienteId,
       autor: montarAutorCliente(usuario),
-      tipo: 'nota',
       conteudo: dados.conteudo,
       arquivos: anexos,
     });
-    return mapearAnotacaoCliente(anotacao, usuario);
+    return mapearMensagemConversa(mensagem, usuario);
   }
 }

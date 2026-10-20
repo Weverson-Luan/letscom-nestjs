@@ -2,8 +2,8 @@ import { HttpStatus } from '@nestjs/common';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 
 /** 403: só o autor edita; só o autor ou um admin exclui. */
-export class SemPermissaoAnotacaoClienteException extends BusinessException {
+export class SemPermissaoMensagemConversaException extends BusinessException {
   constructor(acao: 'editar' | 'excluir') {
-    super(`Você não tem permissão para ${acao} esta anotação.`, HttpStatus.FORBIDDEN);
+    super(`Você não tem permissão para ${acao} esta mensagem.`, HttpStatus.FORBIDDEN);
   }
 }

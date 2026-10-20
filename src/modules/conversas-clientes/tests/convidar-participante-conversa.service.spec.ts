@@ -4,7 +4,7 @@ import { NotificacaoEmissorService } from 'src/modules/notificacoes/services/not
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ParticipanteConversaInvalidoException } from '../exceptions/participante-conversa-invalido.exception';
 import { SemPermissaoConviteConversaException } from '../exceptions/sem-permissao-convite-conversa.exception';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
 import { ConvidarParticipanteConversaService } from '../services/convidar-participante-conversa.service';
 import {
@@ -25,7 +25,7 @@ describe('ConvidarParticipanteConversaService', () => {
     ehInternoAtivo: jest.fn(),
     travarConversa: jest.fn(),
   };
-  const anotacaoRepository = { buscarNomeCliente: jest.fn() };
+  const mensagemRepository = { buscarNomeCliente: jest.fn() };
   const emissor = { emitir: jest.fn() };
   const operador = criarUsuarioLogadoFake();
   let service: ConvidarParticipanteConversaService;
@@ -37,7 +37,7 @@ describe('ConvidarParticipanteConversaService', () => {
         ConvidarParticipanteConversaService,
         { provide: PrismaService, useValue: prisma },
         { provide: ConversaParticipanteRepository, useValue: repository },
-        { provide: ClienteAnotacaoRepository, useValue: anotacaoRepository },
+        { provide: ConversaMensagemRepository, useValue: mensagemRepository },
         { provide: NotificacaoEmissorService, useValue: emissor },
       ],
     }).compile();
@@ -52,7 +52,7 @@ describe('ConvidarParticipanteConversaService', () => {
     repository.criar.mockResolvedValue(
       criarParticipanteSubordinadoFake({ id: 70n, papel: 'convidado', status: 'pendente' }),
     );
-    anotacaoRepository.buscarNomeCliente.mockResolvedValue('Empresa X');
+    mensagemRepository.buscarNomeCliente.mockResolvedValue('Empresa X');
   });
 
   it('operador convida subordinado: cria convite pendente e notifica na mesma transação', async () => {
@@ -78,7 +78,7 @@ describe('ConvidarParticipanteConversaService', () => {
         tipo: 'convite_conversa',
         titulo: 'Convite para conversa',
         mensagem: 'Operador convidou você para a conversa com a equipe Letscom.',
-        link: '/minhas-anotacoes',
+        link: '/minha-conversa',
         participanteId: 70n,
       },
       tx,
@@ -176,6 +176,7 @@ describe('ConvidarParticipanteConversaService', () => {
   it.each([
     ['aceito', 'Esta pessoa já participa da conversa.'],
     ['pendente', 'Esta pessoa já tem um convite pendente.'],
+    ['inativo', 'Esta pessoa está com o acesso inativo: reative em vez de convidar.'],
   ] as const)('recusa convidar quem está %s (relido na transação)', async (status, mensagem) => {
     repository.buscarDaPessoa
       .mockResolvedValueOnce(criarParticipanteFake())

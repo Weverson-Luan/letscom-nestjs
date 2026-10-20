@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ClienteAnotacaoTipo, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { Role } from 'src/shared/constants/roles';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 
@@ -7,16 +7,21 @@ const INCLUIR_RELACOES = {
   autor: { select: { id: true, nome: true } },
   autorSubordinado: { select: { id: true, nome: true, email: true } },
   anexos: { orderBy: { id: 'asc' } },
-} satisfies Prisma.ClienteAnotacaoInclude;
+} satisfies Prisma.ConversaMensagemInclude;
 
-export type AnotacaoComRelacoes = Prisma.ClienteAnotacaoGetPayload<{
+export type MensagemComRelacoes = Prisma.ConversaMensagemGetPayload<{
   include: typeof INCLUIR_RELACOES;
 }>;
 
-type FiltrosListagem = { clienteId: bigint; tipo?: ClienteAnotacaoTipo; search?: string };
+type FiltrosListagem = {
+  clienteId: bigint;
+  search?: string;
+  /** Convidado só vê mensagens a partir de quando entrou (ver `calcularVisivelDesde`). */
+  visivelDesde?: Date | null;
+};
 
 @Injectable()
-export class ClienteAnotacaoRepository {
+export class ConversaMensagemRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Cliente = usuário não excluído com papel `cliente` ativo (`role_user` é @@ignore, por isso SQL cru). */
@@ -34,11 +39,11 @@ export class ClienteAnotacaoRepository {
     return linhas.length > 0;
   }
 
-  private montarWhere(filtros: FiltrosListagem): Prisma.ClienteAnotacaoWhereInput {
+  private montarWhere(filtros: FiltrosListagem): Prisma.ConversaMensagemWhereInput {
     return {
       clienteId: filtros.clienteId,
       deletedAt: null,
-      ...(filtros.tipo ? { tipo: filtros.tipo } : {}),
+      ...(filtros.visivelDesde ? { createdAt: { gte: filtros.visivelDesde } } : {}),
       ...(filtros.search ? { conteudo: { contains: filtros.search } } : {}),
     };
   }
@@ -46,14 +51,14 @@ export class ClienteAnotacaoRepository {
   async paginar(params: FiltrosListagem & { skip: number; take: number }) {
     const where = this.montarWhere(params);
     const [data, total] = await Promise.all([
-      this.prisma.clienteAnotacao.findMany({
+      this.prisma.conversaMensagem.findMany({
         where,
         include: INCLUIR_RELACOES,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: params.skip,
         take: params.take,
       }),
-      this.prisma.clienteAnotacao.count({ where }),
+      this.prisma.conversaMensagem.count({ where }),
     ]);
     return { data, total };
   }
@@ -62,36 +67,36 @@ export class ClienteAnotacaoRepository {
     clienteId: bigint,
     id: bigint,
     tx?: Prisma.TransactionClient,
-  ): Promise<AnotacaoComRelacoes | null> {
-    return (tx ?? this.prisma).clienteAnotacao.findFirst({
+  ): Promise<MensagemComRelacoes | null> {
+    return (tx ?? this.prisma).conversaMensagem.findFirst({
       where: { id, clienteId, deletedAt: null },
       include: INCLUIR_RELACOES,
     });
   }
 
-  criar(data: Prisma.ClienteAnotacaoUncheckedCreateInput, tx?: Prisma.TransactionClient) {
-    return (tx ?? this.prisma).clienteAnotacao.create({ data });
+  criar(data: Prisma.ConversaMensagemUncheckedCreateInput, tx?: Prisma.TransactionClient) {
+    return (tx ?? this.prisma).conversaMensagem.create({ data });
   }
 
-  criarAnexos(data: Prisma.ClienteAnotacaoAnexoCreateManyInput[], tx?: Prisma.TransactionClient) {
-    return (tx ?? this.prisma).clienteAnotacaoAnexo.createMany({ data });
+  criarAnexos(data: Prisma.ConversaMensagemAnexoCreateManyInput[], tx?: Prisma.TransactionClient) {
+    return (tx ?? this.prisma).conversaMensagemAnexo.createMany({ data });
   }
 
   atualizar(
     id: bigint,
-    data: Prisma.ClienteAnotacaoUpdateInput,
+    data: Prisma.ConversaMensagemUpdateInput,
     tx?: Prisma.TransactionClient,
-  ): Promise<AnotacaoComRelacoes> {
-    return (tx ?? this.prisma).clienteAnotacao.update({
+  ): Promise<MensagemComRelacoes> {
+    return (tx ?? this.prisma).conversaMensagem.update({
       where: { id },
       data,
       include: INCLUIR_RELACOES,
     });
   }
 
-  /** Exclusão lógica: a anotação e os anexos continuam no banco/storage para auditoria. */
+  /** Exclusão lógica: a mensagem e os anexos continuam no banco/storage para auditoria. */
   remover(id: bigint, tx?: Prisma.TransactionClient) {
-    return (tx ?? this.prisma).clienteAnotacao.update({
+    return (tx ?? this.prisma).conversaMensagem.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
@@ -105,9 +110,23 @@ export class ClienteAnotacaoRepository {
     return cliente?.nome ?? null;
   }
 
-  buscarAnexo(clienteId: bigint, anotacaoId: bigint, anexoId: bigint) {
-    return this.prisma.clienteAnotacaoAnexo.findFirst({
-      where: { id: anexoId, anotacaoId, anotacao: { clienteId, deletedAt: null } },
+  /** `visivelDesde`: anexo de mensagem anterior à entrada do convidado não é encontrado. */
+  buscarAnexo(
+    clienteId: bigint,
+    mensagemId: bigint,
+    anexoId: bigint,
+    visivelDesde: Date | null = null,
+  ) {
+    return this.prisma.conversaMensagemAnexo.findFirst({
+      where: {
+        id: anexoId,
+        mensagemId,
+        mensagem: {
+          clienteId,
+          deletedAt: null,
+          ...(visivelDesde ? { createdAt: { gte: visivelDesde } } : {}),
+        },
+      },
     });
   }
 }

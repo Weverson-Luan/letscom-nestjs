@@ -10,7 +10,7 @@ import { buscarOuCriarPapel, criarUsuarioAutenticado } from '../helpers/criar-us
 import { liberarFeature } from '../helpers/liberar-feature';
 import { limparBanco } from '../helpers/limpar-banco';
 
-const MINHAS = `${PREFIXO_API}/minhas-anotacoes`;
+const MINHAS = `${PREFIXO_API}/minha-conversa/mensagens`;
 const NOTIFICACOES = `${PREFIXO_API}/notificacoes`;
 const MENSAGEM_SEM_ACESSO =
   'Você não participa desta conversa. Peça um convite a quem iniciou a conversa.';
@@ -64,9 +64,9 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
   }
 
   async function prepararCenario() {
-    await liberarFeature(prisma, Feature.VISUALIZAR_ANOTACOES_CLIENTE, PAPEIS_INTERNOS);
-    await liberarFeature(prisma, Feature.REGISTRAR_ANOTACOES_CLIENTE, PAPEIS_INTERNOS);
-    await liberarFeature(prisma, Feature.RESPONDER_ANOTACOES_CLIENTE, [
+    await liberarFeature(prisma, Feature.VISUALIZAR_CONVERSA_CLIENTE, PAPEIS_INTERNOS);
+    await liberarFeature(prisma, Feature.ENVIAR_MENSAGENS_CONVERSA_CLIENTE, PAPEIS_INTERNOS);
+    await liberarFeature(prisma, Feature.RESPONDER_CONVERSA_CLIENTE, [
       Role.CLIENTE,
       Role.SUBORDINADO,
     ]);
@@ -80,7 +80,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
     return { consultor, outroInterno, cliente, sub };
   }
 
-  describe('autorização de /minhas-anotacoes', () => {
+  describe('autorização de /minha-conversa/mensagens', () => {
     const rotas: Array<[string, 'get' | 'post', string]> = [
       ['GET', 'get', MINHAS],
       ['POST', 'post', MINHAS],
@@ -112,7 +112,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       const { cliente } = await prepararCenario();
 
       const filtro = await request(app.getHttpServer())
-        .get(`${MINHAS}?tipo=invalido`)
+        .get(`${MINHAS}?order=invalido`)
         .set('Authorization', `Bearer ${cliente.token}`);
       const anexo = await request(app.getHttpServer())
         .get(`${MINHAS}/abc/anexos/1`)
@@ -122,10 +122,10 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       expect(anexo.status).toBe(400);
     });
 
-    it('cliente não acessa a rota interna de anotações', async () => {
+    it('cliente não acessa a rota interna de mensagens', async () => {
       const { cliente } = await prepararCenario();
       const resposta = await request(app.getHttpServer())
-        .get(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
+        .get(`${PREFIXO_API}/clientes/${cliente.usuario.id}/conversa/mensagens`)
         .set('Authorization', `Bearer ${cliente.token}`);
       expect(resposta.status).toBe(403);
     });
@@ -135,7 +135,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
     const { consultor, cliente, sub } = await prepararCenario();
 
     const criada = await request(app.getHttpServer())
-      .post(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
+      .post(`${PREFIXO_API}/clientes/${cliente.usuario.id}/conversa/mensagens`)
       .set('Authorization', `Bearer ${consultor.token}`)
       .field('conteudo', 'Segue a proposta.')
       .field('subordinado_id', String(sub.subordinado.id))
@@ -147,7 +147,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       expect.objectContaining({
         destinatarioSubordinadoId: sub.subordinado.id,
         destinatarioUserId: null,
-        link: '/minhas-anotacoes',
+        link: '/minha-conversa',
         titulo: 'Nova mensagem da equipe Letscom',
       }),
     ]);
@@ -194,7 +194,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
   it('subordinado responde → só os participantes aceitos são notificados (não o consultor vinculado)', async () => {
     const { consultor, outroInterno, cliente, sub } = await prepararCenario();
     const iniciada = await request(app.getHttpServer())
-      .post(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
+      .post(`${PREFIXO_API}/clientes/${cliente.usuario.id}/conversa/mensagens`)
       .set('Authorization', `Bearer ${outroInterno.token}`)
       .field('conteudo', 'oi')
       .field('subordinado_id', String(sub.subordinado.id));
@@ -212,7 +212,6 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       message: 'Mensagem enviada com sucesso!',
       data: {
         conteudo: 'Aprovado!',
-        tipo: 'nota',
         autor: { id: Number(sub.subordinado.id), nome: 'Compras', tipo: 'subordinado' },
         eh_minha: true,
         pode_editar: false,
@@ -220,7 +219,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       },
     });
 
-    const gravada = await prisma.clienteAnotacao.findUnique({
+    const gravada = await prisma.conversaMensagem.findUnique({
       where: { id: BigInt(resposta.body.data.id) },
     });
     expect(gravada).toMatchObject({
@@ -230,7 +229,9 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       autorSubordinadoId: sub.subordinado.id,
     });
 
-    const notificacoes = await prisma.notificacao.findMany({ where: { anotacaoId: gravada!.id } });
+    const notificacoes = await prisma.notificacao.findMany({
+      where: { conversaMensagemId: gravada!.id },
+    });
     expect(notificacoes).toEqual([
       expect.objectContaining({
         destinatarioUserId: outroInterno.usuario.id,
@@ -240,7 +241,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
     ]);
 
     const internoVe = await request(app.getHttpServer())
-      .get(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
+      .get(`${PREFIXO_API}/clientes/${cliente.usuario.id}/conversa/mensagens`)
       .set('Authorization', `Bearer ${outroInterno.token}`);
     expect(internoVe.body.data[0]).toMatchObject({
       autor: { tipo: 'subordinado' },
@@ -250,7 +251,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
 
     // o consultor vinculado ao cliente não participa da conversa iniciada por outro operador
     const consultorVe = await request(app.getHttpServer())
-      .get(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
+      .get(`${PREFIXO_API}/clientes/${cliente.usuario.id}/conversa/mensagens`)
       .set('Authorization', `Bearer ${consultor.token}`);
     expect(consultorVe.status).toBe(403);
   });
@@ -258,7 +259,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
   it('cliente principal responde → gravado como cliente e o dono interno notificado', async () => {
     const { consultor, cliente } = await prepararCenario();
     const iniciada = await request(app.getHttpServer())
-      .post(`${PREFIXO_API}/clientes/${cliente.usuario.id}/anotacoes`)
+      .post(`${PREFIXO_API}/clientes/${cliente.usuario.id}/conversa/mensagens`)
       .set('Authorization', `Bearer ${consultor.token}`)
       .field('conteudo', 'Podemos faturar?');
     expect(iniciada.status).toBe(201);
@@ -273,12 +274,14 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       autor: { id: Number(cliente.usuario.id), tipo: 'cliente' },
       eh_minha: true,
     });
-    const gravada = await prisma.clienteAnotacao.findUnique({
+    const gravada = await prisma.conversaMensagem.findUnique({
       where: { id: BigInt(resposta.body.data.id) },
     });
     expect(gravada).toMatchObject({ autorTipo: 'cliente', autorId: cliente.usuario.id });
 
-    const notificacoes = await prisma.notificacao.findMany({ where: { anotacaoId: gravada!.id } });
+    const notificacoes = await prisma.notificacao.findMany({
+      where: { conversaMensagemId: gravada!.id },
+    });
     expect(notificacoes).toEqual([
       expect.objectContaining({
         destinatarioUserId: consultor.usuario.id,
@@ -303,7 +306,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
       .field('conteudo', '  ');
 
     expect(resposta.status).toBe(400);
-    expect(await prisma.clienteAnotacao.count()).toBe(0);
+    expect(await prisma.conversaMensagem.count()).toBe(0);
     expect(await prisma.notificacao.count()).toBe(0);
   });
 
@@ -311,7 +314,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
     const { consultor, cliente } = await prepararCenario();
     const outra = await criarUsuarioAutenticado(app, Role.CLIENTE);
     const criada = await request(app.getHttpServer())
-      .post(`${PREFIXO_API}/clientes/${outra.usuario.id}/anotacoes`)
+      .post(`${PREFIXO_API}/clientes/${outra.usuario.id}/conversa/mensagens`)
       .set('Authorization', `Bearer ${consultor.token}`)
       .attach('anexos', Buffer.from('x'), 'segredo.txt');
 
@@ -337,7 +340,7 @@ describe('Conversa com o cliente e notificações (e2e)', () => {
 
     it('lista, marca uma e marca todas como lidas, só na própria caixa', async () => {
       const { consultor, outroInterno } = await prepararCenario();
-      const base = { tipo: 'anotacao_cliente', titulo: 't', mensagem: 'm' };
+      const base = { tipo: 'mensagem_conversa', titulo: 't', mensagem: 'm' };
       const [primeira] = await Promise.all([
         prisma.notificacao.create({ data: { ...base, destinatarioUserId: consultor.usuario.id } }),
         prisma.notificacao.create({ data: { ...base, destinatarioUserId: consultor.usuario.id } }),

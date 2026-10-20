@@ -93,6 +93,24 @@ describe('ConversaParticipanteRepository', () => {
     });
   });
 
+  it('altera o status só se ainda estiver no status esperado', async () => {
+    prisma.conversaParticipante.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    const inativadoEm = new Date('2026-10-19T10:00:00.000Z');
+
+    await expect(
+      repository.alterarStatus(61n, 'aceito', { status: 'inativo', inativadoEm }),
+    ).resolves.toBe(true);
+    await expect(
+      repository.alterarStatus(61n, 'inativo', { status: 'aceito', inativadoEm: null }),
+    ).resolves.toBe(false);
+    expect(prisma.conversaParticipante.updateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: 61n, status: 'aceito' },
+      data: { status: 'inativo', inativadoEm },
+    });
+  });
+
   it('trava a linha do cliente com FOR UPDATE na transação', async () => {
     const tx = { $queryRaw: jest.fn() };
     await repository.travarConversa(5n, tx as unknown as Prisma.TransactionClient);
@@ -129,7 +147,7 @@ describe('ConversaParticipanteRepository', () => {
     await repository.listarCandidatosInternos({ clienteId: 5n, search: '50%_', take: 50 });
 
     const sql = sqlDaChamada();
-    expect(sql.sql).toContain("p.status IN ('pendente', 'aceito')");
+    expect(sql.sql).toContain("p.status IN ('pendente', 'aceito', 'inativo')");
     expect(sql.values).toEqual(
       expect.arrayContaining([5n, '%50\\%\\_%', 50, 'admin', 'consultor', 'producao', 'recepcao']),
     );
@@ -149,7 +167,7 @@ describe('ConversaParticipanteRepository', () => {
       { user_id: null, subordinado_id: 3n, nome: 'Compras', email: 'c@x.com' },
     ]);
     const filtroOcupados = {
-      none: { clienteId: 5n, status: { in: ['pendente', 'aceito'] } },
+      none: { clienteId: 5n, status: { in: ['pendente', 'aceito', 'inativo'] } },
     };
     expect(prisma.user.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({

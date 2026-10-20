@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
 import { mapearEstadoConversa } from '../mappers/participante-conversa.mapper';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
 import {
   montarAcessoConversa,
@@ -18,11 +18,11 @@ import {
 export class ListarParticipantesConversaService {
   constructor(
     private readonly repository: ConversaParticipanteRepository,
-    private readonly anotacaoRepository: ClienteAnotacaoRepository,
+    private readonly mensagemRepository: ConversaMensagemRepository,
   ) {}
 
   async execute(clienteId: bigint, usuario: AuthUser) {
-    if (!(await this.anotacaoRepository.ehClienteAtivo(clienteId))) {
+    if (!(await this.mensagemRepository.ehClienteAtivo(clienteId))) {
       throw new ClienteNaoEncontradoException();
     }
 

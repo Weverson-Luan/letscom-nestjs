@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { MAXIMO_CANDIDATOS_CONVITE } from '../clientes-anotacoes.constants';
+import { MAXIMO_CANDIDATOS_CONVITE } from '../conversas-clientes.constants';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
 import { mapearCandidatoConvite } from '../mappers/participante-conversa.mapper';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
 import {
   ladoDoParticipante,
@@ -21,12 +21,12 @@ import {
 export class ListarCandidatosConviteConversaService {
   constructor(
     private readonly repository: ConversaParticipanteRepository,
-    private readonly anotacaoRepository: ClienteAnotacaoRepository,
+    private readonly mensagemRepository: ConversaMensagemRepository,
   ) {}
 
   async execute(clienteId: bigint, search: string | undefined, usuario: AuthUser) {
     // sem isso, um `clienteId` de interno/admin devolveria o nome e o e-mail dele
-    if (!(await this.anotacaoRepository.ehClienteAtivo(clienteId))) {
+    if (!(await this.mensagemRepository.ehClienteAtivo(clienteId))) {
       throw new ClienteNaoEncontradoException();
     }
 

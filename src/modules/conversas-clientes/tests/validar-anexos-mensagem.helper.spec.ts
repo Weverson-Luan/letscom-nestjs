@@ -1,18 +1,18 @@
-import { AnotacaoClienteInvalidaException } from '../exceptions/anotacao-cliente-invalida.exception';
+import { MensagemConversaInvalidaException } from '../exceptions/mensagem-conversa-invalida.exception';
 import {
   corrigirNomeArquivo,
   extrairExtensao,
   normalizarNomesAnexos,
   montarCaminhoAnexo,
-  validarAnexosAnotacao,
-} from '../services/helpers/validar-anexos-anotacao.helper';
+  validarAnexosMensagem,
+} from '../services/helpers/validar-anexos-mensagem.helper';
 import { criarArquivoFake } from './fixtures';
 
-describe('validarAnexosAnotacao', () => {
+describe('validarAnexosMensagem', () => {
   it('aceita lista vazia e arquivos dentro das regras', () => {
-    expect(() => validarAnexosAnotacao([])).not.toThrow();
+    expect(() => validarAnexosMensagem([])).not.toThrow();
     expect(() =>
-      validarAnexosAnotacao([
+      validarAnexosMensagem([
         criarArquivoFake(),
         criarArquivoFake({ originalname: 'FOTO.JPG' }),
         criarArquivoFake({ originalname: 'planilha.xlsx', size: 10 * 1024 * 1024 }),
@@ -22,28 +22,28 @@ describe('validarAnexosAnotacao', () => {
 
   it('recusa mais de 5 arquivos', () => {
     const arquivos = Array.from({ length: 6 }, () => criarArquivoFake());
-    expect(() => validarAnexosAnotacao(arquivos)).toThrow(
-      new AnotacaoClienteInvalidaException('Envie no máximo 5 arquivos por anotação.'),
+    expect(() => validarAnexosMensagem(arquivos)).toThrow(
+      new MensagemConversaInvalidaException('Envie no máximo 5 arquivos por mensagem.'),
     );
   });
 
   it('recusa arquivo acima de 10 MB', () => {
-    expect(() => validarAnexosAnotacao([criarArquivoFake({ size: 10 * 1024 * 1024 + 1 })])).toThrow(
+    expect(() => validarAnexosMensagem([criarArquivoFake({ size: 10 * 1024 * 1024 + 1 })])).toThrow(
       'O arquivo proposta.pdf excede o limite de 10 MB.',
     );
   });
 
   it('recusa arquivo vazio usando o tamanho do buffer quando size não vem', () => {
     expect(() =>
-      validarAnexosAnotacao([criarArquivoFake({ size: undefined, buffer: Buffer.alloc(0) })]),
+      validarAnexosMensagem([criarArquivoFake({ size: undefined, buffer: Buffer.alloc(0) })]),
     ).toThrow('O arquivo proposta.pdf está vazio.');
   });
 
   it('recusa extensão fora da lista e arquivo sem extensão', () => {
-    expect(() => validarAnexosAnotacao([criarArquivoFake({ originalname: 'virus.exe' })])).toThrow(
-      AnotacaoClienteInvalidaException,
+    expect(() => validarAnexosMensagem([criarArquivoFake({ originalname: 'virus.exe' })])).toThrow(
+      MensagemConversaInvalidaException,
     );
-    expect(() => validarAnexosAnotacao([criarArquivoFake({ originalname: 'LEIAME' })])).toThrow(
+    expect(() => validarAnexosMensagem([criarArquivoFake({ originalname: 'LEIAME' })])).toThrow(
       'Tipo de arquivo não permitido: LEIAME.',
     );
   });
@@ -59,7 +59,7 @@ describe('extrairExtensao', () => {
 describe('montarCaminhoAnexo', () => {
   it('usa o uuid no nome para não expor nem colidir com o nome original', () => {
     expect(montarCaminhoAnexo(5n, 'Proposta Final.PDF', 'abc-123')).toBe(
-      'clientes/5/anotacoes/abc-123.pdf',
+      'clientes/5/conversa/mensagens/abc-123.pdf',
     );
   });
 });

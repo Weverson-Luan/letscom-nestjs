@@ -1,22 +1,22 @@
 import { Test } from '@nestjs/testing';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
-import { ClienteResumoAnotacoesRepository } from '../repositories/cliente-resumo-anotacoes.repository';
-import { BuscarClienteAnotacoesService } from '../services/buscar-cliente-anotacoes.service';
+import { ConversaClienteResumoRepository } from '../repositories/conversa-cliente-resumo.repository';
+import { BuscarConversaClienteService } from '../services/buscar-conversa-cliente.service';
 import { criarLinhaResumoFake } from './fixtures';
 
-describe('BuscarClienteAnotacoesService', () => {
+describe('BuscarConversaClienteService', () => {
   const repository = { buscarPorId: jest.fn() };
-  let service: BuscarClienteAnotacoesService;
+  let service: BuscarConversaClienteService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
       providers: [
-        BuscarClienteAnotacoesService,
-        { provide: ClienteResumoAnotacoesRepository, useValue: repository },
+        BuscarConversaClienteService,
+        { provide: ConversaClienteResumoRepository, useValue: repository },
       ],
     }).compile();
-    service = moduleRef.get(BuscarClienteAnotacoesService);
+    service = moduleRef.get(BuscarConversaClienteService);
   });
 
   it('devolve o resumo do cliente', async () => {

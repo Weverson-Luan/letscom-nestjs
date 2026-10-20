@@ -4,10 +4,10 @@ import {
   extrairClienteIdDoUsuario,
   montarAutorCliente,
   montarAutorInterno,
-} from '../services/helpers/resolver-usuario-anotacao.helper';
+} from '../services/helpers/resolver-usuario-conversa.helper';
 import { criarUsuarioLogadoFake } from './fixtures';
 
-describe('resolver usuário da anotação', () => {
+describe('resolver usuário da mensagem', () => {
   const subordinado = criarUsuarioLogadoFake({
     id: 3n,
     nome: '  ',

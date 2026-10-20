@@ -20,59 +20,59 @@ import { Roles } from 'src/shared/decorators/roles.decorator';
 import { ApiResponse } from 'src/shared/utils/api-response';
 import {
   ArquivoAnexo,
-  MAXIMO_ANEXOS_POR_ANOTACAO,
-  PAPEIS_CLIENTE_ANOTACOES,
+  MAXIMO_ANEXOS_POR_MENSAGEM,
+  PAPEIS_CONVERSA_CLIENTE,
   TAMANHO_MAXIMO_ANEXO_BYTES,
-} from '../clientes-anotacoes.constants';
-import { ListarAnotacoesClienteQueryDto } from '../dto/listar-anotacoes-cliente-query.dto';
-import { ResponderAnotacoesClienteDto } from '../dto/responder-anotacoes-cliente.dto';
-import { BaixarAnexoMinhaAnotacaoService } from '../services/baixar-anexo-minha-anotacao.service';
-import { ListarMinhasAnotacoesService } from '../services/listar-minhas-anotacoes.service';
-import { ResponderAnotacoesClienteService } from '../services/responder-anotacoes-cliente.service';
+} from '../conversas-clientes.constants';
+import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
+import { ResponderConversaClienteDto } from '../dto/responder-conversa-cliente.dto';
+import { BaixarAnexoMinhaConversaService } from '../services/baixar-anexo-minha-conversa.service';
+import { ListarMinhasMensagensConversaService } from '../services/listar-minhas-mensagens-conversa.service';
+import { ResponderConversaClienteService } from '../services/responder-conversa-cliente.service';
 
 /**
  * Conversa vista pelo lado do cliente (cliente principal e subordinados) no portal do cliente.
  * A empresa vem do token — nunca da URL.
  */
-@ApiTags('clientes-anotacoes')
+@ApiTags('conversas-clientes')
 @ApiBearerAuth()
-@Controller('minhas-anotacoes')
-@Roles(...PAPEIS_CLIENTE_ANOTACOES)
-@RequireFeatures(Feature.RESPONDER_ANOTACOES_CLIENTE)
-export class MinhaAnotacaoController {
+@Controller('minha-conversa/mensagens')
+@Roles(...PAPEIS_CONVERSA_CLIENTE)
+@RequireFeatures(Feature.RESPONDER_CONVERSA_CLIENTE)
+export class MinhaConversaMensagemController {
   constructor(
-    private readonly listarMinhasAnotacoes: ListarMinhasAnotacoesService,
-    private readonly responderAnotacoes: ResponderAnotacoesClienteService,
-    private readonly baixarAnexo: BaixarAnexoMinhaAnotacaoService,
+    private readonly listarMinhasMensagens: ListarMinhasMensagensConversaService,
+    private readonly responderConversa: ResponderConversaClienteService,
+    private readonly baixarAnexo: BaixarAnexoMinhaConversaService,
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Histórico de anotações da empresa do cliente logado' })
-  async listar(@Query() query: ListarAnotacoesClienteQueryDto, @CurrentUser() usuario: AuthUser) {
-    const { data, pagination } = await this.listarMinhasAnotacoes.execute(query, usuario);
-    return ApiResponse.success('Anotações carregadas com sucesso!', data, pagination);
+  @ApiOperation({ summary: 'Histórico de mensagens da empresa do cliente logado' })
+  async listar(@Query() query: PaginationQueryDto, @CurrentUser() usuario: AuthUser) {
+    const { data, pagination } = await this.listarMinhasMensagens.execute(query, usuario);
+    return ApiResponse.success('Mensagens carregadas com sucesso!', data, pagination);
   }
 
   @Post()
   @HttpCode(201)
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FilesInterceptor('anexos', MAXIMO_ANEXOS_POR_ANOTACAO, {
+    FilesInterceptor('anexos', MAXIMO_ANEXOS_POR_MENSAGEM, {
       limits: { fileSize: TAMANHO_MAXIMO_ANEXO_BYTES },
     }),
   )
   @ApiOperation({ summary: 'Cliente responde na conversa (texto e/ou anexos)' })
   async responder(
-    @Body() body: ResponderAnotacoesClienteDto,
+    @Body() body: ResponderConversaClienteDto,
     @CurrentUser() usuario: AuthUser,
     @UploadedFiles() arquivos?: ArquivoAnexo[],
   ) {
-    const data = await this.responderAnotacoes.execute(body, arquivos ?? [], usuario);
+    const data = await this.responderConversa.execute(body, arquivos ?? [], usuario);
     return ApiResponse.success('Mensagem enviada com sucesso!', data, null, 201);
   }
 
   @Get(':id/anexos/:anexoId')
-  @ApiParam({ name: 'id', description: 'ID da anotação' })
+  @ApiParam({ name: 'id', description: 'ID da mensagem' })
   @ApiParam({ name: 'anexoId', description: 'ID do anexo' })
   @ApiOperation({ summary: 'Baixa um anexo da conversa' })
   async baixar(

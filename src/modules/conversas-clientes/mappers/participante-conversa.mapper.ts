@@ -1,5 +1,5 @@
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { LadoConversa } from '../clientes-anotacoes.constants';
+import { LadoConversa } from '../conversas-clientes.constants';
 import {
   CandidatoConvite,
   ParticipanteComPessoa,
@@ -41,6 +41,7 @@ export function mapearParticipanteConversa(participante: ParticipanteComPessoa, 
     eh_eu: ehMesmaPessoa(participante, montarPessoaDoUsuario(usuario)),
     convidado_em: participante.createdAt,
     respondido_em: participante.respondidoEm,
+    inativado_em: participante.inativadoEm,
   };
 }
 

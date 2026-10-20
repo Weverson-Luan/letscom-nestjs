@@ -1,9 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
-import { TAMANHO_MAXIMO_CONTEUDO } from '../clientes-anotacoes.constants';
+import { TAMANHO_MAXIMO_CONTEUDO } from '../conversas-clientes.constants';
 
 /** Resposta do cliente: só texto e anexos (o tipo é sempre `nota`). */
-export class ResponderAnotacoesClienteDto {
+export class ResponderConversaClienteDto {
   @ApiPropertyOptional({ example: 'Pode seguir com o orçamento, aprovado.' })
   @IsOptional()
   @IsString()

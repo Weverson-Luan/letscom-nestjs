@@ -7,11 +7,11 @@ describe('NotificacaoEmissorService', () => {
   const tx = { marcador: 'tx' };
   let service: NotificacaoEmissorService;
   const dados = {
-    tipo: 'anotacao_cliente' as const,
+    tipo: 'mensagem_conversa' as const,
     titulo: 'Título',
     mensagem: 'Mensagem',
     link: '/clientes/5',
-    anotacaoId: 30n,
+    conversaMensagemId: 30n,
   };
 
   beforeEach(async () => {
@@ -38,21 +38,21 @@ describe('NotificacaoEmissorService', () => {
         {
           destinatarioUserId: 7n,
           destinatarioSubordinadoId: null,
-          tipo: 'anotacao_cliente',
+          tipo: 'mensagem_conversa',
           titulo: 'Título',
           mensagem: 'Mensagem',
           link: '/clientes/5',
-          anotacaoId: 30n,
+          conversaMensagemId: 30n,
           participanteId: null,
         },
         {
           destinatarioUserId: null,
           destinatarioSubordinadoId: 3n,
-          tipo: 'anotacao_cliente',
+          tipo: 'mensagem_conversa',
           titulo: 'Título',
           mensagem: 'Mensagem',
           link: '/clientes/5',
-          anotacaoId: 30n,
+          conversaMensagemId: 30n,
           participanteId: null,
         },
       ],
@@ -69,7 +69,11 @@ describe('NotificacaoEmissorService', () => {
     });
 
     const [linha] = repository.criarVarias.mock.calls[0][0];
-    expect(linha).toMatchObject({ tipo: 'convite_conversa', participanteId: 9n, anotacaoId: null });
+    expect(linha).toMatchObject({
+      tipo: 'convite_conversa',
+      participanteId: 9n,
+      conversaMensagemId: null,
+    });
   });
 
   it('não grava nada sem destinatários', async () => {
@@ -77,9 +81,9 @@ describe('NotificacaoEmissorService', () => {
     expect(repository.criarVarias).not.toHaveBeenCalled();
   });
 
-  it('corta título acima de 191 e mensagem acima de 500 caracteres e usa null para link/anotação ausentes', async () => {
+  it('corta título acima de 191 e mensagem acima de 500 caracteres e usa null para link/mensagem ausentes', async () => {
     await service.emitir([{ userId: 7n }], {
-      tipo: 'anotacao_cliente',
+      tipo: 'mensagem_conversa',
       titulo: 't'.repeat(250),
       mensagem: 'x'.repeat(600),
     });
@@ -88,6 +92,6 @@ describe('NotificacaoEmissorService', () => {
     expect(linha.mensagem).toHaveLength(500);
     expect(linha.mensagem.endsWith('\u2026')).toBe(true);
     expect(linha.titulo).toHaveLength(191);
-    expect(linha).toMatchObject({ link: null, anotacaoId: null, participanteId: null });
+    expect(linha).toMatchObject({ link: null, conversaMensagemId: null, participanteId: null });
   });
 });

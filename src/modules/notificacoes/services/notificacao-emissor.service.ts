@@ -37,7 +37,7 @@ export class NotificacaoEmissorService {
         titulo: cortarTexto(dados.titulo, TAMANHO_MAXIMO_TITULO_NOTIFICACAO),
         mensagem,
         link: dados.link ?? null,
-        anotacaoId: dados.anotacaoId ?? null,
+        conversaMensagemId: dados.conversaMensagemId ?? null,
         participanteId: dados.participanteId ?? null,
       })),
       tx,

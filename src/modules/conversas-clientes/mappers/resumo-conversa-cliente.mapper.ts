@@ -1,7 +1,7 @@
-import { LinhaResumoCliente } from '../repositories/cliente-resumo-anotacoes.repository';
+import { LinhaResumoCliente } from '../repositories/conversa-cliente-resumo.repository';
 
-/** Cliente na lista da tela de anotações (sem dados sensíveis). */
-export function mapearResumoClienteAnotacoes(linha: LinhaResumoCliente) {
+/** Cliente na lista da tela de mensagens (sem dados sensíveis). */
+export function mapearResumoConversaCliente(linha: LinhaResumoCliente) {
   return {
     id: linha.id,
     nome: linha.nome,
@@ -9,7 +9,7 @@ export function mapearResumoClienteAnotacoes(linha: LinhaResumoCliente) {
     telefone: linha.telefone,
     documento: linha.documento,
     ativo: Boolean(linha.ativo),
-    total_anotacoes: Number(linha.total_anotacoes),
-    ultima_anotacao_em: linha.ultima_anotacao_em,
+    total_mensagens: Number(linha.total_mensagens),
+    ultima_mensagem_em: linha.ultima_mensagem_em,
   };
 }

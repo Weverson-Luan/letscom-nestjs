@@ -1,30 +1,30 @@
 import { Test } from '@nestjs/testing';
 import { SemAcessoConversaException } from '../exceptions/sem-acesso-conversa.exception';
 import { StorageService } from 'src/shared/storage/storage.service';
-import { AnexoAnotacaoNaoEncontradoException } from '../exceptions/anexo-anotacao-nao-encontrado.exception';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { AnexoMensagemNaoEncontradoException } from '../exceptions/anexo-mensagem-nao-encontrado.exception';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaAcessoService } from '../services/conversa-acesso.service';
-import { BaixarAnexoMinhaAnotacaoService } from '../services/baixar-anexo-minha-anotacao.service';
-import { criarAnexoFake, criarUsuarioLogadoFake } from './fixtures';
+import { BaixarAnexoMinhaConversaService } from '../services/baixar-anexo-minha-conversa.service';
+import { criarAnexoFake, criarParticipanteFake, criarUsuarioLogadoFake } from './fixtures';
 
-describe('BaixarAnexoMinhaAnotacaoService', () => {
+describe('BaixarAnexoMinhaConversaService', () => {
   const repository = { buscarAnexo: jest.fn() };
   const storage = { download: jest.fn() };
   const acesso = { garantirAcesso: jest.fn() };
-  let service: BaixarAnexoMinhaAnotacaoService;
+  let service: BaixarAnexoMinhaConversaService;
   const subordinado = criarUsuarioLogadoFake({ id: 3n, tipoLogin: 'subordinado', clienteId: 5n });
 
   beforeEach(async () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
       providers: [
-        BaixarAnexoMinhaAnotacaoService,
-        { provide: ClienteAnotacaoRepository, useValue: repository },
+        BaixarAnexoMinhaConversaService,
+        { provide: ConversaMensagemRepository, useValue: repository },
         { provide: ConversaAcessoService, useValue: acesso },
         { provide: StorageService, useValue: storage },
       ],
     }).compile();
-    service = moduleRef.get(BaixarAnexoMinhaAnotacaoService);
+    service = moduleRef.get(BaixarAnexoMinhaConversaService);
     acesso.garantirAcesso.mockResolvedValue({
       participante: null,
       iniciada: true,
@@ -37,23 +37,23 @@ describe('BaixarAnexoMinhaAnotacaoService', () => {
   it('busca o anexo restrito à empresa do usuário logado', async () => {
     const resultado = await service.execute(30n, 40n, subordinado);
 
-    expect(repository.buscarAnexo).toHaveBeenCalledWith(5n, 30n, 40n);
+    expect(repository.buscarAnexo).toHaveBeenCalledWith(5n, 30n, 40n, null);
     expect(resultado).toMatchObject({ conteudo: Buffer.from('pdf'), mimeType: 'application/pdf' });
   });
 
   it('lança 404 sem empresa, para anexo de outra empresa ou ausente no storage', async () => {
     await expect(
       service.execute(30n, 40n, { ...subordinado, clienteId: null }),
-    ).rejects.toBeInstanceOf(AnexoAnotacaoNaoEncontradoException);
+    ).rejects.toBeInstanceOf(AnexoMensagemNaoEncontradoException);
 
     repository.buscarAnexo.mockResolvedValueOnce(null);
     await expect(service.execute(30n, 40n, subordinado)).rejects.toBeInstanceOf(
-      AnexoAnotacaoNaoEncontradoException,
+      AnexoMensagemNaoEncontradoException,
     );
 
     storage.download.mockResolvedValueOnce(null);
     await expect(service.execute(30n, 40n, subordinado)).rejects.toBeInstanceOf(
-      AnexoAnotacaoNaoEncontradoException,
+      AnexoMensagemNaoEncontradoException,
     );
   });
 
@@ -64,5 +64,23 @@ describe('BaixarAnexoMinhaAnotacaoService', () => {
       SemAcessoConversaException,
     );
     expect(repository.buscarAnexo).not.toHaveBeenCalled();
+  });
+
+  it('convidado busca o anexo com o corte de quando aceitou o convite', async () => {
+    const aceitouEm = new Date('2026-10-15T09:00:00.000Z');
+    acesso.garantirAcesso.mockResolvedValue({
+      participante: criarParticipanteFake({
+        userId: null,
+        subordinadoId: 3n,
+        papel: 'convidado',
+        respondidoEm: aceitouEm,
+      }),
+      iniciada: true,
+      semDonoInterno: false,
+    });
+
+    await service.execute(30n, 40n, subordinado);
+
+    expect(repository.buscarAnexo).toHaveBeenCalledWith(5n, 30n, 40n, aceitouEm);
   });
 });

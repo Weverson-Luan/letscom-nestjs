@@ -1,11 +1,11 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { ClienteResumoAnotacoesRepository } from '../repositories/cliente-resumo-anotacoes.repository';
+import { ConversaClienteResumoRepository } from '../repositories/conversa-cliente-resumo.repository';
 import { criarLinhaResumoFake } from './fixtures';
 
-describe('ClienteResumoAnotacoesRepository', () => {
+describe('ConversaClienteResumoRepository', () => {
   const prisma = { $queryRaw: jest.fn() };
-  const repository = new ClienteResumoAnotacoesRepository(prisma as unknown as PrismaService);
+  const repository = new ConversaClienteResumoRepository(prisma as unknown as PrismaService);
 
   function sqlDaChamada(indice: number): Prisma.Sql {
     const [template, ...valores] = prisma.$queryRaw.mock.calls[indice];
@@ -14,7 +14,7 @@ describe('ClienteResumoAnotacoesRepository', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('lista clientes ativos com contagem de anotações não excluídas e ordena pelo último contato', async () => {
+  it('lista clientes ativos com contagem de mensagens não excluídas e ordena pelo último contato', async () => {
     prisma.$queryRaw.mockResolvedValueOnce([criarLinhaResumoFake()]);
     prisma.$queryRaw.mockResolvedValueOnce([{ total: 1n }]);
 

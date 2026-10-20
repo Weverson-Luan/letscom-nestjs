@@ -10,18 +10,18 @@ export type LinhaResumoCliente = {
   telefone: string;
   documento: string | null;
   ativo: boolean | number;
-  total_anotacoes: bigint;
-  ultima_anotacao_em: Date | null;
+  total_mensagens: bigint;
+  ultima_mensagem_em: Date | null;
 };
 
 type Filtros = { search?: string; id?: bigint };
 
 /**
- * Clientes (papel `cliente` ativo, não excluídos) com total de anotações e data da última.
+ * Clientes (papel `cliente` ativo, não excluídos) com total de mensagens e data da última.
  * `role_user` não tem PK (@@ignore no Prisma), por isso SQL cru.
  */
 @Injectable()
-export class ClienteResumoAnotacoesRepository {
+export class ConversaClienteResumoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private montarSqlBase(filtros: Filtros): Prisma.Sql {
@@ -29,7 +29,7 @@ export class ClienteResumoAnotacoesRepository {
     const busca = filtros.search ? `%${filtros.search.replace(/[\\%_]/g, '\\$&')}%` : null;
     return Prisma.sql`
       FROM users u
-      LEFT JOIN clientes_anotacoes a ON a.cliente_id = u.id AND a.deleted_at IS NULL
+      LEFT JOIN conversas_mensagens a ON a.cliente_id = u.id AND a.deleted_at IS NULL
       WHERE u.deleted_at IS NULL
         AND EXISTS (
           SELECT 1 FROM role_user ru
@@ -49,13 +49,13 @@ export class ClienteResumoAnotacoesRepository {
   private selecionar(base: Prisma.Sql): Prisma.Sql {
     return Prisma.sql`
       SELECT u.id, u.nome, u.email, u.telefone, u.documento, u.ativo,
-        COUNT(a.id) AS total_anotacoes, MAX(a.created_at) AS ultima_anotacao_em
+        COUNT(a.id) AS total_mensagens, MAX(a.created_at) AS ultima_mensagem_em
       ${base}
       GROUP BY u.id, u.nome, u.email, u.telefone, u.documento, u.ativo
     `;
   }
 
-  /** Quem teve contato mais recente primeiro; clientes sem anotação por último, em ordem alfabética. */
+  /** Quem teve contato mais recente primeiro; clientes sem mensagem por último, em ordem alfabética. */
   async paginar(params: { search?: string; skip: number; take: number }) {
     const base = this.montarSqlBase(params);
     const [data, contagem] = await Promise.all([

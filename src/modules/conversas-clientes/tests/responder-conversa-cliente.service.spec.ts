@@ -1,19 +1,19 @@
 import { Test } from '@nestjs/testing';
 import { SemAcessoConversaException } from '../exceptions/sem-acesso-conversa.exception';
 import { ConversaNaoIniciadaException } from '../exceptions/conversa-nao-iniciada.exception';
-import { AnotacaoClienteInvalidaException } from '../exceptions/anotacao-cliente-invalida.exception';
+import { MensagemConversaInvalidaException } from '../exceptions/mensagem-conversa-invalida.exception';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaAcessoService } from '../services/conversa-acesso.service';
-import { AnotacaoRegistroService } from '../services/anotacao-registro.service';
-import { ResponderAnotacoesClienteService } from '../services/responder-anotacoes-cliente.service';
-import { criarAnotacaoFake, criarArquivoFake, criarUsuarioLogadoFake } from './fixtures';
+import { MensagemRegistroService } from '../services/mensagem-registro.service';
+import { ResponderConversaClienteService } from '../services/responder-conversa-cliente.service';
+import { criarMensagemFake, criarArquivoFake, criarUsuarioLogadoFake } from './fixtures';
 
-describe('ResponderAnotacoesClienteService', () => {
+describe('ResponderConversaClienteService', () => {
   const repository = { ehClienteAtivo: jest.fn() };
   const registro = { registrar: jest.fn() };
   const acesso = { garantirAcesso: jest.fn() };
-  let service: ResponderAnotacoesClienteService;
+  let service: ResponderConversaClienteService;
 
   const cliente = criarUsuarioLogadoFake({ id: 5n, nome: 'Empresa X', roles: ['cliente'] });
   const subordinado = criarUsuarioLogadoFake({
@@ -28,13 +28,13 @@ describe('ResponderAnotacoesClienteService', () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
       providers: [
-        ResponderAnotacoesClienteService,
-        { provide: ClienteAnotacaoRepository, useValue: repository },
+        ResponderConversaClienteService,
+        { provide: ConversaMensagemRepository, useValue: repository },
         { provide: ConversaAcessoService, useValue: acesso },
-        { provide: AnotacaoRegistroService, useValue: registro },
+        { provide: MensagemRegistroService, useValue: registro },
       ],
     }).compile();
-    service = moduleRef.get(ResponderAnotacoesClienteService);
+    service = moduleRef.get(ResponderConversaClienteService);
     acesso.garantirAcesso.mockResolvedValue({
       participante: null,
       iniciada: true,
@@ -42,7 +42,7 @@ describe('ResponderAnotacoesClienteService', () => {
     });
     repository.ehClienteAtivo.mockResolvedValue(true);
     registro.registrar.mockResolvedValue(
-      criarAnotacaoFake({
+      criarMensagemFake({
         autorId: 5n,
         autorTipo: 'cliente',
         autor: { id: 5n, nome: 'Empresa X' },
@@ -57,7 +57,6 @@ describe('ResponderAnotacoesClienteService', () => {
     expect(registro.registrar).toHaveBeenCalledWith({
       clienteId: 5n,
       autor: { tipo: 'cliente', userId: 5n, nome: 'Empresa X' },
-      tipo: 'nota',
       conteudo: 'Aprovado',
       arquivos: [],
     });
@@ -78,7 +77,7 @@ describe('ResponderAnotacoesClienteService', () => {
 
   it('recusa mensagem vazia', async () => {
     await expect(service.execute({ conteudo: '' }, [], cliente)).rejects.toBeInstanceOf(
-      AnotacaoClienteInvalidaException,
+      MensagemConversaInvalidaException,
     );
     expect(registro.registrar).not.toHaveBeenCalled();
   });

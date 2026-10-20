@@ -2,15 +2,15 @@ import { Test } from '@nestjs/testing';
 import { NotificacaoEmissorService } from 'src/modules/notificacoes/services/notificacao-emissor.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
-import { AnotacaoClienteInvalidaException } from '../exceptions/anotacao-cliente-invalida.exception';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { MensagemConversaInvalidaException } from '../exceptions/mensagem-conversa-invalida.exception';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
-import { AnotacaoRegistroService } from '../services/anotacao-registro.service';
-import { criarAnexoFake, criarAnotacaoFake, criarArquivoFake } from './fixtures';
+import { MensagemRegistroService } from '../services/mensagem-registro.service';
+import { criarAnexoFake, criarMensagemFake, criarArquivoFake } from './fixtures';
 
 jest.mock('uuid', () => ({ v4: () => 'uuid-fixo' }));
 
-describe('AnotacaoRegistroService', () => {
+describe('MensagemRegistroService', () => {
   const tx = { marcador: 'tx' };
   const prisma = { $transaction: jest.fn((fn: (t: unknown) => unknown) => fn(tx)) };
   const repository = {
@@ -22,7 +22,7 @@ describe('AnotacaoRegistroService', () => {
   const participanteRepository = { listarAceitosAtivos: jest.fn() };
   const storage = { put: jest.fn(), delete: jest.fn() };
   const emissor = { emitir: jest.fn() };
-  let service: AnotacaoRegistroService;
+  let service: MensagemRegistroService;
 
   const autorInterno = { tipo: 'interno' as const, userId: 7n, nome: 'Operador' };
   const autorSubordinado = { tipo: 'subordinado' as const, subordinadoId: 3n, nome: 'Compras' };
@@ -31,17 +31,17 @@ describe('AnotacaoRegistroService', () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
       providers: [
-        AnotacaoRegistroService,
+        MensagemRegistroService,
         { provide: PrismaService, useValue: prisma },
-        { provide: ClienteAnotacaoRepository, useValue: repository },
+        { provide: ConversaMensagemRepository, useValue: repository },
         { provide: ConversaParticipanteRepository, useValue: participanteRepository },
         { provide: StorageService, useValue: storage },
         { provide: NotificacaoEmissorService, useValue: emissor },
       ],
     }).compile();
-    service = moduleRef.get(AnotacaoRegistroService);
+    service = moduleRef.get(MensagemRegistroService);
     repository.criar.mockResolvedValue({ id: 30n });
-    repository.buscarPorId.mockResolvedValue(criarAnotacaoFake());
+    repository.buscarPorId.mockResolvedValue(criarMensagemFake());
     repository.buscarNomeCliente.mockResolvedValue('Empresa X');
     // participantes aceitos: operador (7), outro interno (8), cliente principal (5), subordinados 3 e 4
     participanteRepository.listarAceitosAtivos.mockResolvedValue([
@@ -53,11 +53,10 @@ describe('AnotacaoRegistroService', () => {
     ]);
   });
 
-  it('equipe escreve: grava anotação e notifica os demais participantes de cada lado na transação', async () => {
+  it('equipe escreve: grava mensagem e notifica os demais participantes de cada lado na transação', async () => {
     const resultado = await service.registrar({
       clienteId: 5n,
       autor: autorInterno,
-      tipo: 'ligacao',
       conteudo: '  Orçamento enviado  ',
       arquivos: [],
     });
@@ -68,7 +67,6 @@ describe('AnotacaoRegistroService', () => {
         autorTipo: 'interno',
         autorId: 7n,
         autorSubordinadoId: null,
-        tipo: 'ligacao',
         conteudo: 'Orçamento enviado',
       },
       tx,
@@ -85,16 +83,16 @@ describe('AnotacaoRegistroService', () => {
     expect(emissor.emitir).toHaveBeenCalledWith(
       [{ userId: 5n }, { subordinadoId: 3n }, { subordinadoId: 4n }],
       {
-        tipo: 'anotacao_cliente',
+        tipo: 'mensagem_conversa',
         titulo: 'Nova mensagem da equipe Letscom',
         mensagem: 'Operador: Orçamento enviado',
-        link: '/minhas-anotacoes',
-        anotacaoId: 30n,
+        link: '/minha-conversa',
+        conversaMensagemId: 30n,
       },
       tx,
     );
     expect(storage.put).not.toHaveBeenCalled();
-    expect(resultado).toEqual(criarAnotacaoFake());
+    expect(resultado).toEqual(criarMensagemFake());
   });
 
   it('roda o gancho de início na transação antes de gravar e notifica quem ele registrou', async () => {
@@ -115,7 +113,6 @@ describe('AnotacaoRegistroService', () => {
     await service.registrar({
       clienteId: 5n,
       autor: autorInterno,
-      tipo: 'nota',
       conteudo: 'Olá',
       arquivos: [],
       antesDeGravar,
@@ -127,17 +124,19 @@ describe('AnotacaoRegistroService', () => {
   });
 
   it('subordinado escreve: grava, sobe anexo e notifica a equipe e o resto do lado do cliente', async () => {
-    repository.buscarPorId.mockResolvedValue(criarAnotacaoFake({ anexos: [criarAnexoFake()] }));
+    repository.buscarPorId.mockResolvedValue(criarMensagemFake({ anexos: [criarAnexoFake()] }));
     const arquivo = criarArquivoFake();
 
     await service.registrar({
       clienteId: 5n,
       autor: autorSubordinado,
-      tipo: 'nota',
       arquivos: [arquivo],
     });
 
-    expect(storage.put).toHaveBeenCalledWith('clientes/5/anotacoes/uuid-fixo.pdf', arquivo.buffer);
+    expect(storage.put).toHaveBeenCalledWith(
+      'clientes/5/conversa/mensagens/uuid-fixo.pdf',
+      arquivo.buffer,
+    );
     expect(repository.criar).toHaveBeenCalledWith(
       expect.objectContaining({
         autorTipo: 'subordinado',
@@ -150,9 +149,9 @@ describe('AnotacaoRegistroService', () => {
     expect(repository.criarAnexos).toHaveBeenCalledWith(
       [
         {
-          anotacaoId: 30n,
+          mensagemId: 30n,
           nomeOriginal: 'proposta.pdf',
-          filePath: 'clientes/5/anotacoes/uuid-fixo.pdf',
+          filePath: 'clientes/5/conversa/mensagens/uuid-fixo.pdf',
           mimeType: 'application/pdf',
           tamanhoBytes: 8,
         },
@@ -170,21 +169,20 @@ describe('AnotacaoRegistroService', () => {
     );
     expect(emissor.emitir).toHaveBeenCalledWith(
       [{ userId: 5n }, { subordinadoId: 4n }],
-      expect.objectContaining({ titulo: 'Nova mensagem na conversa', link: '/minhas-anotacoes' }),
+      expect.objectContaining({ titulo: 'Nova mensagem na conversa', link: '/minha-conversa' }),
       tx,
     );
   });
 
-  it('recusa anotação vazia sem tocar em storage ou banco', async () => {
+  it('recusa mensagem vazia sem tocar em storage ou banco', async () => {
     await expect(
       service.registrar({
         clienteId: 5n,
         autor: autorInterno,
-        tipo: 'nota',
         conteudo: ' ',
         arquivos: [],
       }),
-    ).rejects.toBeInstanceOf(AnotacaoClienteInvalidaException);
+    ).rejects.toBeInstanceOf(MensagemConversaInvalidaException);
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.buscarNomeCliente).not.toHaveBeenCalled();
   });
@@ -196,7 +194,6 @@ describe('AnotacaoRegistroService', () => {
       service.registrar({
         clienteId: 5n,
         autor: autorInterno,
-        tipo: 'nota',
         arquivos: [criarArquivoFake(), criarArquivoFake()],
       }),
     ).rejects.toThrow('falha ao notificar');
@@ -210,7 +207,6 @@ describe('AnotacaoRegistroService', () => {
       service.registrar({
         clienteId: 5n,
         autor: autorInterno,
-        tipo: 'nota',
         arquivos: [criarArquivoFake(), criarArquivoFake()],
       }),
     ).rejects.toThrow('storage fora');

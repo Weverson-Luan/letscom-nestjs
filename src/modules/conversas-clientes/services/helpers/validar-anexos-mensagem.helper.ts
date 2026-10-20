@@ -1,10 +1,10 @@
 import {
   ArquivoAnexo,
   EXTENSOES_ANEXO_PERMITIDAS,
-  MAXIMO_ANEXOS_POR_ANOTACAO,
+  MAXIMO_ANEXOS_POR_MENSAGEM,
   TAMANHO_MAXIMO_ANEXO_BYTES,
-} from '../../clientes-anotacoes.constants';
-import { AnotacaoClienteInvalidaException } from '../../exceptions/anotacao-cliente-invalida.exception';
+} from '../../conversas-clientes.constants';
+import { MensagemConversaInvalidaException } from '../../exceptions/mensagem-conversa-invalida.exception';
 
 /**
  * O multer 2 (busboy) lê o nome do arquivo do multipart como latin1, então "orçamento.pdf"
@@ -30,42 +30,42 @@ export function extrairExtensao(nomeArquivo: string): string {
   return partes.length > 1 ? (partes.pop() ?? '').toLowerCase() : '';
 }
 
-/** Lança AnotacaoClienteInvalidaException na primeira regra violada. */
-export function validarAnexosAnotacao(arquivos: ArquivoAnexo[]): void {
-  if (arquivos.length > MAXIMO_ANEXOS_POR_ANOTACAO) {
-    throw new AnotacaoClienteInvalidaException(
-      `Envie no máximo ${MAXIMO_ANEXOS_POR_ANOTACAO} arquivos por anotação.`,
+/** Lança MensagemConversaInvalidaException na primeira regra violada. */
+export function validarAnexosMensagem(arquivos: ArquivoAnexo[]): void {
+  if (arquivos.length > MAXIMO_ANEXOS_POR_MENSAGEM) {
+    throw new MensagemConversaInvalidaException(
+      `Envie no máximo ${MAXIMO_ANEXOS_POR_MENSAGEM} arquivos por mensagem.`,
     );
   }
 
   for (const arquivo of arquivos) {
     const tamanho = arquivo.size ?? arquivo.buffer.length;
     if (tamanho === 0) {
-      throw new AnotacaoClienteInvalidaException(`O arquivo ${arquivo.originalname} está vazio.`);
+      throw new MensagemConversaInvalidaException(`O arquivo ${arquivo.originalname} está vazio.`);
     }
     if (tamanho > TAMANHO_MAXIMO_ANEXO_BYTES) {
-      throw new AnotacaoClienteInvalidaException(
+      throw new MensagemConversaInvalidaException(
         `O arquivo ${arquivo.originalname} excede o limite de 10 MB.`,
       );
     }
     const extensao = extrairExtensao(arquivo.originalname);
     if (!(EXTENSOES_ANEXO_PERMITIDAS as readonly string[]).includes(extensao)) {
-      throw new AnotacaoClienteInvalidaException(
+      throw new MensagemConversaInvalidaException(
         `Tipo de arquivo não permitido: ${arquivo.originalname}.`,
       );
     }
   }
 }
 
-/** Anotação nova precisa de texto ou de pelo menos um anexo, e anexos dentro das regras. */
-export function validarNovaAnotacao(conteudo: string | undefined, arquivos: ArquivoAnexo[]): void {
+/** Mensagem nova precisa de texto ou de pelo menos um anexo, e anexos dentro das regras. */
+export function validarNovaMensagem(conteudo: string | undefined, arquivos: ArquivoAnexo[]): void {
   if (!conteudo?.trim() && arquivos.length === 0) {
-    throw new AnotacaoClienteInvalidaException('Escreva uma anotação ou anexe um arquivo.');
+    throw new MensagemConversaInvalidaException('Escreva uma mensagem ou anexe um arquivo.');
   }
-  validarAnexosAnotacao(arquivos);
+  validarAnexosMensagem(arquivos);
 }
 
 /** Caminho no storage com nome aleatório (o nome original fica só no banco). */
 export function montarCaminhoAnexo(clienteId: bigint, nomeArquivo: string, uuid: string): string {
-  return `clientes/${clienteId}/anotacoes/${uuid}.${extrairExtensao(nomeArquivo)}`;
+  return `clientes/${clienteId}/conversa/mensagens/${uuid}.${extrairExtensao(nomeArquivo)}`;
 }

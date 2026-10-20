@@ -6,15 +6,15 @@ import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import {
   LadoConversa,
-  LINK_MINHAS_ANOTACOES,
-  montarLinkAnotacoesInterno,
+  LINK_MINHA_CONVERSA,
+  montarLinkConversaInterno,
   PessoaConversa,
-} from '../clientes-anotacoes.constants';
+} from '../conversas-clientes.constants';
 import { ConvidarParticipanteConversaDto } from '../dto/convidar-participante-conversa.dto';
 import { ParticipanteConversaInvalidoException } from '../exceptions/participante-conversa-invalido.exception';
 import { SemPermissaoConviteConversaException } from '../exceptions/sem-permissao-convite-conversa.exception';
 import { mapearParticipanteConversa } from '../mappers/participante-conversa.mapper';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import {
   ConversaParticipanteRepository,
   ParticipanteComPessoa,
@@ -35,7 +35,7 @@ export class ConvidarParticipanteConversaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly repository: ConversaParticipanteRepository,
-    private readonly anotacaoRepository: ClienteAnotacaoRepository,
+    private readonly mensagemRepository: ConversaMensagemRepository,
     private readonly notificacaoEmissor: NotificacaoEmissorService,
   ) {}
 
@@ -52,7 +52,7 @@ export class ConvidarParticipanteConversaService {
       );
     }
 
-    const clienteNome = await this.anotacaoRepository.buscarNomeCliente(clienteId);
+    const clienteNome = await this.mensagemRepository.buscarNomeCliente(clienteId);
 
     try {
       const participante = await this.prisma.$transaction(async (tx) => {
@@ -136,8 +136,16 @@ export class ConvidarParticipanteConversaService {
     return 'interno';
   }
 
-  /** Dono, convidado aceito ou convite pendente não recebem novo convite; recusado pode. */
+  /**
+   * Dono, convidado aceito, convite pendente ou acesso inativo não recebem novo convite
+   * (inativo volta pela reativação); recusado pode.
+   */
   private validarSituacaoAtual(existente: ParticipanteComPessoa | null): void {
+    if (existente?.status === 'inativo') {
+      throw new ParticipanteConversaInvalidoException(
+        'Esta pessoa está com o acesso inativo: reative em vez de convidar.',
+      );
+    }
     if (existente?.status === 'aceito') {
       throw new ParticipanteConversaInvalidoException('Esta pessoa já participa da conversa.');
     }
@@ -161,7 +169,7 @@ export class ConvidarParticipanteConversaService {
       mensagem: interno
         ? `${nomeDono} convidou você para a conversa com ${clienteNome ?? 'o cliente'}.`
         : `${nomeDono} convidou você para a conversa com a equipe Letscom.`,
-      link: interno ? montarLinkAnotacoesInterno(clienteId) : LINK_MINHAS_ANOTACOES,
+      link: interno ? montarLinkConversaInterno(clienteId) : LINK_MINHA_CONVERSA,
       participanteId,
     };
   }

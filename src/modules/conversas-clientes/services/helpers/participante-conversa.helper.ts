@@ -1,6 +1,6 @@
 import { Role } from 'src/shared/constants/roles';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { LadoConversa, PessoaConversa } from '../../clientes-anotacoes.constants';
+import { LadoConversa, PessoaConversa } from '../../conversas-clientes.constants';
 import { ParticipanteConversaInvalidoException } from '../../exceptions/participante-conversa-invalido.exception';
 import { ParticipanteConversaNaoEncontradoException } from '../../exceptions/participante-conversa-nao-encontrado.exception';
 import { SemPermissaoConviteConversaException } from '../../exceptions/sem-permissao-convite-conversa.exception';
@@ -90,6 +90,7 @@ export function montarAcessoConversa(
 /**
  * Entra: participante com convite aceito; admin; enquanto não há dono interno ativo, qualquer
  * interno; e, antes de iniciada (sem mensagens), o lado do cliente vê a conversa vazia.
+ * Participante com acesso inativado só entra se for admin.
  */
 export function temAcessoConversa(
   acesso: AcessoConversa,
@@ -97,8 +98,27 @@ export function temAcessoConversa(
   usuario: AuthUser,
 ): boolean {
   if (acesso.participante?.status === 'aceito') return true;
+  if (acesso.participante?.status === 'inativo') return ehAdminConversa(usuario);
   if (ladoDoUsuario(usuario, clienteId) === 'cliente') return !acesso.iniciada;
   return ehAdminConversa(usuario) || acesso.semDonoInterno;
+}
+
+/**
+ * A partir de quando o usuário vê as mensagens (como no WhatsApp): o convidado só vê o que foi
+ * enviado depois de aceitar o convite (`respondidoEm` é zerado a cada novo convite). Dono, admin e
+ * o interno que entra sem dono interno ativo veem todo o histórico (null = sem corte).
+ */
+export function calcularVisivelDesde(
+  acesso: AcessoConversa,
+  clienteId: bigint,
+  usuario: AuthUser,
+): Date | null {
+  const { participante } = acesso;
+  if (ehAdminConversa(usuario)) return null;
+  // sem dono interno ativo, qualquer interno entra e vê tudo: ser convidado não pode dar menos
+  if (acesso.semDonoInterno && ladoDoUsuario(usuario, clienteId) === 'interno') return null;
+  if (participante?.papel !== 'convidado' || participante.status !== 'aceito') return null;
+  return participante.respondidoEm ?? participante.createdAt;
 }
 
 /** Só os dois donos (com acesso aceito) convidam e removem participantes; admin não. */
@@ -107,6 +127,36 @@ export function validarDonoConversa(
 ): ParticipanteComPessoa {
   if (participante?.papel !== 'dono' || participante.status !== 'aceito') {
     throw new SemPermissaoConviteConversaException();
+  }
+  return participante;
+}
+
+export type AcaoGestaoParticipante = 'remover' | 'inativar' | 'reativar';
+
+/**
+ * Regras comuns para o dono gerir um participante: de outra conversa é 404 (não revela que o id
+ * existe), dono não é gerido e o dono do lado do cliente só gere pessoas da própria empresa.
+ */
+export function validarGestaoParticipante(params: {
+  dono: ParticipanteComPessoa;
+  participante: ParticipanteComPessoa | null;
+  clienteId: bigint;
+  acao: AcaoGestaoParticipante;
+}): ParticipanteComPessoa {
+  const { dono, participante, clienteId, acao } = params;
+  if (!participante || participante.clienteId !== clienteId) {
+    throw new ParticipanteConversaNaoEncontradoException();
+  }
+  if (participante.papel === 'dono') {
+    throw new ParticipanteConversaInvalidoException(
+      `Não é possível ${acao} quem iniciou a conversa.`,
+    );
+  }
+  if (
+    ladoDoParticipante(dono, clienteId) === 'cliente' &&
+    ladoDoParticipante(participante, clienteId) === 'interno'
+  ) {
+    throw new SemPermissaoConviteConversaException(`Você só pode ${acao} pessoas da sua empresa.`);
   }
   return participante;
 }

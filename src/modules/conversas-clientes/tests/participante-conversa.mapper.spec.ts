@@ -25,6 +25,7 @@ describe('mapearParticipanteConversa', () => {
       eh_eu: true,
       convidado_em: participante.createdAt,
       respondido_em: participante.respondidoEm,
+      inativado_em: null,
     });
   });
 

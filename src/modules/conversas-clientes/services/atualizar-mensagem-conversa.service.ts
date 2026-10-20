@@ -1,48 +1,62 @@
-import { Injectable } from '@nestjs/common';
-import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { AtualizarAnotacaoClienteDto } from '../dto/atualizar-anotacao-cliente.dto';
-import { AnotacaoClienteInvalidaException } from '../exceptions/anotacao-cliente-invalida.exception';
-import { AnotacaoClienteNaoEncontradaException } from '../exceptions/anotacao-cliente-nao-encontrada.exception';
-import { SemPermissaoAnotacaoClienteException } from '../exceptions/sem-permissao-anotacao-cliente.exception';
-import { mapearAnotacaoCliente } from '../mappers/anotacao-cliente.mapper';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
-import { ConversaAcessoService } from './conversa-acesso.service';
-import { podeEditarAnotacao } from './helpers/permissoes-anotacao.helper';
+/**
+ * IMPORTS
+ */
 
-/** Edita texto e/ou tipo da anotação. Só o autor; marca `editada_em`. */
+import { Injectable } from '@nestjs/common';
+
+// services / conversa-acesso
+import { ConversaAcessoService } from './conversa-acesso.service';
+
+// repositories / conversa-mensagem
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
+
+// exceptions / conversa-mensagem
+import { MensagemConversaNaoEncontradaException } from '../exceptions/mensagem-conversa-nao-encontrada.exception';
+import { SemPermissaoMensagemConversaException } from '../exceptions/sem-permissao-mensagem-conversa.exception';
+import { MensagemConversaInvalidaException } from '../exceptions/mensagem-conversa-invalida.exception';
+
+// mappers / conversa-mensagem
+import { mapearMensagemConversa } from '../mappers/mensagem-conversa.mapper';
+
+// helpers / conversa-mensagem
+import { podeEditarMensagem } from './helpers/permissoes-mensagem.helper';
+
+// shared / decorators
+import { AuthUser } from 'src/shared/decorators/current-user.decorator';
+
+// typings
+import { AtualizarMensagemConversaDto } from '../dto/atualizar-mensagem-conversa.dto';
+
+/** Edita texto e/ou tipo da mensagem. Só o autor; marca `editada_em`. */
 @Injectable()
-export class AtualizarAnotacaoClienteService {
+export class AtualizarMensagemConversaService {
   constructor(
-    private readonly repository: ClienteAnotacaoRepository,
+    private readonly repository: ConversaMensagemRepository,
     private readonly acesso: ConversaAcessoService,
   ) {}
 
   async execute(
     clienteId: bigint,
     id: bigint,
-    dados: AtualizarAnotacaoClienteDto,
+    dados: AtualizarMensagemConversaDto,
     usuario: AuthUser,
   ) {
     await this.acesso.garantirAcesso(clienteId, usuario);
-    const anotacao = await this.repository.buscarPorId(clienteId, id);
-    if (!anotacao) throw new AnotacaoClienteNaoEncontradaException();
-    if (!podeEditarAnotacao(anotacao, usuario)) {
-      throw new SemPermissaoAnotacaoClienteException('editar');
+    const mensagem = await this.repository.buscarPorId(clienteId, id);
+    if (!mensagem) throw new MensagemConversaNaoEncontradaException();
+    if (!podeEditarMensagem(mensagem, usuario)) {
+      throw new SemPermissaoMensagemConversaException('editar');
     }
 
     const conteudo = dados.conteudo?.trim();
-    if (conteudo === '' && anotacao.anexos.length === 0) {
-      throw new AnotacaoClienteInvalidaException('Escreva uma anotação ou anexe um arquivo.');
+    if (conteudo === '' && mensagem.anexos.length === 0) {
+      throw new MensagemConversaInvalidaException('Escreva uma mensagem ou anexe um arquivo.');
     }
-    if (conteudo === undefined && dados.tipo === undefined) {
-      return mapearAnotacaoCliente(anotacao, usuario);
+    if (conteudo === undefined) {
+      return mapearMensagemConversa(mensagem, usuario);
     }
 
-    const atualizada = await this.repository.atualizar(id, {
-      ...(conteudo !== undefined ? { conteudo } : {}),
-      ...(dados.tipo !== undefined ? { tipo: dados.tipo } : {}),
-      editadaEm: new Date(),
-    });
-    return mapearAnotacaoCliente(atualizada, usuario);
+    const atualizada = await this.repository.atualizar(id, { conteudo, editadaEm: new Date() });
+    return mapearMensagemConversa(atualizada, usuario);
   }
 }

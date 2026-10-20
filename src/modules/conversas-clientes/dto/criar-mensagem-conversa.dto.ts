@@ -1,10 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ClienteAnotacaoTipo } from '@prisma/client';
-import { IsIn, IsInt, IsOptional, IsPositive, IsString, MaxLength } from 'class-validator';
-import { TAMANHO_MAXIMO_CONTEUDO, TIPOS_ANOTACAO } from '../clientes-anotacoes.constants';
+import { IsInt, IsOptional, IsPositive, IsString, MaxLength } from 'class-validator';
+import { TAMANHO_MAXIMO_CONTEUDO } from '../conversas-clientes.constants';
 
 /** Campos de texto do multipart. Os arquivos chegam no campo `anexos`. */
-export class CriarAnotacaoClienteDto {
+export class CriarMensagemConversaDto {
   @ApiPropertyOptional({
     example: 'Cliente pediu orçamento de 500 crachás PVC para novembro.',
     description: 'Obrigatório quando não houver anexo.',
@@ -12,14 +11,9 @@ export class CriarAnotacaoClienteDto {
   @IsOptional()
   @IsString()
   @MaxLength(TAMANHO_MAXIMO_CONTEUDO, {
-    message: `A anotação deve ter no máximo ${TAMANHO_MAXIMO_CONTEUDO} caracteres.`,
+    message: `A mensagem deve ter no máximo ${TAMANHO_MAXIMO_CONTEUDO} caracteres.`,
   })
   conteudo?: string;
-
-  @ApiPropertyOptional({ enum: TIPOS_ANOTACAO, default: 'nota' })
-  @IsOptional()
-  @IsIn(TIPOS_ANOTACAO, { message: 'Tipo de anotação inválido.' })
-  tipo?: ClienteAnotacaoTipo;
 
   @ApiPropertyOptional({
     example: 3,

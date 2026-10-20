@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { ApiResponse } from 'src/shared/utils/api-response';
-import { PAPEIS_CONVITE_CONVERSA } from '../clientes-anotacoes.constants';
+import { PAPEIS_CONVITE_CONVERSA } from '../conversas-clientes.constants';
 import { AceitarConviteConversaService } from '../services/aceitar-convite-conversa.service';
 import { RecusarConviteConversaService } from '../services/recusar-convite-conversa.service';
 
@@ -11,7 +11,7 @@ import { RecusarConviteConversaService } from '../services/recusar-convite-conve
  * Resposta ao convite recebido por notificação (equipe ou lado do cliente). Sem feature flag:
  * só o próprio convidado responde, e o acesso à conversa continua exigindo a feature.
  */
-@ApiTags('clientes-anotacoes')
+@ApiTags('conversas-clientes')
 @ApiBearerAuth()
 @ApiParam({ name: 'id', description: 'ID do convite (participante)' })
 @Controller('convites-conversa/:id')

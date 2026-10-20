@@ -12,7 +12,7 @@ export function mapearNotificacao(notificacao: NotificacaoComConvite) {
     titulo: notificacao.titulo,
     mensagem: notificacao.mensagem,
     link: notificacao.link,
-    anotacao_id: notificacao.anotacaoId,
+    conversa_mensagem_id: notificacao.conversaMensagemId,
     convite: notificacao.participante
       ? { id: notificacao.participante.id, status: notificacao.participante.status }
       : null,

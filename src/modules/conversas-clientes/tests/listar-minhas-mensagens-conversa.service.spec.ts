@@ -1,15 +1,15 @@
 import { Test } from '@nestjs/testing';
 import { SemAcessoConversaException } from '../exceptions/sem-acesso-conversa.exception';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaAcessoService } from '../services/conversa-acesso.service';
-import { ListarMinhasAnotacoesService } from '../services/listar-minhas-anotacoes.service';
-import { criarAnotacaoFake, criarUsuarioLogadoFake } from './fixtures';
+import { ListarMinhasMensagensConversaService } from '../services/listar-minhas-mensagens-conversa.service';
+import { criarMensagemFake, criarParticipanteFake, criarUsuarioLogadoFake } from './fixtures';
 
-describe('ListarMinhasAnotacoesService', () => {
+describe('ListarMinhasMensagensConversaService', () => {
   const repository = { ehClienteAtivo: jest.fn(), paginar: jest.fn() };
   const acesso = { garantirAcesso: jest.fn() };
-  let service: ListarMinhasAnotacoesService;
+  let service: ListarMinhasMensagensConversaService;
   const subordinado = criarUsuarioLogadoFake({
     id: 3n,
     tipoLogin: 'subordinado',
@@ -21,28 +21,28 @@ describe('ListarMinhasAnotacoesService', () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
       providers: [
-        ListarMinhasAnotacoesService,
-        { provide: ClienteAnotacaoRepository, useValue: repository },
+        ListarMinhasMensagensConversaService,
+        { provide: ConversaMensagemRepository, useValue: repository },
         { provide: ConversaAcessoService, useValue: acesso },
       ],
     }).compile();
-    service = moduleRef.get(ListarMinhasAnotacoesService);
+    service = moduleRef.get(ListarMinhasMensagensConversaService);
     acesso.garantirAcesso.mockResolvedValue({
       participante: null,
       iniciada: true,
       semDonoInterno: false,
     });
     repository.ehClienteAtivo.mockResolvedValue(true);
-    repository.paginar.mockResolvedValue({ data: [criarAnotacaoFake()], total: 1 });
+    repository.paginar.mockResolvedValue({ data: [criarMensagemFake()], total: 1 });
   });
 
   it('lista a conversa da empresa do usuário, sem permissões de edição', async () => {
-    const resultado = await service.execute({ tipo: 'email', search: ' prazo ' }, subordinado);
+    const resultado = await service.execute({ search: ' prazo ' }, subordinado);
 
     expect(repository.paginar).toHaveBeenCalledWith({
       clienteId: 5n,
-      tipo: 'email',
       search: 'prazo',
+      visivelDesde: null,
       skip: 0,
       take: 20,
     });
@@ -75,5 +75,25 @@ describe('ListarMinhasAnotacoesService', () => {
     );
     expect(acesso.garantirAcesso).toHaveBeenCalledWith(5n, subordinado);
     expect(repository.paginar).not.toHaveBeenCalled();
+  });
+
+  it('convidado só vê mensagens a partir de quando aceitou o convite', async () => {
+    const aceitouEm = new Date('2026-10-15T09:00:00.000Z');
+    acesso.garantirAcesso.mockResolvedValue({
+      participante: criarParticipanteFake({
+        userId: null,
+        subordinadoId: 3n,
+        papel: 'convidado',
+        respondidoEm: aceitouEm,
+      }),
+      iniciada: true,
+      semDonoInterno: false,
+    });
+
+    await service.execute({}, subordinado);
+
+    expect(repository.paginar).toHaveBeenCalledWith(
+      expect.objectContaining({ visivelDesde: aceitouEm }),
+    );
   });
 });

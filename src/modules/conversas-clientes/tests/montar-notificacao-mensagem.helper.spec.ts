@@ -1,29 +1,29 @@
-import { montarNotificacaoAnotacao } from '../services/helpers/montar-notificacao-anotacao.helper';
+import { montarNotificacaoMensagem } from '../services/helpers/montar-notificacao-mensagem.helper';
 
-describe('montarNotificacaoAnotacao', () => {
+describe('montarNotificacaoMensagem', () => {
   const base = {
-    anotacaoId: 30n,
+    mensagemId: 30n,
     clienteId: 5n,
     clienteNome: 'Empresa X',
     autorNome: 'Maria',
     quantidadeAnexos: 0,
   };
 
-  it('equipe → cliente aponta para /minhas-anotacoes', () => {
+  it('equipe → cliente aponta para /minha-conversa', () => {
     expect(
-      montarNotificacaoAnotacao({ ...base, autorTipo: 'interno', conteudo: 'Olá\n\n  tudo bem?' }),
+      montarNotificacaoMensagem({ ...base, autorTipo: 'interno', conteudo: 'Olá\n\n  tudo bem?' }),
     ).toEqual({
-      tipo: 'anotacao_cliente',
+      tipo: 'mensagem_conversa',
       titulo: 'Nova mensagem da equipe Letscom',
       mensagem: 'Maria: Olá tudo bem?',
-      link: '/minhas-anotacoes',
-      anotacaoId: 30n,
+      link: '/minha-conversa',
+      conversaMensagemId: 30n,
     });
   });
 
   it('cliente → equipe aponta para a tela do cliente', () => {
     expect(
-      montarNotificacaoAnotacao({ ...base, autorTipo: 'cliente', conteudo: 'Ok' }),
+      montarNotificacaoMensagem({ ...base, autorTipo: 'cliente', conteudo: 'Ok' }),
     ).toMatchObject({
       titulo: 'Empresa X respondeu',
       link: '/clientes/5',
@@ -32,13 +32,13 @@ describe('montarNotificacaoAnotacao', () => {
 
   it('usa "Cliente" quando o nome não foi encontrado', () => {
     expect(
-      montarNotificacaoAnotacao({ ...base, clienteNome: null, autorTipo: 'cliente', conteudo: 'x' })
+      montarNotificacaoMensagem({ ...base, clienteNome: null, autorTipo: 'cliente', conteudo: 'x' })
         .titulo,
     ).toBe('Cliente respondeu');
   });
 
   it('resume texto longo e descreve anexos quando não há texto', () => {
-    const longa = montarNotificacaoAnotacao({
+    const longa = montarNotificacaoMensagem({
       ...base,
       autorTipo: 'subordinado',
       conteudo: 'a'.repeat(300),
@@ -47,7 +47,7 @@ describe('montarNotificacaoAnotacao', () => {
     expect(longa.mensagem.endsWith('\u2026')).toBe(true);
 
     expect(
-      montarNotificacaoAnotacao({
+      montarNotificacaoMensagem({
         ...base,
         autorTipo: 'cliente',
         conteudo: '',
@@ -58,7 +58,7 @@ describe('montarNotificacaoAnotacao', () => {
 
   it('equipe → outro interno participante aponta para a tela do cliente', () => {
     expect(
-      montarNotificacaoAnotacao({
+      montarNotificacaoMensagem({
         ...base,
         autorTipo: 'interno',
         conteudo: 'Ok',
@@ -67,14 +67,14 @@ describe('montarNotificacaoAnotacao', () => {
     ).toMatchObject({ titulo: 'Nova mensagem na conversa com Empresa X', link: '/clientes/5' });
   });
 
-  it('cliente → outro participante do lado do cliente aponta para /minhas-anotacoes', () => {
+  it('cliente → outro participante do lado do cliente aponta para /minha-conversa', () => {
     expect(
-      montarNotificacaoAnotacao({
+      montarNotificacaoMensagem({
         ...base,
         autorTipo: 'subordinado',
         conteudo: 'Ok',
         destino: 'cliente',
       }),
-    ).toMatchObject({ titulo: 'Nova mensagem na conversa', link: '/minhas-anotacoes' });
+    ).toMatchObject({ titulo: 'Nova mensagem na conversa', link: '/minha-conversa' });
   });
 });

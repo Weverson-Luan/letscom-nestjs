@@ -2,8 +2,8 @@ import { HttpStatus } from '@nestjs/common';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 
 /** 404: inexistente, excluída ou de outro cliente. */
-export class AnotacaoClienteNaoEncontradaException extends BusinessException {
+export class MensagemConversaNaoEncontradaException extends BusinessException {
   constructor() {
-    super('Anotação não encontrada.', HttpStatus.NOT_FOUND);
+    super('Mensagem não encontrada.', HttpStatus.NOT_FOUND);
   }
 }

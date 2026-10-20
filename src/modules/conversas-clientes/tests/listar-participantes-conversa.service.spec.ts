@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
 import { ListarParticipantesConversaService } from '../services/listar-participantes-conversa.service';
 import {
@@ -12,7 +12,7 @@ import {
 
 describe('ListarParticipantesConversaService', () => {
   const repository = { listar: jest.fn(), buscarDaPessoa: jest.fn(), listarDonos: jest.fn() };
-  const anotacaoRepository = { ehClienteAtivo: jest.fn() };
+  const mensagemRepository = { ehClienteAtivo: jest.fn() };
   const usuario = criarUsuarioLogadoFake();
   let service: ListarParticipantesConversaService;
 
@@ -22,11 +22,11 @@ describe('ListarParticipantesConversaService', () => {
       providers: [
         ListarParticipantesConversaService,
         { provide: ConversaParticipanteRepository, useValue: repository },
-        { provide: ClienteAnotacaoRepository, useValue: anotacaoRepository },
+        { provide: ConversaMensagemRepository, useValue: mensagemRepository },
       ],
     }).compile();
     service = moduleRef.get(ListarParticipantesConversaService);
-    anotacaoRepository.ehClienteAtivo.mockResolvedValue(true);
+    mensagemRepository.ehClienteAtivo.mockResolvedValue(true);
     repository.listarDonos.mockResolvedValue([criarDonoFake({ userId: 8n })]);
     repository.listar.mockResolvedValue([
       criarParticipanteFake(),
@@ -77,7 +77,7 @@ describe('ListarParticipantesConversaService', () => {
   });
 
   it('404 quando o id não é de um cliente ativo', async () => {
-    anotacaoRepository.ehClienteAtivo.mockResolvedValue(false);
+    mensagemRepository.ehClienteAtivo.mockResolvedValue(false);
 
     await expect(service.execute(7n, usuario)).rejects.toBeInstanceOf(
       ClienteNaoEncontradoException,

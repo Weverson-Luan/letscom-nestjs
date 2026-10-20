@@ -1,48 +1,47 @@
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { AnotacaoComRelacoes } from '../repositories/cliente-anotacao.repository';
+import { MensagemComRelacoes } from '../repositories/conversa-mensagem.repository';
 import {
-  ehAutorAnotacao,
-  podeEditarAnotacao,
-  podeExcluirAnotacao,
-} from '../services/helpers/permissoes-anotacao.helper';
+  ehAutorMensagem,
+  podeEditarMensagem,
+  podeExcluirMensagem,
+} from '../services/helpers/permissoes-mensagem.helper';
 
 const AUTOR_REMOVIDO = 'Usuário removido';
 
-function mapearAutor(anotacao: AnotacaoComRelacoes) {
-  if (anotacao.autorTipo === 'subordinado') {
-    const subordinado = anotacao.autorSubordinado;
+function mapearAutor(mensagem: MensagemComRelacoes) {
+  if (mensagem.autorTipo === 'subordinado') {
+    const subordinado = mensagem.autorSubordinado;
     return {
-      id: anotacao.autorSubordinadoId,
+      id: mensagem.autorSubordinadoId,
       nome: subordinado?.nome?.trim() || subordinado?.email || AUTOR_REMOVIDO,
-      tipo: anotacao.autorTipo,
+      tipo: mensagem.autorTipo,
     };
   }
   return {
-    id: anotacao.autorId,
-    nome: anotacao.autor?.nome ?? AUTOR_REMOVIDO,
-    tipo: anotacao.autorTipo,
+    id: mensagem.autorId,
+    nome: mensagem.autor?.nome ?? AUTOR_REMOVIDO,
+    tipo: mensagem.autorTipo,
   };
 }
 
 /**
- * Anotação na resposta HTTP. `eh_minha` e `pode_*` são calculados para o usuário logado
+ * Mensagem na resposta HTTP. `eh_minha` e `pode_*` são calculados para o usuário logado
  * (o front só usa para alinhar a mensagem e esconder botões; a API revalida).
  */
-export function mapearAnotacaoCliente(anotacao: AnotacaoComRelacoes, usuario: AuthUser) {
+export function mapearMensagemConversa(mensagem: MensagemComRelacoes, usuario: AuthUser) {
   return {
-    id: anotacao.id,
-    cliente_id: anotacao.clienteId,
-    tipo: anotacao.tipo,
-    conteudo: anotacao.conteudo,
-    autor: mapearAutor(anotacao),
-    eh_minha: ehAutorAnotacao(anotacao, usuario),
-    editada: anotacao.editadaEm !== null,
-    editada_em: anotacao.editadaEm,
-    pode_editar: podeEditarAnotacao(anotacao, usuario),
-    pode_excluir: podeExcluirAnotacao(anotacao, usuario),
-    created_at: anotacao.createdAt,
-    updated_at: anotacao.updatedAt,
-    anexos: anotacao.anexos.map((anexo) => ({
+    id: mensagem.id,
+    cliente_id: mensagem.clienteId,
+    conteudo: mensagem.conteudo,
+    autor: mapearAutor(mensagem),
+    eh_minha: ehAutorMensagem(mensagem, usuario),
+    editada: mensagem.editadaEm !== null,
+    editada_em: mensagem.editadaEm,
+    pode_editar: podeEditarMensagem(mensagem, usuario),
+    pode_excluir: podeExcluirMensagem(mensagem, usuario),
+    created_at: mensagem.createdAt,
+    updated_at: mensagem.updatedAt,
+    anexos: mensagem.anexos.map((anexo) => ({
       id: anexo.id,
       nome_original: anexo.nomeOriginal,
       mime_type: anexo.mimeType,

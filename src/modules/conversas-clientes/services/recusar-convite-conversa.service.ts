@@ -1,14 +1,26 @@
+/**
+ * IMPORTS
+ */
 import { Injectable } from '@nestjs/common';
-import { MarcarNotificacoesConviteLidasService } from 'src/modules/notificacoes/services/marcar-notificacoes-convite-lidas.service';
-import { AuthUser } from 'src/shared/decorators/current-user.decorator';
+
+// services / conversa-participante
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { ParticipanteConversaInvalidoException } from '../exceptions/participante-conversa-invalido.exception';
-import { mapearParticipanteConversa } from '../mappers/participante-conversa.mapper';
+import { MarcarNotificacoesConviteLidasService } from 'src/modules/notificacoes/services/marcar-notificacoes-convite-lidas.service';
+
+// repositories / conversa-participante
 import {
   ConversaParticipanteRepository,
   ParticipanteComPessoa,
 } from '../repositories/conversa-participante.repository';
+
+import { ParticipanteConversaInvalidoException } from '../exceptions/participante-conversa-invalido.exception';
+import { mapearParticipanteConversa } from '../mappers/participante-conversa.mapper';
+
+// helpers / conversa
 import { validarConvitePendenteDoUsuario } from './helpers/participante-conversa.helper';
+
+// shared / decorators
+import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 
 /** O convidado recusa: continua sem acesso (um dono pode convidar de novo). */
 @Injectable()

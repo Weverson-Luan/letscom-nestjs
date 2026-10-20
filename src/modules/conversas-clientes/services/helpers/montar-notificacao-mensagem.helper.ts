@@ -1,4 +1,4 @@
-import { ClienteAnotacaoAutorTipo } from '@prisma/client';
+import { ConversaMensagemAutorTipo } from '@prisma/client';
 import {
   cortarTexto,
   DadosNotificacao,
@@ -6,18 +6,18 @@ import {
 } from 'src/modules/notificacoes/notificacoes.constants';
 import {
   LadoConversa,
-  montarLinkAnotacoesInterno,
-  LINK_MINHAS_ANOTACOES,
-} from '../../clientes-anotacoes.constants';
+  montarLinkConversaInterno,
+  LINK_MINHA_CONVERSA,
+} from '../../conversas-clientes.constants';
 
 const TAMANHO_TRECHO = 140;
 
 type Parametros = {
-  anotacaoId: bigint;
+  mensagemId: bigint;
   clienteId: bigint;
   /** null quando o cliente não foi encontrado (usa "Cliente"). */
   clienteNome: string | null;
-  autorTipo: ClienteAnotacaoAutorTipo;
+  autorTipo: ConversaMensagemAutorTipo;
   autorNome: string;
   conteudo: string;
   quantidadeAnexos: number;
@@ -33,9 +33,9 @@ function montarTrecho(conteudo: string, quantidadeAnexos: number): string {
 
 /**
  * Texto e link da notificação conforme o lado de quem recebe: o lado do cliente abre
- * /minhas-anotacoes; a equipe abre a tela do cliente.
+ * /minha-conversa; a equipe abre a tela do cliente.
  */
-export function montarNotificacaoAnotacao(parametros: Parametros): DadosNotificacao {
+export function montarNotificacaoMensagem(parametros: Parametros): DadosNotificacao {
   const trecho = montarTrecho(parametros.conteudo, parametros.quantidadeAnexos);
   const autorInterno = parametros.autorTipo === 'interno';
   const destino = parametros.destino ?? (autorInterno ? 'cliente' : 'interno');
@@ -43,21 +43,21 @@ export function montarNotificacaoAnotacao(parametros: Parametros): DadosNotifica
 
   if (destino === 'cliente') {
     return {
-      tipo: TIPOS_NOTIFICACAO.ANOTACAO_CLIENTE,
+      tipo: TIPOS_NOTIFICACAO.MENSAGEM_CONVERSA,
       titulo: autorInterno ? 'Nova mensagem da equipe Letscom' : 'Nova mensagem na conversa',
       mensagem: `${parametros.autorNome}: ${trecho}`,
-      link: LINK_MINHAS_ANOTACOES,
-      anotacaoId: parametros.anotacaoId,
+      link: LINK_MINHA_CONVERSA,
+      conversaMensagemId: parametros.mensagemId,
     };
   }
 
   return {
-    tipo: TIPOS_NOTIFICACAO.ANOTACAO_CLIENTE,
+    tipo: TIPOS_NOTIFICACAO.MENSAGEM_CONVERSA,
     titulo: autorInterno
       ? `Nova mensagem na conversa com ${clienteNome}`
       : `${clienteNome} respondeu`,
     mensagem: `${parametros.autorNome}: ${trecho}`,
-    link: montarLinkAnotacoesInterno(parametros.clienteId),
-    anotacaoId: parametros.anotacaoId,
+    link: montarLinkConversaInterno(parametros.clienteId),
+    conversaMensagemId: parametros.mensagemId,
   };
 }

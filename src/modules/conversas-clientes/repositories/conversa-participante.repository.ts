@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ConversaParticipanteStatus, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { PAPEIS_INTERNOS_CONVIDAVEIS, PessoaConversa } from '../clientes-anotacoes.constants';
+import { PAPEIS_INTERNOS_CONVIDAVEIS, PessoaConversa } from '../conversas-clientes.constants';
 
 const INCLUIR_PESSOA = {
   user: { select: { id: true, nome: true, email: true } },
@@ -101,6 +101,23 @@ export class ConversaParticipanteRepository {
     });
   }
 
+  /**
+   * Muda o status só se ainda estiver no status esperado (update condicional): numa corrida com
+   * outro dono, devolve false em vez de sobrescrever.
+   */
+  async alterarStatus(
+    id: bigint,
+    de: ConversaParticipanteStatus,
+    data: { status: ConversaParticipanteStatus; inativadoEm: Date | null },
+    tx?: Prisma.TransactionClient,
+  ): Promise<boolean> {
+    const { count } = await (tx ?? this.prisma).conversaParticipante.updateMany({
+      where: { id, status: de },
+      data,
+    });
+    return count > 0;
+  }
+
   /** Remove o participante; as notificações do convite caem junto (FK em cascata). */
   remover(id: bigint, tx?: Prisma.TransactionClient) {
     return (tx ?? this.prisma).conversaParticipante.delete({ where: { id } });
@@ -162,7 +179,7 @@ export class ConversaParticipanteRepository {
     return subordinado !== null;
   }
 
-  /** Internos ativos que ainda não participam nem têm convite pendente nesta conversa. */
+  /** Internos ativos que ainda não participam (nem inativos) nem têm convite pendente nesta conversa. */
   listarCandidatosInternos(params: { clienteId: bigint; search?: string; take: number }) {
     const busca = montarBusca(params.search);
     return this.prisma.$queryRaw<CandidatoConvite[]>`
@@ -177,7 +194,7 @@ export class ConversaParticipanteRepository {
         AND NOT EXISTS (
           SELECT 1 FROM conversa_participantes p
           WHERE p.cliente_id = ${params.clienteId} AND p.user_id = u.id
-            AND p.status IN ('pendente', 'aceito')
+            AND p.status IN ('pendente', 'aceito', 'inativo')
         )
         ${busca ? Prisma.sql`AND (u.nome LIKE ${busca} OR u.email LIKE ${busca})` : Prisma.empty}
       ORDER BY u.nome ASC, u.id ASC
@@ -192,7 +209,7 @@ export class ConversaParticipanteRepository {
     take: number;
   }): Promise<CandidatoConvite[]> {
     const ocupados: Prisma.ConversaParticipanteWhereInput = {
-      status: { in: ['pendente', 'aceito'] },
+      status: { in: ['pendente', 'aceito', 'inativo'] },
     };
     const busca = params.search
       ? { OR: [{ nome: { contains: params.search } }, { email: { contains: params.search } }] }

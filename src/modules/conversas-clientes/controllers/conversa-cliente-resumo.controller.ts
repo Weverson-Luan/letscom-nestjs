@@ -5,24 +5,24 @@ import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { ApiResponse } from 'src/shared/utils/api-response';
-import { PAPEIS_ANOTACOES_CLIENTE } from '../clientes-anotacoes.constants';
-import { BuscarClienteAnotacoesService } from '../services/buscar-cliente-anotacoes.service';
-import { ListarClientesAnotacoesService } from '../services/listar-clientes-anotacoes.service';
+import { PAPEIS_CONVERSA_INTERNO } from '../conversas-clientes.constants';
+import { BuscarConversaClienteService } from '../services/buscar-conversa-cliente.service';
+import { ListarConversasClientesService } from '../services/listar-conversas-clientes.service';
 
-/** Clientes com resumo de anotações (total e último contato) para a tela do backoffice. */
-@ApiTags('clientes-anotacoes')
+/** Clientes com resumo de mensagens (total e último contato) para a tela do backoffice. */
+@ApiTags('conversas-clientes')
 @ApiBearerAuth()
-@Controller('clientes-anotacoes')
-@Roles(...PAPEIS_ANOTACOES_CLIENTE)
-@RequireFeatures(Feature.VISUALIZAR_ANOTACOES_CLIENTE)
-export class ClienteResumoAnotacoesController {
+@Controller('conversas-clientes')
+@Roles(...PAPEIS_CONVERSA_INTERNO)
+@RequireFeatures(Feature.VISUALIZAR_CONVERSA_CLIENTE)
+export class ConversaClienteResumoController {
   constructor(
-    private readonly listarClientes: ListarClientesAnotacoesService,
-    private readonly buscarCliente: BuscarClienteAnotacoesService,
+    private readonly listarClientes: ListarConversasClientesService,
+    private readonly buscarCliente: BuscarConversaClienteService,
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lista clientes com total de anotações e data do último contato' })
+  @ApiOperation({ summary: 'Lista clientes com total de mensagens e data do último contato' })
   async listar(@Query() query: PaginationQueryDto) {
     const { data, pagination } = await this.listarClientes.execute(query);
     return ApiResponse.success('Clientes carregados com sucesso!', data, pagination);
@@ -30,7 +30,7 @@ export class ClienteResumoAnotacoesController {
 
   @Get(':clienteId')
   @ApiParam({ name: 'clienteId', description: 'ID do cliente (users.id)' })
-  @ApiOperation({ summary: 'Resumo de anotações de um cliente' })
+  @ApiOperation({ summary: 'Resumo de mensagens de um cliente' })
   async buscar(@Param('clienteId', ParseIntPipe) clienteId: number) {
     const data = await this.buscarCliente.execute(BigInt(clienteId));
     return ApiResponse.success('Cliente carregado com sucesso!', data);

@@ -6,11 +6,11 @@ describe('mapearNotificacao', () => {
     const notificacao = criarNotificacaoFake();
     expect(mapearNotificacao(notificacao)).toEqual({
       id: 50n,
-      tipo: 'anotacao_cliente',
+      tipo: 'mensagem_conversa',
       titulo: 'Empresa X respondeu',
       mensagem: 'Compras: Ok',
       link: '/clientes/5',
-      anotacao_id: 30n,
+      conversa_mensagem_id: 30n,
       convite: null,
       lida: false,
       lida_em: null,
@@ -20,7 +20,11 @@ describe('mapearNotificacao', () => {
 
   it('expõe id e status do convite nas notificações de convite', () => {
     const notificacao = {
-      ...criarNotificacaoFake({ tipo: 'convite_conversa', anotacaoId: null, participanteId: 9n }),
+      ...criarNotificacaoFake({
+        tipo: 'convite_conversa',
+        conversaMensagemId: null,
+        participanteId: 9n,
+      }),
       participante: { id: 9n, status: 'pendente' as const },
     };
     expect(mapearNotificacao(notificacao)).toMatchObject({

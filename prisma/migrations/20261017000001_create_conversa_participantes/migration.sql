@@ -59,9 +59,9 @@ ALTER TABLE `notificacoes` ADD CONSTRAINT `notificacoes_participante_id_fkey` FO
 --    (operador desativado não pode ser dono: travaria a conversa para a equipe).
 INSERT INTO `conversa_participantes` (`cliente_id`, `user_id`, `papel`, `status`, `respondido_em`, `updated_at`)
 SELECT a.`cliente_id`, a.`autor_id`, 'dono', 'aceito', NOW(3), NOW(3)
-FROM `clientes_anotacoes` a
+FROM `conversas_mensagens` a
 WHERE a.`id` IN (
-    SELECT MIN(a2.`id`) FROM `clientes_anotacoes` a2
+    SELECT MIN(a2.`id`) FROM `conversas_mensagens` a2
     INNER JOIN `users` u ON u.`id` = a2.`autor_id` AND u.`ativo` = 1 AND u.`deleted_at` IS NULL
     WHERE a2.`autor_tipo` = 'interno'
     GROUP BY a2.`cliente_id`
@@ -73,9 +73,9 @@ SELECT a.`cliente_id`,
     IF(a.`autor_tipo` = 'cliente', a.`autor_id`, NULL),
     IF(a.`autor_tipo` = 'subordinado', a.`autor_subordinado_id`, NULL),
     'dono', 'aceito', NOW(3), NOW(3)
-FROM `clientes_anotacoes` a
+FROM `conversas_mensagens` a
 WHERE a.`id` IN (
-    SELECT MIN(a2.`id`) FROM `clientes_anotacoes` a2
+    SELECT MIN(a2.`id`) FROM `conversas_mensagens` a2
     WHERE (a2.`autor_tipo` = 'cliente' AND a2.`autor_id` IS NOT NULL)
        OR (a2.`autor_tipo` = 'subordinado' AND a2.`autor_subordinado_id` IS NOT NULL)
     GROUP BY a2.`cliente_id`
@@ -84,7 +84,7 @@ WHERE a.`id` IN (
 -- 3. Cliente ainda não escreveu: o cliente principal vira o dono do lado do cliente.
 INSERT INTO `conversa_participantes` (`cliente_id`, `user_id`, `papel`, `status`, `respondido_em`, `updated_at`)
 SELECT c.`cliente_id`, c.`cliente_id`, 'dono', 'aceito', NOW(3), NOW(3)
-FROM (SELECT DISTINCT `cliente_id` FROM `clientes_anotacoes`) c
+FROM (SELECT DISTINCT `cliente_id` FROM `conversas_mensagens`) c
 WHERE NOT EXISTS (
     SELECT 1 FROM `conversa_participantes` p
     WHERE p.`cliente_id` = c.`cliente_id` AND p.`papel` = 'dono'
@@ -97,7 +97,7 @@ INSERT INTO `conversa_participantes` (`cliente_id`, `user_id`, `papel`, `status`
 SELECT cc.`cliente_id`, MIN(cc.`consultor_id`), 'dono', 'aceito', NOW(3), NOW(3)
 FROM `cliente_consultor` cc
 INNER JOIN `users` u ON u.`id` = cc.`consultor_id` AND u.`ativo` = 1 AND u.`deleted_at` IS NULL
-WHERE cc.`cliente_id` IN (SELECT DISTINCT `cliente_id` FROM `clientes_anotacoes`)
+WHERE cc.`cliente_id` IN (SELECT DISTINCT `cliente_id` FROM `conversas_mensagens`)
   AND NOT EXISTS (
     SELECT 1 FROM `conversa_participantes` p
     WHERE p.`cliente_id` = cc.`cliente_id` AND p.`papel` = 'dono'
@@ -105,10 +105,13 @@ WHERE cc.`cliente_id` IN (SELECT DISTINCT `cliente_id` FROM `clientes_anotacoes`
   )
 GROUP BY cc.`cliente_id`;
 
--- 5. Quem mais já escreveu entra como convidado com convite aceito.
+-- 5. Quem mais já escreveu entra como convidado com convite aceito. `respondido_em` = primeira
+--    mensagem da conversa: o convidado só vê mensagens a partir dessa data, então quem já participava
+--    mantém todo o histórico.
 INSERT INTO `conversa_participantes` (`cliente_id`, `user_id`, `papel`, `status`, `respondido_em`, `updated_at`)
-SELECT DISTINCT a.`cliente_id`, a.`autor_id`, 'convidado', 'aceito', NOW(3), NOW(3)
-FROM `clientes_anotacoes` a
+SELECT DISTINCT a.`cliente_id`, a.`autor_id`, 'convidado', 'aceito',
+  (SELECT MIN(m.`created_at`) FROM `conversas_mensagens` m WHERE m.`cliente_id` = a.`cliente_id`), NOW(3)
+FROM `conversas_mensagens` a
 WHERE a.`autor_tipo` IN ('interno', 'cliente') AND a.`autor_id` IS NOT NULL
   AND NOT EXISTS (
     SELECT 1 FROM `conversa_participantes` p
@@ -116,8 +119,9 @@ WHERE a.`autor_tipo` IN ('interno', 'cliente') AND a.`autor_id` IS NOT NULL
   );
 
 INSERT INTO `conversa_participantes` (`cliente_id`, `subordinado_id`, `papel`, `status`, `respondido_em`, `updated_at`)
-SELECT DISTINCT a.`cliente_id`, a.`autor_subordinado_id`, 'convidado', 'aceito', NOW(3), NOW(3)
-FROM `clientes_anotacoes` a
+SELECT DISTINCT a.`cliente_id`, a.`autor_subordinado_id`, 'convidado', 'aceito',
+  (SELECT MIN(m.`created_at`) FROM `conversas_mensagens` m WHERE m.`cliente_id` = a.`cliente_id`), NOW(3)
+FROM `conversas_mensagens` a
 WHERE a.`autor_tipo` = 'subordinado' AND a.`autor_subordinado_id` IS NOT NULL
   AND NOT EXISTS (
     SELECT 1 FROM `conversa_participantes` p

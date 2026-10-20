@@ -1,21 +1,21 @@
 import { Test } from '@nestjs/testing';
-import { ClienteResumoAnotacoesRepository } from '../repositories/cliente-resumo-anotacoes.repository';
-import { ListarClientesAnotacoesService } from '../services/listar-clientes-anotacoes.service';
+import { ConversaClienteResumoRepository } from '../repositories/conversa-cliente-resumo.repository';
+import { ListarConversasClientesService } from '../services/listar-conversas-clientes.service';
 import { criarLinhaResumoFake } from './fixtures';
 
-describe('ListarClientesAnotacoesService', () => {
+describe('ListarConversasClientesService', () => {
   const repository = { paginar: jest.fn() };
-  let service: ListarClientesAnotacoesService;
+  let service: ListarConversasClientesService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
       providers: [
-        ListarClientesAnotacoesService,
-        { provide: ClienteResumoAnotacoesRepository, useValue: repository },
+        ListarConversasClientesService,
+        { provide: ConversaClienteResumoRepository, useValue: repository },
       ],
     }).compile();
-    service = moduleRef.get(ListarClientesAnotacoesService);
+    service = moduleRef.get(ListarConversasClientesService);
     repository.paginar.mockResolvedValue({ data: [criarLinhaResumoFake()], total: 11 });
   });
 
@@ -24,7 +24,7 @@ describe('ListarClientesAnotacoesService', () => {
 
     expect(repository.paginar).toHaveBeenCalledWith({ search: 'empresa', skip: 10, take: 10 });
     expect(resultado.data).toEqual([
-      expect.objectContaining({ id: 5n, ativo: true, total_anotacoes: 3 }),
+      expect.objectContaining({ id: 5n, ativo: true, total_mensagens: 3 }),
     ]);
     expect(resultado.pagination).toEqual({
       current_page: 2,

@@ -22,105 +22,105 @@ import { Roles } from 'src/shared/decorators/roles.decorator';
 import { ApiResponse } from 'src/shared/utils/api-response';
 import {
   ArquivoAnexo,
-  MAXIMO_ANEXOS_POR_ANOTACAO,
-  PAPEIS_ANOTACOES_CLIENTE,
+  MAXIMO_ANEXOS_POR_MENSAGEM,
+  PAPEIS_CONVERSA_INTERNO,
   TAMANHO_MAXIMO_ANEXO_BYTES,
-} from '../clientes-anotacoes.constants';
-import { AtualizarAnotacaoClienteDto } from '../dto/atualizar-anotacao-cliente.dto';
-import { CriarAnotacaoClienteDto } from '../dto/criar-anotacao-cliente.dto';
-import { ListarAnotacoesClienteQueryDto } from '../dto/listar-anotacoes-cliente-query.dto';
-import { AtualizarAnotacaoClienteService } from '../services/atualizar-anotacao-cliente.service';
-import { BaixarAnexoAnotacaoClienteService } from '../services/baixar-anexo-anotacao-cliente.service';
-import { CriarAnotacaoClienteService } from '../services/criar-anotacao-cliente.service';
-import { ListarAnotacoesClienteService } from '../services/listar-anotacoes-cliente.service';
-import { RemoverAnotacaoClienteService } from '../services/remover-anotacao-cliente.service';
+} from '../conversas-clientes.constants';
+import { AtualizarMensagemConversaDto } from '../dto/atualizar-mensagem-conversa.dto';
+import { CriarMensagemConversaDto } from '../dto/criar-mensagem-conversa.dto';
+import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
+import { AtualizarMensagemConversaService } from '../services/atualizar-mensagem-conversa.service';
+import { BaixarAnexoMensagemConversaService } from '../services/baixar-anexo-mensagem-conversa.service';
+import { CriarMensagemConversaService } from '../services/criar-mensagem-conversa.service';
+import { ListarMensagensConversaService } from '../services/listar-mensagens-conversa.service';
+import { RemoverMensagemConversaService } from '../services/remover-mensagem-conversa.service';
 
 /**
- * Linha do tempo de anotações do cliente (conversas, ligações, negociações...) usada pelo
- * backoffice no lugar do CRM externo. Anexos ficam no storage e são baixados pela API.
+ * Mensagens da conversa (chat) entre a equipe e a empresa do cliente, vistas pelo backoffice.
+ * Compromissos (ligações, reuniões...) ficam na agenda. Anexos ficam no storage e são baixados pela API.
  */
-@ApiTags('clientes-anotacoes')
+@ApiTags('conversas-clientes')
 @ApiBearerAuth()
 @ApiParam({ name: 'clienteId', description: 'ID do cliente (users.id)' })
-@Controller('clientes/:clienteId/anotacoes')
-@Roles(...PAPEIS_ANOTACOES_CLIENTE)
-export class ClienteAnotacaoController {
+@Controller('clientes/:clienteId/conversa/mensagens')
+@Roles(...PAPEIS_CONVERSA_INTERNO)
+export class ConversaMensagemController {
   constructor(
-    private readonly listarAnotacoes: ListarAnotacoesClienteService,
-    private readonly criarAnotacao: CriarAnotacaoClienteService,
-    private readonly atualizarAnotacao: AtualizarAnotacaoClienteService,
-    private readonly removerAnotacao: RemoverAnotacaoClienteService,
-    private readonly baixarAnexo: BaixarAnexoAnotacaoClienteService,
+    private readonly listarMensagens: ListarMensagensConversaService,
+    private readonly criarMensagem: CriarMensagemConversaService,
+    private readonly atualizarMensagem: AtualizarMensagemConversaService,
+    private readonly removerMensagem: RemoverMensagemConversaService,
+    private readonly baixarAnexo: BaixarAnexoMensagemConversaService,
   ) {}
 
   @Get()
-  @RequireFeatures(Feature.VISUALIZAR_ANOTACOES_CLIENTE)
-  @ApiOperation({ summary: 'Lista as anotações do cliente (mais recentes primeiro)' })
+  @RequireFeatures(Feature.VISUALIZAR_CONVERSA_CLIENTE)
+  @ApiOperation({ summary: 'Lista as mensagens do cliente (mais recentes primeiro)' })
   async listar(
     @Param('clienteId', ParseIntPipe) clienteId: number,
-    @Query() query: ListarAnotacoesClienteQueryDto,
+    @Query() query: PaginationQueryDto,
     @CurrentUser() usuario: AuthUser,
   ) {
-    const { data, pagination } = await this.listarAnotacoes.execute(
+    const { data, pagination } = await this.listarMensagens.execute(
       BigInt(clienteId),
       query,
       usuario,
     );
-    return ApiResponse.success('Anotações carregadas com sucesso!', data, pagination);
+    return ApiResponse.success('Mensagens carregadas com sucesso!', data, pagination);
   }
 
   @Post()
   @HttpCode(201)
-  @RequireFeatures(Feature.REGISTRAR_ANOTACOES_CLIENTE)
+  @RequireFeatures(Feature.ENVIAR_MENSAGENS_CONVERSA_CLIENTE)
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FilesInterceptor('anexos', MAXIMO_ANEXOS_POR_ANOTACAO, {
+    FilesInterceptor('anexos', MAXIMO_ANEXOS_POR_MENSAGEM, {
       limits: { fileSize: TAMANHO_MAXIMO_ANEXO_BYTES },
     }),
   )
-  @ApiOperation({ summary: 'Registra uma anotação com anexos opcionais' })
+  @ApiOperation({ summary: 'Registra uma mensagem com anexos opcionais' })
   async criar(
     @Param('clienteId', ParseIntPipe) clienteId: number,
-    @Body() body: CriarAnotacaoClienteDto,
+    @Body() body: CriarMensagemConversaDto,
     @CurrentUser() usuario: AuthUser,
     @UploadedFiles() arquivos?: ArquivoAnexo[],
   ) {
-    const data = await this.criarAnotacao.execute(BigInt(clienteId), body, arquivos ?? [], usuario);
-    return ApiResponse.success('Anotação registrada com sucesso!', data, null, 201);
+    const data = await this.criarMensagem.execute(BigInt(clienteId), body, arquivos ?? [], usuario);
+    return ApiResponse.success('Mensagem registrada com sucesso!', data, null, 201);
   }
 
   @Put(':id')
-  @RequireFeatures(Feature.REGISTRAR_ANOTACOES_CLIENTE)
-  @ApiParam({ name: 'id', description: 'ID da anotação' })
-  @ApiOperation({ summary: 'Edita a própria anotação' })
+  @RequireFeatures(Feature.ENVIAR_MENSAGENS_CONVERSA_CLIENTE)
+  @ApiParam({ name: 'id', description: 'ID da mensagem' })
+  @ApiOperation({ summary: 'Edita a própria mensagem' })
   async atualizar(
     @Param('clienteId', ParseIntPipe) clienteId: number,
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: AtualizarAnotacaoClienteDto,
+    @Body() body: AtualizarMensagemConversaDto,
     @CurrentUser() usuario: AuthUser,
   ) {
-    const data = await this.atualizarAnotacao.execute(BigInt(clienteId), BigInt(id), body, usuario);
-    return ApiResponse.success('Anotação atualizada com sucesso!', data);
+    const data = await this.atualizarMensagem.execute(BigInt(clienteId), BigInt(id), body, usuario);
+    return ApiResponse.success('Mensagem atualizada com sucesso!', data);
   }
 
   @Delete(':id')
-  @RequireFeatures(Feature.REGISTRAR_ANOTACOES_CLIENTE)
-  @ApiParam({ name: 'id', description: 'ID da anotação' })
-  @ApiOperation({ summary: 'Exclui a anotação (autor ou admin)' })
+  @RequireFeatures(Feature.ENVIAR_MENSAGENS_CONVERSA_CLIENTE)
+  @ApiParam({ name: 'id', description: 'ID da mensagem' })
+  @ApiOperation({ summary: 'Exclui a mensagem (autor ou admin)' })
   async remover(
     @Param('clienteId', ParseIntPipe) clienteId: number,
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() usuario: AuthUser,
   ) {
-    await this.removerAnotacao.execute(BigInt(clienteId), BigInt(id), usuario);
-    return ApiResponse.success('Anotação excluída com sucesso!', null);
+    await this.removerMensagem.execute(BigInt(clienteId), BigInt(id), usuario);
+    return ApiResponse.success('Mensagem excluída com sucesso!', null);
   }
 
   @Get(':id/anexos/:anexoId')
-  @RequireFeatures(Feature.VISUALIZAR_ANOTACOES_CLIENTE)
-  @ApiParam({ name: 'id', description: 'ID da anotação' })
+  @RequireFeatures(Feature.VISUALIZAR_CONVERSA_CLIENTE)
+  @ApiParam({ name: 'id', description: 'ID da mensagem' })
   @ApiParam({ name: 'anexoId', description: 'ID do anexo' })
-  @ApiOperation({ summary: 'Baixa um anexo da anotação' })
+  @ApiOperation({ summary: 'Baixa um anexo da mensagem' })
   async baixar(
     @Param('clienteId', ParseIntPipe) clienteId: number,
     @Param('id', ParseIntPipe) id: number,

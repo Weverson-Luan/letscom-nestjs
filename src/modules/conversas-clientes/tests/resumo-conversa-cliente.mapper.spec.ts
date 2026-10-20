@@ -1,26 +1,26 @@
-import { mapearResumoClienteAnotacoes } from '../mappers/resumo-cliente-anotacoes.mapper';
+import { mapearResumoConversaCliente } from '../mappers/resumo-conversa-cliente.mapper';
 import { criarLinhaResumoFake } from './fixtures';
 
-describe('mapearResumoClienteAnotacoes', () => {
+describe('mapearResumoConversaCliente', () => {
   it('converte ativo (tinyint) e total (bigint) do SQL cru', () => {
     const linha = criarLinhaResumoFake();
-    expect(mapearResumoClienteAnotacoes(linha)).toEqual({
+    expect(mapearResumoConversaCliente(linha)).toEqual({
       id: 5n,
       nome: 'Empresa X',
       email: 'contato@empresax.com',
       telefone: '11988887777',
       documento: '12345678000199',
       ativo: true,
-      total_anotacoes: 3,
-      ultima_anotacao_em: linha.ultima_anotacao_em,
+      total_mensagens: 3,
+      ultima_mensagem_em: linha.ultima_mensagem_em,
     });
   });
 
-  it('mantém cliente sem anotação com total zero e data nula', () => {
+  it('mantém cliente sem mensagem com total zero e data nula', () => {
     expect(
-      mapearResumoClienteAnotacoes(
-        criarLinhaResumoFake({ ativo: 0, total_anotacoes: 0n, ultima_anotacao_em: null }),
+      mapearResumoConversaCliente(
+        criarLinhaResumoFake({ ativo: 0, total_mensagens: 0n, ultima_mensagem_em: null }),
       ),
-    ).toMatchObject({ ativo: false, total_anotacoes: 0, ultima_anotacao_em: null });
+    ).toMatchObject({ ativo: false, total_mensagens: 0, ultima_mensagem_em: null });
   });
 });

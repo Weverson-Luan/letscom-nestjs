@@ -1,45 +1,45 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { ArquivoAnexo, PessoaConversa } from '../clientes-anotacoes.constants';
-import { CriarAnotacaoClienteDto } from '../dto/criar-anotacao-cliente.dto';
+import { ArquivoAnexo, PessoaConversa } from '../conversas-clientes.constants';
+import { CriarMensagemConversaDto } from '../dto/criar-mensagem-conversa.dto';
 import { ClienteNaoEncontradoException } from '../exceptions/cliente-nao-encontrado.exception';
 import { ParticipanteConversaInvalidoException } from '../exceptions/participante-conversa-invalido.exception';
-import { mapearAnotacaoCliente } from '../mappers/anotacao-cliente.mapper';
-import { ClienteAnotacaoRepository } from '../repositories/cliente-anotacao.repository';
+import { mapearMensagemConversa } from '../mappers/mensagem-conversa.mapper';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
-import { AnotacaoRegistroService } from './anotacao-registro.service';
+import { MensagemRegistroService } from './mensagem-registro.service';
 import { ConversaAcessoService } from './conversa-acesso.service';
 import { ehDonoInternoAtivo, ladoDoParticipante } from './helpers/participante-conversa.helper';
-import { montarAutorInterno } from './helpers/resolver-usuario-anotacao.helper';
+import { montarAutorInterno } from './helpers/resolver-usuario-conversa.helper';
 import {
   normalizarNomesAnexos,
-  validarNovaAnotacao,
-} from './helpers/validar-anexos-anotacao.helper';
+  validarNovaMensagem,
+} from './helpers/validar-anexos-mensagem.helper';
 
 /**
- * Equipe interna registra uma anotação na conversa do cliente (notifica os participantes).
+ * Equipe interna registra uma mensagem na conversa do cliente (notifica os participantes).
  * A primeira mensagem inicia a conversa: o operador e a pessoa do cliente escolhida
  * (cliente principal ou um subordinado) viram os donos — só eles convidam os demais.
  */
 @Injectable()
-export class CriarAnotacaoClienteService {
+export class CriarMensagemConversaService {
   constructor(
-    private readonly repository: ClienteAnotacaoRepository,
+    private readonly repository: ConversaMensagemRepository,
     private readonly participanteRepository: ConversaParticipanteRepository,
     private readonly acesso: ConversaAcessoService,
-    private readonly registro: AnotacaoRegistroService,
+    private readonly registro: MensagemRegistroService,
   ) {}
 
   async execute(
     clienteId: bigint,
-    dados: CriarAnotacaoClienteDto,
+    dados: CriarMensagemConversaDto,
     arquivos: ArquivoAnexo[],
     usuario: AuthUser,
   ) {
     const anexos = normalizarNomesAnexos(arquivos);
     // validação antecipada (o registro valida de novo): evita consultar o banco à toa
-    validarNovaAnotacao(dados.conteudo, anexos);
+    validarNovaMensagem(dados.conteudo, anexos);
 
     if (!(await this.repository.ehClienteAtivo(clienteId))) {
       throw new ClienteNaoEncontradoException();
@@ -50,17 +50,16 @@ export class CriarAnotacaoClienteService {
       ? null
       : await this.resolverContraparte(clienteId, dados.subordinado_id);
 
-    const anotacao = await this.registro.registrar({
+    const mensagem = await this.registro.registrar({
       clienteId,
       autor: montarAutorInterno(usuario),
-      tipo: dados.tipo ?? 'nota',
       conteudo: dados.conteudo,
       arquivos: anexos,
       antesDeGravar: acesso.semDonoInterno
         ? (tx) => this.registrarDonos(clienteId, usuario, contraparte, tx)
         : undefined,
     });
-    return mapearAnotacaoCliente(anotacao, usuario);
+    return mapearMensagemConversa(mensagem, usuario);
   }
 
   /** Com quem a conversa é iniciada: o subordinado escolhido ou o cliente principal. */
