@@ -806,7 +806,6 @@ async function seedRemessaResponsabilidade() {
  */
 async function seedFeatureFlags() {
   const flags: { key: string; nome: string; descricao: string; tipoUsuario?: string }[] = [
-    { key: 'acessar_atividades', nome: 'Acessar Atividades (Cropix)', descricao: 'Permite acessar a tela de atividades no Backoffice Cropix.' },
     { key: 'acessar_produtos', nome: 'Acessar Produtos (Cropix)', descricao: 'Permite acessar a tela de produtos no Backoffice Cropix.' },
     { key: 'acessar_tecnologias', nome: 'Acessar Tecnologias (Cropix)', descricao: 'Permite acessar a tela de tecnologias no Backoffice Cropix.' },
     { key: 'acessar_feature_flags', nome: 'Acessar Feature Flags (Cropix)', descricao: 'Permite acessar o gerenciamento de feature flags no Backoffice Cropix.' },
@@ -820,6 +819,9 @@ async function seedFeatureFlags() {
     { key: 'acessar_modelos_cliente', nome: 'Acessar Modelos (Cliente)', descricao: 'Exibe o item "Modelos" no menu lateral do cliente e permite abrir a tela inicial com os modelos técnicos disponíveis.', tipoUsuario: 'cliente,subordinado' },
     { key: 'acessar_remessas_andamento', nome: 'Acessar Remessas em Andamento', descricao: 'Exibe o item "Remessas Andamento" no menu lateral do cliente e permite abrir essa tela.', tipoUsuario: 'cliente,subordinado' },
     { key: 'acessar_historico_remessas', nome: 'Acessar Histórico de Remessas', descricao: 'Exibe o item "Histórico de Remessas" no menu lateral do cliente e permite abrir essa tela.', tipoUsuario: 'cliente,subordinado' },
+    { key: 'acessar_conversa_cliente', nome: 'Acessar Conversa (Cliente)', descricao: 'Exibe o item "Conversa" no menu lateral do cliente e permite abrir a conversa com a equipe.', tipoUsuario: 'cliente,subordinado' },
+    { key: 'acessar_agenda_cliente', nome: 'Acessar Agenda (Cliente)', descricao: 'Exibe o item "Agenda" no menu lateral do cliente e mostra os compromissos marcados como visíveis para o cliente (exigida pela API em /minha-agenda).', tipoUsuario: 'cliente,subordinado' },
+    { key: 'acessar_notificacoes', nome: 'Acessar Notificações (Cliente)', descricao: 'Exibe o item "Notificações" no menu lateral do cliente, o sino com contador e o som de notificação nova.', tipoUsuario: 'cliente,subordinado' },
     { key: 'visualizar_cliente', nome: 'Visualizar Cliente', descricao: 'Permite visualizar os clientes.', tipoUsuario: 'admin,producao,consultor' },
     { key: 'criar_cliente', nome: 'Criar Cliente', descricao: 'Permite cadastrar novos clientes.', tipoUsuario: 'admin,consultor,producao' },
     { key: 'editar_cliente', nome: 'Editar Cliente', descricao: 'Permite editar os dados do cliente.', tipoUsuario: 'admin,consultor' },
@@ -832,6 +834,11 @@ async function seedFeatureFlags() {
     { key: 'visualizar_saldo_creditos', nome: 'Visualizar Saldo de Créditos', descricao: 'Permite ao cliente visualizar o saldo de créditos.', tipoUsuario: 'cliente,subordinado' },
     { key: 'visualizar_extrato_credito', nome: 'Visualizar Extrato de Créditos', descricao: 'Permite visualizar o extrato de créditos do cliente.', tipoUsuario: 'admin,producao,consultor' },
     { key: 'visualizar_cobranca_credito', nome: 'Visualizar Cobrança de Créditos', descricao: 'Permite visualizar a cobrança de créditos do cliente.', tipoUsuario: 'admin,producao,consultor' },
+    { key: 'visualizar_conversa_cliente', nome: 'Visualizar Conversa do Cliente', descricao: 'Permite ver a conversa (chat) com o cliente, os participantes e os anexos.', tipoUsuario: 'admin,producao,consultor,recepcao' },
+    { key: 'responder_conversa_cliente', nome: 'Responder Conversa (Cliente)', descricao: 'Permite ao cliente e aos subordinados ler a conversa com a equipe e responder pelo portal do cliente (exigida pela API em /minha-conversa).', tipoUsuario: 'cliente,subordinado' },
+    { key: 'enviar_mensagens_conversa_cliente', nome: 'Enviar Mensagens na Conversa do Cliente', descricao: 'Permite enviar, editar e excluir as próprias mensagens, anexos e convidar participantes na conversa com o cliente.', tipoUsuario: 'admin,producao,consultor,recepcao' },
+    { key: 'visualizar_agenda_cliente', nome: 'Visualizar Agenda do Cliente', descricao: 'Permite ver a agenda do cliente (ligações, reuniões, visitas e demais compromissos).', tipoUsuario: 'admin,producao,consultor,recepcao' },
+    { key: 'gerenciar_agenda_cliente', nome: 'Gerenciar Agenda do Cliente', descricao: 'Permite criar, editar, concluir, cancelar e excluir compromissos na agenda do cliente.', tipoUsuario: 'admin,producao,consultor,recepcao' },
     { key: 'criar_credito', nome: 'Criar Crédito', descricao: 'Permite lançar créditos para o cliente.', tipoUsuario: 'admin,producao' },
     { key: 'visualizar_modelos_tecnicos', nome: 'Visualizar Modelos Técnicos', descricao: 'Permite visualizar os modelos técnicos dos clientes.', tipoUsuario: 'admin,producao,consultor,cliente,subordinado' },
     { key: 'criar_modelos_tecnicos', nome: 'Criar Modelos Técnicos', descricao: 'Permite adicionar modelos técnicos.', tipoUsuario: 'admin,producao' },

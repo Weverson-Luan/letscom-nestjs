@@ -1,15 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { mapActivityLog } from '../mappers/activity-log.mapper';
-import { ActivityLogRepository } from '../repositories/activity-log.repository';
 import { DashboardRepository } from '../repositories/dashboard.repository';
 
-/** Espelha DashboardService + ActivityLogService (listagem). */
+/** Espelha DashboardService. Atividades recentes: GET /dashboard/atividades-recentes. */
 @Injectable()
 export class DashboardService {
-  constructor(
-    private readonly repository: DashboardRepository,
-    private readonly activityLogRepo: ActivityLogRepository,
-  ) {}
+  constructor(private readonly repository: DashboardRepository) {}
 
   async overview() {
     const [
@@ -17,13 +12,13 @@ export class DashboardService {
       usuariosClienteAtivos,
       fotosProcessadas,
       taxaSucesso,
-      atividadesRecentes,
+      remessasCanceladas,
     ] = await Promise.all([
       this.repository.contarClientesAtivos(),
       this.repository.contarUsuariosClienteAtivos(),
       this.repository.contarFotosProcessadas(),
       this.repository.calcularTaxaSucesso(),
-      this.repository.listarAtividadesRecentes(10),
+      this.repository.contarRemessasCanceladas(),
     ]);
 
     return {
@@ -31,15 +26,7 @@ export class DashboardService {
       usuarios_cliente_ativos: usuariosClienteAtivos,
       fotos_processadas: fotosProcessadas,
       taxa_sucesso: taxaSucesso,
-      atividades_recentes: atividadesRecentes,
-    };
-  }
-
-  async listarAtividades(query: Record<string, unknown>) {
-    const { data, pagination } = await this.activityLogRepo.listar(query);
-    return {
-      data: data.map(mapActivityLog),
-      pagination,
+      remessas_canceladas: remessasCanceladas,
     };
   }
 }

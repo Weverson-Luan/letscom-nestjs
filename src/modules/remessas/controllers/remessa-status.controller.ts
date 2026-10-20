@@ -69,7 +69,7 @@ export class RemessaStatusController {
     if (!(await this.featureGate.permite(user, featuresExigidasParaStatus(body.status)))) {
       throw new ForbiddenException(MENSAGEM_SEM_PERMISSAO);
     }
-    await this.service.registrarStatus(BigInt(remessaId), body.status as RemessaStatusEtapa);
+    await this.service.registrarStatus(BigInt(remessaId), body.status as RemessaStatusEtapa, user);
     return { message: 'Status registrado com sucesso.' };
   }
 

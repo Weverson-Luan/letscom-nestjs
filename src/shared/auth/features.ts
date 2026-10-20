@@ -18,9 +18,11 @@ export const Feature = {
   ACESSAR_MODELOS_CLIENTE: 'acessar_modelos_cliente',
   ACESSAR_REMESSAS_ANDAMENTO: 'acessar_remessas_andamento',
   ACESSAR_HISTORICO_REMESSAS: 'acessar_historico_remessas',
+  ACESSAR_CONVERSA_CLIENTE: 'acessar_conversa_cliente',
+  ACESSAR_AGENDA_CLIENTE: 'acessar_agenda_cliente',
+  ACESSAR_NOTIFICACOES: 'acessar_notificacoes',
 
   // BACKOFFICE CROPIX
-  ACESSAR_ATIVIDADES: 'acessar_atividades',
   ACESSAR_PRODUTOS: 'acessar_produtos',
   ACESSAR_TECNOLOGIAS: 'acessar_tecnologias',
   ACESSAR_FEATURE_FLAGS: 'acessar_feature_flags',
@@ -31,6 +33,16 @@ export const Feature = {
   EDITAR_CLIENTE: 'editar_cliente',
   INATIVAR_CLIENTE: 'inativar_cliente',
   GERENCIAR_CREDITOS_CLIENTE: 'gerenciar_creditos_cliente',
+
+  // CONVERSA DO CLIENTE (chat entre a equipe e a empresa do cliente)
+  VISUALIZAR_CONVERSA_CLIENTE: 'visualizar_conversa_cliente',
+  ENVIAR_MENSAGENS_CONVERSA_CLIENTE: 'enviar_mensagens_conversa_cliente',
+  /** Cliente/subordinado: ler e responder a conversa da própria empresa no portal do cliente. */
+  RESPONDER_CONVERSA_CLIENTE: 'responder_conversa_cliente',
+
+  // AGENDA DO CLIENTE (compromissos: ligações, reuniões, visitas...)
+  VISUALIZAR_AGENDA_CLIENTE: 'visualizar_agenda_cliente',
+  GERENCIAR_AGENDA_CLIENTE: 'gerenciar_agenda_cliente',
 
   // USUARIOS INTERNOS (backoffice: consultor, producao, recepcao)
   GERENCIAR_USUARIOS_INTERNOS: 'gerenciar_usuarios_internos',

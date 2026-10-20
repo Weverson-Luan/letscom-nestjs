@@ -22,8 +22,8 @@ COPY . .
 
 EXPOSE 8000
 
-## aplica migrations pendentes e sobe em modo watch
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:dev"]
+## aplica migrations pendentes, regera o client (node_modules fica em volume) e sobe em modo watch
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && npm run start:dev"]
 
 # ============ Stage builder: compila o projeto ============
 FROM development AS builder

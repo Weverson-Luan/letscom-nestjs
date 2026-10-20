@@ -30,6 +30,9 @@ import { RolesModule } from './modules/roles/roles.module';
 import { UsersModule } from './modules/users/users.module';
 import { UsuariosClienteModule } from './modules/usuarios-cliente/usuarios-cliente.module';
 import { UsuariosInternosModule } from './modules/usuarios-internos/usuarios-internos.module';
+import { ConversasClientesModule } from './modules/conversas-clientes/conversas-clientes.module';
+import { ClientesAgendaModule } from './modules/clientes-agenda/clientes-agenda.module';
+import { NotificacoesModule } from './modules/notificacoes/notificacoes.module';
 import { UsersAtendimentosModule } from './modules/users-atendimentos/users-atendimentos.module';
 import { TecnologiasModule } from './modules/tecnologias/tecnologias.module';
 import { TiposEntregaModule } from './modules/tipos-entrega/tipos-entrega.module';
@@ -95,6 +98,9 @@ import { UtilsModule } from './shared/utils/utils.module';
     UsersAtendimentosModule,
     UsuariosInternosModule,
     UsuariosClienteModule,
+    ConversasClientesModule,
+    ClientesAgendaModule,
+    NotificacoesModule,
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: LoggingInterceptor }],
 })

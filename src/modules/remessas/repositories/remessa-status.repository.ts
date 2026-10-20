@@ -13,7 +13,12 @@ export class RemessaStatusRepository {
   }
 
   create(
-    data: { remessaId: bigint; status: RemessaStatusEtapa; dataStatus: Date },
+    data: {
+      remessaId: bigint;
+      status: RemessaStatusEtapa;
+      dataStatus: Date;
+      userId?: bigint | null;
+    },
     tx?: Prisma.TransactionClient,
   ) {
     return (tx ?? this.prisma).remessaStatus.create({ data });

@@ -82,6 +82,41 @@ enum VendaCreditoTipoTransacao {
   saida
 }
 
+enum ClienteCompromissoTipo {
+  nota
+  ligacao
+  reuniao
+  email
+  whatsapp
+  visita
+  negociacao
+}
+
+enum ClienteCompromissoStatus {
+  pendente
+  concluido
+  cancelado
+}
+
+enum ConversaMensagemAutorTipo {
+  interno
+  cliente
+  subordinado
+}
+
+enum ConversaParticipantePapel {
+  dono
+  convidado
+}
+
+enum ConversaParticipanteStatus {
+  pendente
+  aceito
+  recusado
+  /// acesso desativado por um dono; pode ser reativado sem novo convite
+  inativo
+}
+
 enum RemessaStatusEtapa {
   envio_de_dados
   em_producao
@@ -119,6 +154,7 @@ model User {
   remessasConsultor        Remessa[]                           @relation("RemessaConsultor")
   remessasSolicitante      Remessa[]                           @relation("RemessaSolicitante")
   remessasExecutor         Remessa[]                           @relation("RemessaExecutor")
+  remessasStatusAlterados  RemessaStatus[]                     @relation("RemessaStatusUsuario")
   remessaFotos             RemessaFoto[]
   remessaPlanilhas         RemessaPlanilha[]
   vendasCliente            CreditSale[]                        @relation("VendaCliente")
@@ -129,6 +165,15 @@ model User {
   extratoCliente           ExtratoMovimentacaoCreditoCliente[] @relation("ExtratoCliente")
   extratoResponsavel       ExtratoMovimentacaoCreditoCliente[] @relation("ExtratoResponsavel")
   atendimentos             UserAtendimento[]
+  mensagensConversaCliente ConversaMensagem[]                  @relation("ConversaMensagemCliente")
+  mensagensConversaAutor   ConversaMensagem[]                  @relation("ConversaMensagemAutor")
+  notificacoes             Notificacao[]
+  conversasCliente         ConversaParticipante[]              @relation("ConversaParticipanteCliente")
+  conversasParticipante    ConversaParticipante[]              @relation("ConversaParticipanteUser")
+  conversasConvitesFeitos  ConversaParticipante[]              @relation("ConversaParticipanteConvidadoPorUser")
+  compromissosCliente      ClienteCompromisso[]                @relation("ClienteCompromissoCliente")
+  compromissosAutor        ClienteCompromisso[]                @relation("ClienteCompromissoAutor")
+  compromissosResponsavel  ClienteCompromisso[]                @relation("ClienteCompromissoResponsavel")
 
   @@index([createdAt], map: "users_created_at_index")
   @@map("users")
@@ -145,8 +190,13 @@ model UserCliente {
   createdAt DateTime? @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  clientePrincipal    User      @relation("UserClientePrincipal", fields: [clienteId], references: [id], onDelete: Cascade)
-  remessasSolicitante Remessa[] @relation("RemessaSolicitanteSubordinado")
+  clientePrincipal        User                   @relation("UserClientePrincipal", fields: [clienteId], references: [id], onDelete: Cascade)
+  remessasSolicitante     Remessa[]              @relation("RemessaSolicitanteSubordinado")
+  mensagensConversaAutor  ConversaMensagem[]
+  notificacoes            Notificacao[]
+  conversasParticipante   ConversaParticipante[] @relation("ConversaParticipanteSubordinado")
+  conversasConvitesFeitos ConversaParticipante[] @relation("ConversaParticipanteConvidadoPorSubordinado")
+  compromissosResponsavel ClienteCompromisso[]   @relation("ClienteCompromissoResponsavelSubordinado")
 
   @@map("users_cliente")
 }
@@ -431,11 +481,15 @@ model RemessaStatus {
   remessaId  BigInt             @map("remessa_id") @db.UnsignedBigInt
   status     RemessaStatusEtapa
   dataStatus DateTime           @default(now()) @map("data_status")
+  /// quem registrou a mudança (usuário interno); nulo no legado e em ações de subordinado
+  userId     BigInt?            @map("user_id") @db.UnsignedBigInt
   createdAt  DateTime?          @default(now()) @map("created_at")
   updatedAt  DateTime?          @updatedAt @map("updated_at")
 
   remessa Remessa @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  usuario User?   @relation("RemessaStatusUsuario", fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([userId], map: "remessas_status_user_id_index")
   @@map("remessas_status")
 }
 
@@ -649,4 +703,167 @@ model UserAtendimento {
 
   @@index([userId])
   @@map("users_atendimentos")
+}
+
+// =====================================================================
+// CONVERSA DO CLIENTE (chat entre a equipe e a empresa do cliente)
+// =====================================================================
+
+model ConversaMensagem {
+  id                 BigInt                    @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId          BigInt                    @map("cliente_id") @db.UnsignedBigInt
+  /// users.id do autor quando autor_tipo = interno ou cliente
+  autorId            BigInt?                   @map("autor_id") @db.UnsignedBigInt
+  /// users_cliente.id do autor quando autor_tipo = subordinado
+  autorSubordinadoId BigInt?                   @map("autor_subordinado_id") @db.UnsignedBigInt
+  autorTipo          ConversaMensagemAutorTipo @default(interno) @map("autor_tipo")
+  conteudo           String                    @db.Text
+  editadaEm          DateTime?                 @map("editada_em")
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
+  deletedAt          DateTime?                 @map("deleted_at")
+
+  cliente          User                    @relation("ConversaMensagemCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  autor            User?                   @relation("ConversaMensagemAutor", fields: [autorId], references: [id], onDelete: Restrict)
+  autorSubordinado UserCliente?            @relation(fields: [autorSubordinadoId], references: [id], onDelete: SetNull)
+  anexos           ConversaMensagemAnexo[]
+  notificacoes     Notificacao[]
+
+  @@index([clienteId, deletedAt, createdAt], map: "conversas_mensagens_cliente_timeline_index")
+  @@index([autorId], map: "conversas_mensagens_autor_id_index")
+  @@index([autorSubordinadoId], map: "conversas_mensagens_autor_subordinado_id_index")
+  @@map("conversas_mensagens")
+}
+
+model ConversaMensagemAnexo {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  mensagemId   BigInt   @map("mensagem_id") @db.UnsignedBigInt
+  nomeOriginal String   @map("nome_original")
+  filePath     String   @map("file_path") @db.VarChar(500)
+  mimeType     String?  @map("mime_type")
+  tamanhoBytes Int      @map("tamanho_bytes") @db.UnsignedInt
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  mensagem ConversaMensagem @relation(fields: [mensagemId], references: [id], onDelete: Cascade)
+
+  @@index([mensagemId], map: "conversas_mensagens_anexos_mensagem_id_index")
+  @@map("conversas_mensagens_anexos")
+}
+
+// =====================================================================
+// NOTIFICAÇÕES (sino do backoffice) — destinatário é users OU users_cliente
+// =====================================================================
+
+model Notificacao {
+  id                        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  destinatarioUserId        BigInt?   @map("destinatario_user_id") @db.UnsignedBigInt
+  destinatarioSubordinadoId BigInt?   @map("destinatario_subordinado_id") @db.UnsignedBigInt
+  tipo                      String    @db.VarChar(50)
+  titulo                    String
+  mensagem                  String    @db.VarChar(500)
+  link                      String?   @db.VarChar(500)
+  conversaMensagemId        BigInt?   @map("conversa_mensagem_id") @db.UnsignedBigInt
+  /// convite (conversa_participantes.id) quando tipo = convite_conversa
+  participanteId            BigInt?   @map("participante_id") @db.UnsignedBigInt
+  lidaEm                    DateTime? @map("lida_em")
+  createdAt                 DateTime  @default(now()) @map("created_at")
+
+  destinatarioUser        User?                 @relation(fields: [destinatarioUserId], references: [id], onDelete: Cascade)
+  destinatarioSubordinado UserCliente?          @relation(fields: [destinatarioSubordinadoId], references: [id], onDelete: Cascade)
+  conversaMensagem        ConversaMensagem?     @relation(fields: [conversaMensagemId], references: [id], onDelete: Cascade)
+  participante            ConversaParticipante? @relation(fields: [participanteId], references: [id], onDelete: Cascade)
+
+  @@index([destinatarioUserId, lidaEm, createdAt], map: "notificacoes_user_caixa_index")
+  @@index([destinatarioSubordinadoId, lidaEm, createdAt], map: "notificacoes_subordinado_caixa_index")
+  @@index([conversaMensagemId], map: "notificacoes_conversa_mensagem_id_index")
+  @@index([participanteId], map: "notificacoes_participante_id_index")
+  @@map("notificacoes")
+}
+
+/// Quem participa da conversa do cliente (uma conversa por cliente). Os dois donos são o operador
+/// que iniciou e a pessoa do cliente com quem ele iniciou; os demais entram por convite aceito.
+/// Exatamente um entre user_id (users) e subordinado_id (users_cliente) é preenchido.
+model ConversaParticipante {
+  id                        BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId                 BigInt                     @map("cliente_id") @db.UnsignedBigInt
+  userId                    BigInt?                    @map("user_id") @db.UnsignedBigInt
+  subordinadoId             BigInt?                    @map("subordinado_id") @db.UnsignedBigInt
+  papel                     ConversaParticipantePapel  @default(convidado)
+  status                    ConversaParticipanteStatus @default(pendente)
+  convidadoPorUserId        BigInt?                    @map("convidado_por_user_id") @db.UnsignedBigInt
+  convidadoPorSubordinadoId BigInt?                    @map("convidado_por_subordinado_id") @db.UnsignedBigInt
+  respondidoEm              DateTime?                  @map("respondido_em")
+  /// quando um dono desativou o acesso (status = inativo)
+  inativadoEm               DateTime?                  @map("inativado_em")
+  createdAt                 DateTime                   @default(now()) @map("created_at")
+  updatedAt                 DateTime                   @updatedAt @map("updated_at")
+
+  cliente                 User          @relation("ConversaParticipanteCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  user                    User?         @relation("ConversaParticipanteUser", fields: [userId], references: [id], onDelete: Cascade)
+  subordinado             UserCliente?  @relation("ConversaParticipanteSubordinado", fields: [subordinadoId], references: [id], onDelete: Cascade)
+  convidadoPorUser        User?         @relation("ConversaParticipanteConvidadoPorUser", fields: [convidadoPorUserId], references: [id], onDelete: SetNull)
+  convidadoPorSubordinado UserCliente?  @relation("ConversaParticipanteConvidadoPorSubordinado", fields: [convidadoPorSubordinadoId], references: [id], onDelete: SetNull)
+  notificacoes            Notificacao[]
+
+  @@unique([clienteId, userId], map: "conversa_participantes_cliente_user_unique")
+  @@unique([clienteId, subordinadoId], map: "conversa_participantes_cliente_subordinado_unique")
+  @@index([userId], map: "conversa_participantes_user_id_index")
+  @@index([subordinadoId], map: "conversa_participantes_subordinado_id_index")
+  @@index([convidadoPorUserId], map: "conversa_participantes_convidado_por_user_id_index")
+  @@index([convidadoPorSubordinadoId], map: "conversa_participantes_convidado_por_subordinado_id_index")
+  @@map("conversa_participantes")
+}
+
+// =====================================================================
+// AGENDA DO CLIENTE (compromissos: ligações, reuniões, visitas...)
+// =====================================================================
+
+/// Compromisso na agenda do cliente. Criado pela equipe; o lado do cliente só vê os que têm
+/// visivel_cliente = true. Separado da conversa (conversas_mensagens), que é o chat.
+model ClienteCompromisso {
+  id                       BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId                BigInt                   @map("cliente_id") @db.UnsignedBigInt
+  autorId                  BigInt                   @map("autor_id") @db.UnsignedBigInt
+  /// operador que vai cuidar do compromisso (opcional)
+  responsavelId            BigInt?                  @map("responsavel_id") @db.UnsignedBigInt
+  /// subordinado do cliente responsável pelo compromisso (exclusivo com `responsavelId`)
+  responsavelSubordinadoId BigInt?                  @map("responsavel_subordinado_id") @db.UnsignedBigInt
+  tipo                     ClienteCompromissoTipo   @default(nota)
+  titulo                   String                   @db.VarChar(191)
+  descricao                String?                  @db.Text
+  agendadoPara             DateTime                 @map("agendado_para")
+  status                   ClienteCompromissoStatus @default(pendente)
+  concluidoEm              DateTime?                @map("concluido_em")
+  visivelCliente           Boolean                  @default(false) @map("visivel_cliente")
+  createdAt                DateTime                 @default(now()) @map("created_at")
+  updatedAt                DateTime                 @updatedAt @map("updated_at")
+  deletedAt                DateTime?                @map("deleted_at")
+
+  cliente                User                      @relation("ClienteCompromissoCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  autor                  User                      @relation("ClienteCompromissoAutor", fields: [autorId], references: [id], onDelete: Restrict)
+  responsavel            User?                     @relation("ClienteCompromissoResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelSubordinado UserCliente?              @relation("ClienteCompromissoResponsavelSubordinado", fields: [responsavelSubordinadoId], references: [id], onDelete: SetNull)
+  anexos                 ClienteCompromissoAnexo[]
+
+  @@index([clienteId, deletedAt, agendadoPara], map: "clientes_compromissos_cliente_agenda_index")
+  @@index([responsavelId, status, agendadoPara], map: "clientes_compromissos_responsavel_index")
+  @@index([autorId], map: "clientes_compromissos_autor_id_index")
+  @@index([responsavelSubordinadoId], map: "clientes_compromissos_responsavel_subordinado_id_index")
+  @@map("clientes_compromissos")
+}
+
+/// Arquivos anexados na criação do compromisso (só a equipe interna vê/baixa).
+model ClienteCompromissoAnexo {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  compromissoId BigInt   @map("compromisso_id") @db.UnsignedBigInt
+  nomeOriginal  String   @map("nome_original")
+  filePath      String   @map("file_path") @db.VarChar(500)
+  mimeType      String?  @map("mime_type")
+  tamanhoBytes  Int      @map("tamanho_bytes") @db.UnsignedInt
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  compromisso ClienteCompromisso @relation(fields: [compromissoId], references: [id], onDelete: Cascade)
+
+  @@index([compromissoId], map: "clientes_compromissos_anexos_compromisso_id_index")
+  @@map("clientes_compromissos_anexos")
 }

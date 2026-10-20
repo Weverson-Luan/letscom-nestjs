@@ -3,8 +3,9 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { ApiResponse } from 'src/shared/utils/api-response';
-import { DashboardAtividadesQueryDto } from '../dto/atividades-query.dto';
 import { DashboardService } from '../services/dashboard.service';
+import { ListarAtividadesRecentesDashboardService } from '../services/listar-atividades-recentes-dashboard.service';
+import { ListarAtividadesRecentesQueryDto } from '../dto/listar-atividades-recentes-query.dto';
 import { Feature } from 'src/shared/auth/features';
 import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 
@@ -12,25 +13,26 @@ import { RequireFeatures } from 'src/shared/decorators/features.decorator';
 @ApiBearerAuth()
 @Controller('dashboard')
 export class DashboardController {
-  constructor(private readonly service: DashboardService) {}
+  constructor(
+    private readonly service: DashboardService,
+    private readonly listarAtividadesRecentes: ListarAtividadesRecentesDashboardService,
+  ) {}
 
   @Get('overview')
   @RequireFeatures(Feature.ACESSAR_BACKOFFICE)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
-  @ApiOperation({ summary: 'KPIs e atividades recentes do dashboard' })
+  @ApiOperation({ summary: 'KPIs do dashboard' })
   async overview() {
     const data = await this.service.overview();
     return ApiResponse.success('Overview carregado com sucesso', data);
   }
 
-  @Get('atividades')
-  @RequireFeatures(Feature.ACESSAR_ATIVIDADES)
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Lista activity logs (auditoria)' })
-  async atividades(@Query() query: DashboardAtividadesQueryDto) {
-    const { data, pagination } = await this.service.listarAtividades(
-      query as unknown as Record<string, unknown>,
-    );
-    return ApiResponse.success('Atividades carregadas com sucesso!', data, pagination);
+  @Get('atividades-recentes')
+  @RequireFeatures(Feature.ACESSAR_BACKOFFICE)
+  @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
+  @ApiOperation({ summary: 'Atividades recentes do dashboard (paginadas)' })
+  async atividadesRecentes(@Query() query: ListarAtividadesRecentesQueryDto) {
+    const { data, pagination } = await this.listarAtividadesRecentes.execute(query);
+    return ApiResponse.success('Atividades recentes carregadas com sucesso!', data, pagination);
   }
 }
