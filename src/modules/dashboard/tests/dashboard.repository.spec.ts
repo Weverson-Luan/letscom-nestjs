@@ -1,8 +1,8 @@
 import { DashboardRepository } from '../repositories/dashboard.repository';
 
-describe('DashboardRepository.listarAtividadesRecentes', () => {
+describe('DashboardRepository', () => {
   const prisma = {
-    remessa: { findMany: jest.fn() },
+    remessa: { findMany: jest.fn(), count: jest.fn() },
     remessaStatus: { findMany: jest.fn() },
     user: { findMany: jest.fn() },
     $queryRaw: jest.fn(),
@@ -60,5 +60,14 @@ describe('DashboardRepository.listarAtividadesRecentes', () => {
     const [atividade] = await repository.listarAtividadesRecentes(10);
 
     expect(atividade.descricao).toBe('Remessa #52647 avançou para conferido.');
+  });
+
+  it('conta só remessas canceladas não excluídas', async () => {
+    prisma.remessa.count.mockResolvedValue(7);
+
+    await expect(repository.contarRemessasCanceladas()).resolves.toBe(7);
+    expect(prisma.remessa.count).toHaveBeenCalledWith({
+      where: { deletedAt: null, status: 'cancelada' },
+    });
   });
 });

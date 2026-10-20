@@ -3,6 +3,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
 
 const STATUS_CONCLUIDOS = ['concluida', 'concluído', 'concluido'];
+const STATUS_CANCELADA = 'cancelada';
 
 type AtividadeRecente = {
   tipo: string;
@@ -30,14 +31,16 @@ export class DashboardRepository {
     return this.prisma.remessaFoto.count();
   }
 
+  contarRemessasCanceladas() {
+    return this.prisma.remessa.count({ where: { deletedAt: null, status: STATUS_CANCELADA } });
+  }
+
   async calcularTaxaSucesso(): Promise<number> {
     const [concluidas, canceladas] = await Promise.all([
       this.prisma.remessa.count({
         where: { deletedAt: null, status: { in: STATUS_CONCLUIDOS } },
       }),
-      this.prisma.remessa.count({
-        where: { deletedAt: null, status: 'cancelada' },
-      }),
+      this.contarRemessasCanceladas(),
     ]);
     const total = concluidas + canceladas;
     if (total === 0) return 0;

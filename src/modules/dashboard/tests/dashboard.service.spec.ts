@@ -6,6 +6,7 @@ describe('DashboardService', () => {
     contarUsuariosClienteAtivos: jest.fn(),
     contarFotosProcessadas: jest.fn(),
     calcularTaxaSucesso: jest.fn(),
+    contarRemessasCanceladas: jest.fn(),
     listarAtividadesRecentes: jest.fn(),
   };
 
@@ -21,6 +22,7 @@ describe('DashboardService', () => {
     repository.contarUsuariosClienteAtivos.mockResolvedValue(45);
     repository.contarFotosProcessadas.mockResolvedValue(3200);
     repository.calcularTaxaSucesso.mockResolvedValue(87.5);
+    repository.contarRemessasCanceladas.mockResolvedValue(4);
     repository.listarAtividadesRecentes.mockResolvedValue([
       {
         tipo: 'remessa_criada',
@@ -41,6 +43,7 @@ describe('DashboardService', () => {
       usuarios_cliente_ativos: 45,
       fotos_processadas: 3200,
       taxa_sucesso: 87.5,
+      remessas_canceladas: 4,
       atividades_recentes: [
         {
           tipo: 'remessa_criada',
@@ -61,6 +64,7 @@ describe('DashboardService', () => {
     repository.contarUsuariosClienteAtivos.mockResolvedValue(0);
     repository.contarFotosProcessadas.mockResolvedValue(0);
     repository.calcularTaxaSucesso.mockResolvedValue(0);
+    repository.contarRemessasCanceladas.mockResolvedValue(0);
     repository.listarAtividadesRecentes.mockResolvedValue([]);
 
     const result = await service.overview();
@@ -68,6 +72,7 @@ describe('DashboardService', () => {
     expect(result.clientes_ativos).toBe(0);
     expect(result.fotos_processadas).toBe(0);
     expect(result.taxa_sucesso).toBe(0);
+    expect(result.remessas_canceladas).toBe(0);
     expect(result.atividades_recentes).toEqual([]);
   });
 });

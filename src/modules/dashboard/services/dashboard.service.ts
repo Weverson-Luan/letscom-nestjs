@@ -12,12 +12,14 @@ export class DashboardService {
       usuariosClienteAtivos,
       fotosProcessadas,
       taxaSucesso,
+      remessasCanceladas,
       atividadesRecentes,
     ] = await Promise.all([
       this.repository.contarClientesAtivos(),
       this.repository.contarUsuariosClienteAtivos(),
       this.repository.contarFotosProcessadas(),
       this.repository.calcularTaxaSucesso(),
+      this.repository.contarRemessasCanceladas(),
       this.repository.listarAtividadesRecentes(10),
     ]);
 
@@ -26,6 +28,7 @@ export class DashboardService {
       usuarios_cliente_ativos: usuariosClienteAtivos,
       fotos_processadas: fotosProcessadas,
       taxa_sucesso: taxaSucesso,
+      remessas_canceladas: remessasCanceladas,
       atividades_recentes: atividadesRecentes,
     };
   }
