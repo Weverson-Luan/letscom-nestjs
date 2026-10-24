@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
+import { mapCampoVariavel } from 'src/modules/modelos-tecnicos/mappers/modelo-tecnico.mapper';
 import { basename } from 'path';
 
 const STEP_LABELS: Record<string, { id: number; label: string; color: string }> = {
@@ -129,14 +130,6 @@ export class RemessasResponseMapper {
     });
 
     const modelo = remessa.modeloTecnico ?? null;
-    if (modelo) {
-      modelo.foto_frente_url = modelo.fotoFrentePath
-        ? await this.storage.getSignedUrl(modelo.fotoFrentePath)
-        : null;
-      modelo.foto_verso_url = modelo.fotoVersoPath
-        ? await this.storage.getSignedUrl(modelo.fotoVersoPath)
-        : null;
-    }
 
     let fotos: any[] | null = null;
     if (incluirFotos && Array.isArray(remessa.fotos)) {
@@ -172,7 +165,7 @@ export class RemessasResponseMapper {
       consultor: serializeUser(remessa.consultor ?? null),
       designer: serializeUser(remessa.executor ?? null),
       tecnologia: remessa.tecnologia ?? null,
-      modelo_tecnico: modelo,
+      modelo_tecnico: modelo ? await this.mapearModeloTecnico(modelo) : null,
       historico_status_remessa: steps,
       observacao: remessa.observacao ?? null,
       numero_remessa: remessa.numeroRemessa,
@@ -188,6 +181,43 @@ export class RemessasResponseMapper {
         : null,
       created_at: remessa.createdAt,
       updated_at: remessa.updatedAt,
+    };
+  }
+
+  /**
+   * Serializa o modelo técnico da remessa em snake_case (como o Eloquent),
+   * com as URLs assinadas das fotos. Sem contagens de remessas, para não
+   * consultar o banco por item da listagem.
+   */
+  private async mapearModeloTecnico(modelo: any) {
+    const campos = [...(modelo.camposVariaveis ?? [])].sort((a, b) => a.ordem - b.ordem);
+
+    return {
+      id: modelo.id,
+      cliente_id: modelo.clienteId,
+      produto_id: modelo.produtoId,
+      tecnologia_id: modelo.tecnologiaId,
+      nome_modelo: modelo.nomeModelo,
+      posicionamento: modelo.posicionamento,
+      tem_furo: modelo.temFuro,
+      tem_carga_foto: modelo.temCargaFoto,
+      tem_dados_variaveis: modelo.temDadosVariaveis,
+      is_provisorio: modelo.isProvisorio,
+      ativo: modelo.ativo,
+      tipo_furo: modelo.tipoFuro,
+      campo_chave: modelo.campoChave,
+      foto_frente_path: modelo.fotoFrentePath,
+      foto_verso_path: modelo.fotoVersoPath,
+      observacoes: modelo.observacoes,
+      created_at: modelo.createdAt,
+      updated_at: modelo.updatedAt,
+      campos_variaveis: campos.map(mapCampoVariavel),
+      foto_frente_url: modelo.fotoFrentePath
+        ? await this.storage.getSignedUrl(modelo.fotoFrentePath)
+        : null,
+      foto_verso_url: modelo.fotoVersoPath
+        ? await this.storage.getSignedUrl(modelo.fotoVersoPath)
+        : null,
     };
   }
 
