@@ -28,13 +28,24 @@ export class StorageService implements OnModuleInit {
   private s3?: S3Client;
   private bucket?: string;
   private disk: string;
+  private readonly pastaRaiz: string;
   private readonly localRoot = join(process.cwd(), 'storage', 'app');
 
   constructor(private readonly config: ConfigService) {
-    this.disk = this.config.get<string>('storage.disk') ?? 'local';
+    // em desenvolvimento os arquivos ficam sempre no disco local (storage/app)
+    this.disk =
+      this.config.get<string>('app.env') === 'development'
+        ? 'local'
+        : (this.config.get<string>('storage.disk') ?? 'local');
+    this.pastaRaiz = (this.config.get<string>('storage.pastaRaiz') ?? '')
+      .trim()
+      .replace(/^\/+|\/+$/g, '');
   }
 
   onModuleInit() {
+    if (!this.usesR2() && this.config.get<string>('storage.disk') === 'r2') {
+      this.logger.warn('FILESYSTEM_DISK=r2 ignorado: NODE_ENV=development usa o disco local.');
+    }
     if (this.usesR2()) {
       const r2 = this.config.get('storage.r2');
       this.bucket = r2.bucket;
@@ -52,6 +63,16 @@ export class StorageService implements OnModuleInit {
 
   usesR2(): boolean {
     return this.disk === 'r2';
+  }
+
+  /**
+   * Prefixa o caminho relativo com a pasta raiz do ambiente (STORAGE_PASTA_RAIZ),
+   * ex.: `remessas/1/fotos/a.jpg` → `homologacao/remessas/1/fotos/a.jpg`.
+   * O caminho retornado é o que deve ser persistido no banco.
+   */
+  montarCaminho(relativo: string): string {
+    const limpo = relativo.replace(/^\/+/, '');
+    return this.pastaRaiz ? `${this.pastaRaiz}/${limpo}` : limpo;
   }
 
   /** Faz upload de um conteúdo (Buffer/string) para o caminho informado. */

@@ -20,7 +20,11 @@ describe('MensagemRegistroService', () => {
     buscarNomeCliente: jest.fn(),
   };
   const participanteRepository = { listarAceitosAtivos: jest.fn() };
-  const storage = { put: jest.fn(), delete: jest.fn() };
+  const storage = {
+    put: jest.fn(),
+    delete: jest.fn(),
+    montarCaminho: jest.fn((relativo: string) => relativo),
+  };
   const emissor = { emitir: jest.fn() };
   let service: MensagemRegistroService;
 
@@ -171,6 +175,19 @@ describe('MensagemRegistroService', () => {
       [{ userId: 5n }, { subordinadoId: 4n }],
       expect.objectContaining({ titulo: 'Nova mensagem na conversa', link: '/minha-conversa' }),
       tx,
+    );
+  });
+
+  it('grava o anexo dentro da pasta raiz do storage (ex.: homologacao)', async () => {
+    storage.montarCaminho.mockImplementationOnce((relativo: string) => `homologacao/${relativo}`);
+    repository.buscarPorId.mockResolvedValue(criarMensagemFake({ anexos: [criarAnexoFake()] }));
+    const arquivo = criarArquivoFake();
+
+    await service.registrar({ clienteId: 5n, autor: autorSubordinado, arquivos: [arquivo] });
+
+    expect(storage.put).toHaveBeenCalledWith(
+      expect.stringMatching(/^homologacao\/clientes\/5\//),
+      arquivo.buffer,
     );
   });
 

@@ -43,7 +43,7 @@ export class EntregaClienteService {
     if (imagem) {
       this.validarImagem(imagem);
       const ext = extname(imagem.originalname) || '.jpg';
-      const path = `entregas/protocolos/${randomUUID()}${ext}`;
+      const path = this.storage.montarCaminho(`entregas/protocolos/${randomUUID()}${ext}`);
       await this.storage.put(path, imagem.buffer);
       imagemProtocolo = path;
     }
@@ -65,7 +65,7 @@ export class EntregaClienteService {
     if (imagem) {
       this.validarImagem(imagem);
       const ext = extname(imagem.originalname) || '.jpg';
-      const path = `entregas/protocolos/${randomUUID()}${ext}`;
+      const path = this.storage.montarCaminho(`entregas/protocolos/${randomUUID()}${ext}`);
       await this.storage.put(path, imagem.buffer);
       data.imagemProtocolo = path;
     }

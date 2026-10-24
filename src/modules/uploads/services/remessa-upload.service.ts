@@ -38,7 +38,7 @@ export class RemessaUploadService {
 
     for (const entry of entries) {
       if (this.ignorarEntrada(entry.name)) continue;
-      const path = `remessas/fotos/${remessaId}/${entry.name}`;
+      const path = this.storage.montarCaminho(`remessas/fotos/${remessaId}/${entry.name}`);
       await this.storage.put(path, entry.buffer);
       await this.prisma.remessaFoto.create({
         data: { remessaId, clienteId, filePath: path },
@@ -51,7 +51,7 @@ export class RemessaUploadService {
   async uploadPlanilha(remessaId: bigint, file: UploadFile, tipo?: string) {
     const clienteId = await this.clienteIdDaRemessa(remessaId);
     const ext = (file.originalname.split('.').pop() ?? 'xlsx').toLowerCase();
-    const path = `remessas/planilhas/${remessaId}/${uuidv4()}.${ext}`;
+    const path = this.storage.montarCaminho(`remessas/planilhas/${remessaId}/${uuidv4()}.${ext}`);
     await this.storage.put(path, file.buffer);
 
     return this.prisma.remessaPlanilha.create({

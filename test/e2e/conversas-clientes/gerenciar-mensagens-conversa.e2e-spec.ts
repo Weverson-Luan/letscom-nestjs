@@ -16,6 +16,7 @@ describe('Mensagens de cliente (e2e)', () => {
   let prisma: PrismaService;
   const arquivos = new Map<string, Buffer>();
   const storage = {
+    montarCaminho: jest.fn((relativo: string) => relativo),
     put: jest.fn(async (caminho: string, conteudo: Buffer) => {
       arquivos.set(caminho, conteudo);
       return caminho;

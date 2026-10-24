@@ -27,7 +27,11 @@ describe('CriarCompromissoClienteService', () => {
   };
   const tx = { tx: true };
   const prisma = { $transaction: jest.fn((fn: (t: unknown) => unknown) => fn(tx)) };
-  const storage = { put: jest.fn(), delete: jest.fn() };
+  const storage = {
+    put: jest.fn(),
+    delete: jest.fn(),
+    montarCaminho: jest.fn((relativo: string) => relativo),
+  };
   const responsavelRepository = {
     ehUsuarioInternoAtivo: jest.fn(),
     ehSubordinadoAtivoDoCliente: jest.fn(),
@@ -247,6 +251,26 @@ describe('CriarCompromissoClienteService', () => {
         },
       ]);
       expect(storage.delete).not.toHaveBeenCalled();
+    });
+
+    it('grava o anexo dentro da pasta raiz do storage (ex.: homologacao)', async () => {
+      storage.montarCaminho.mockImplementationOnce((relativo: string) => `homologacao/${relativo}`);
+      const arquivo = criarArquivoFake({ originalname: 'orcamento.pdf' });
+
+      await service.execute(5n, dto, usuario, [arquivo]);
+
+      expect(storage.put).toHaveBeenCalledWith(
+        'homologacao/clientes/5/agenda/compromissos/uuid-fixo.pdf',
+        arquivo.buffer,
+      );
+      expect(repository.criarAnexos).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            filePath: 'homologacao/clientes/5/agenda/compromissos/uuid-fixo.pdf',
+          }),
+        ],
+        tx,
+      );
     });
 
     it('usa o tamanho do buffer e mime null quando o multer não informa', async () => {

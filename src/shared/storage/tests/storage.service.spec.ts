@@ -3,6 +3,7 @@ jest.mock('@aws-sdk/s3-request-presigner', () => ({
 }));
 
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { promises as fs } from 'fs';
 import { join } from 'path';
@@ -87,6 +88,78 @@ describe('StorageService', () => {
     await expect(service.getSignedUrl(testPath)).resolves.toBe('https://signed.example/foto.jpg');
     expect(mockedGetSignedUrl).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
       expiresIn: 900,
+    });
+  });
+
+  it('usa o disco local em desenvolvimento mesmo com FILESYSTEM_DISK=r2', () => {
+    const config = {
+      get: jest.fn((key: string) => {
+        if (key === 'app.env') return 'development';
+        if (key === 'storage.disk') return 'r2';
+        return undefined;
+      }),
+    };
+
+    expect(new StorageService(config as unknown as ConfigService).usesR2()).toBe(false);
+  });
+
+  it('avisa no log quando FILESYSTEM_DISK=r2 é ignorado em desenvolvimento', () => {
+    const config = {
+      get: jest.fn((key: string) => {
+        if (key === 'app.env') return 'development';
+        if (key === 'storage.disk') return 'r2';
+        return undefined;
+      }),
+    };
+    const service = new StorageService(config as unknown as ConfigService);
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+    service.onModuleInit();
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('FILESYSTEM_DISK=r2 ignorado'));
+    expect(config.get).not.toHaveBeenCalledWith('storage.r2');
+    warn.mockRestore();
+  });
+
+  describe('montarCaminho', () => {
+    const criarComPastaRaiz = (pastaRaiz?: string) => {
+      const config = {
+        get: jest.fn((key: string) => {
+          if (key === 'storage.disk') return 'local';
+          if (key === 'storage.pastaRaiz') return pastaRaiz;
+          return undefined;
+        }),
+      };
+      return new StorageService(config as unknown as ConfigService);
+    };
+
+    it('prefixa o caminho com a pasta raiz configurada', () => {
+      const service = criarComPastaRaiz('homologacao');
+
+      expect(service.montarCaminho('modelos/frente/a.jpg')).toBe(
+        'homologacao/modelos/frente/a.jpg',
+      );
+      expect(service.montarCaminho('remessas/1/fotos/123.jpg')).toBe(
+        'homologacao/remessas/1/fotos/123.jpg',
+      );
+      expect(service.montarCaminho('remessas-liberadas-cliente/1/file/a.pdf')).toBe(
+        'homologacao/remessas-liberadas-cliente/1/file/a.pdf',
+      );
+    });
+
+    it('normaliza barras da pasta raiz e do caminho', () => {
+      const service = criarComPastaRaiz(' /homologacao/ ');
+
+      expect(service.montarCaminho('/remessas/1/')).toBe('homologacao/remessas/1/');
+    });
+
+    it('mantém o caminho original quando não há pasta raiz', () => {
+      expect(criarComPastaRaiz(undefined).montarCaminho('modelos/verso/b.png')).toBe(
+        'modelos/verso/b.png',
+      );
+      expect(criarComPastaRaiz('').montarCaminho('modelos/verso/b.png')).toBe(
+        'modelos/verso/b.png',
+      );
     });
   });
 });

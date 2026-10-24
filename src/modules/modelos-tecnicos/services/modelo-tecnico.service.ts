@@ -219,7 +219,7 @@ export class ModeloTecnicoService {
 
   private async armazenarFoto(file: UploadFile, pasta: 'frente' | 'verso') {
     const ext = (extname(file.originalname) || '.jpg').replace('.', '');
-    const path = `modelos/${pasta}/${randomUUID()}.${ext}`;
+    const path = this.storage.montarCaminho(`modelos/${pasta}/${randomUUID()}.${ext}`);
     await this.storage.put(path, file.buffer);
     return path;
   }

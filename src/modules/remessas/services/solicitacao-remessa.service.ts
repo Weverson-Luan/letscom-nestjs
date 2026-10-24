@@ -87,7 +87,7 @@ export class SolicitacaoRemessaService {
       }
       if (remessaId !== null) {
         try {
-          await this.storage.deleteDirectory(`remessas/${remessaId}`);
+          await this.storage.deleteDirectory(this.storage.montarCaminho(`remessas/${remessaId}/`));
         } catch {
           /* noop */
         }

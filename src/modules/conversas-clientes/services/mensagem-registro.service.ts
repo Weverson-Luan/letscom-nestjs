@@ -47,7 +47,9 @@ export class MensagemRegistroService {
 
     const anexos = dados.arquivos.map((arquivo) => ({
       arquivo,
-      caminho: montarCaminhoAnexo(dados.clienteId, arquivo.originalname, uuidv4()),
+      caminho: this.storage.montarCaminho(
+        montarCaminhoAnexo(dados.clienteId, arquivo.originalname, uuidv4()),
+      ),
     }));
     const enviados: string[] = [];
 

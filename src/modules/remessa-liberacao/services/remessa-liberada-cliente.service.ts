@@ -105,7 +105,9 @@ export class RemessaLiberadaClienteService {
     }
 
     const filename = `${randomUUID()}${ext}`;
-    const relative = `remessas-liberadas-cliente/${remessaId}/file/${filename}`;
+    const relative = this.storage.montarCaminho(
+      `remessas-liberadas-cliente/${remessaId}/file/${filename}`,
+    );
     await this.storage.put(relative, file.buffer);
     return relative;
   }

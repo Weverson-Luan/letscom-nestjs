@@ -34,6 +34,8 @@ export default () => ({
   storage: {
     disk: process.env.FILESYSTEM_DISK ?? 'local',
     signedUrlExpiration: parseInt(process.env.SIGNED_URL_EXPIRATION ?? '900', 10),
+    // pasta raiz que separa os arquivos por ambiente (ex.: homologacao); vazio = raiz do bucket
+    pastaRaiz: process.env.STORAGE_PASTA_RAIZ ?? '',
     r2: {
       accountId: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
       accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,

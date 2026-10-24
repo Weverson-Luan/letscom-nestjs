@@ -432,7 +432,7 @@ export class RemessaService {
     storedFiles: string[],
   ): Promise<void> {
     const ext = (file.originalname.split('.').pop() ?? '').toLowerCase();
-    const path = `remessas/${remessaId}/planilhas/${uuidv4()}.${ext}`;
+    const path = this.storage.montarCaminho(`remessas/${remessaId}/planilhas/${uuidv4()}.${ext}`);
     await this.storage.put(path, file.buffer);
     storedFiles.push(path);
     await tx.remessaPlanilha.create({
@@ -461,7 +461,7 @@ export class RemessaService {
       } catch {
         throw new BusinessException(`Erro ao converter imagem '${entry.name}' para JPG.`);
       }
-      const path = `remessas/${remessaId}/fotos/${matricula}.jpg`;
+      const path = this.storage.montarCaminho(`remessas/${remessaId}/fotos/${matricula}.jpg`);
       await this.storage.put(path, jpeg);
       storedFiles.push(path);
       await tx.remessaFoto.create({

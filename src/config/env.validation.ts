@@ -106,6 +106,10 @@ export class EnvironmentVariables {
   CLOUDFLARE_R2_ENDPOINT?: string;
 
   @IsOptional()
+  @IsString()
+  STORAGE_PASTA_RAIZ?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   SIGNED_URL_EXPIRATION = 900;

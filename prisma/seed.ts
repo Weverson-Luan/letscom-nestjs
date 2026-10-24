@@ -822,6 +822,7 @@ async function seedFeatureFlags() {
     { key: 'acessar_conversa_cliente', nome: 'Acessar Conversa (Cliente)', descricao: 'Exibe o item "Conversa" no menu lateral do cliente e permite abrir a conversa com a equipe.', tipoUsuario: 'cliente,subordinado' },
     { key: 'acessar_agenda_cliente', nome: 'Acessar Agenda (Cliente)', descricao: 'Exibe o item "Agenda" no menu lateral do cliente e mostra os compromissos marcados como visíveis para o cliente (exigida pela API em /minha-agenda).', tipoUsuario: 'cliente,subordinado' },
     { key: 'acessar_notificacoes', nome: 'Acessar Notificações (Cliente)', descricao: 'Exibe o item "Notificações" no menu lateral do cliente, o sino com contador e o som de notificação nova.', tipoUsuario: 'cliente,subordinado' },
+    { key: 'exibir_banner_manutencao', nome: 'Exibir Banner de Manutenção', descricao: 'Exibe no topo do letscom-front o aviso de manutenção programada do sistema.', tipoUsuario: 'admin,producao,consultor,expedicao,recepcao,cliente,subordinado' },
     { key: 'visualizar_cliente', nome: 'Visualizar Cliente', descricao: 'Permite visualizar os clientes.', tipoUsuario: 'admin,producao,consultor' },
     { key: 'criar_cliente', nome: 'Criar Cliente', descricao: 'Permite cadastrar novos clientes.', tipoUsuario: 'admin,consultor,producao' },
     { key: 'editar_cliente', nome: 'Editar Cliente', descricao: 'Permite editar os dados do cliente.', tipoUsuario: 'admin,consultor' },

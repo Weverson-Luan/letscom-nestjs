@@ -10,7 +10,11 @@ describe('SolicitacaoRemessaService — status inicial', () => {
   const remessaService = { solicitarRemessa: jest.fn() };
   const remessaRepository = { findById: jest.fn() };
   const statusService = { registrarStatusTx: jest.fn() };
-  const storage = { delete: jest.fn(), deleteDirectory: jest.fn() };
+  const storage = {
+    delete: jest.fn(),
+    deleteDirectory: jest.fn(),
+    montarCaminho: jest.fn((relativo: string) => `homologacao/${relativo}`),
+  };
   const cache = { invalidarTudo: jest.fn() };
 
   const dadosBase = {
@@ -57,5 +61,14 @@ describe('SolicitacaoRemessaService — status inicial', () => {
       'envio_de_dados',
       null,
     );
+  });
+
+  it('remove a pasta da remessa dentro da pasta raiz do storage quando a solicitação falha', async () => {
+    statusService.registrarStatusTx.mockRejectedValueOnce(new Error('falha'));
+
+    await expect(service.executar(dadosBase)).rejects.toThrow();
+
+    expect(storage.montarCaminho).toHaveBeenCalledWith('remessas/10/');
+    expect(storage.deleteDirectory).toHaveBeenCalledWith('homologacao/remessas/10/');
   });
 });

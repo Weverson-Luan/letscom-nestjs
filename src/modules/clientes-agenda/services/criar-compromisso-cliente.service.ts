@@ -63,7 +63,9 @@ export class CriarCompromissoClienteService {
 
     const paraSubir = anexos.map((arquivo) => ({
       arquivo,
-      caminho: montarCaminhoAnexoCompromisso(clienteId, arquivo.originalname, uuidv4()),
+      caminho: this.storage.montarCaminho(
+        montarCaminhoAnexoCompromisso(clienteId, arquivo.originalname, uuidv4()),
+      ),
     }));
     const enviados: string[] = [];
 
