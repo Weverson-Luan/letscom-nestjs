@@ -46,7 +46,7 @@ export class UserRepository {
       ${this.montarFiltroBuscaClientesSql(params.search)}
     `;
 
-    const rows = await this.prisma.$queryRaw<{ id: bigint }[]>`
+    const linhasIds = await this.prisma.$queryRaw<{ id: bigint }[]>`
       SELECT u.id
       FROM users u
       ${where}
@@ -54,13 +54,13 @@ export class UserRepository {
       LIMIT ${params.take} OFFSET ${params.skip}
     `;
 
-    const countRows = await this.prisma.$queryRaw<[{ total: bigint }]>`
+    const linhasTotal = await this.prisma.$queryRaw<[{ total: bigint }]>`
       SELECT COUNT(*) AS total
       FROM users u
       ${where}
     `;
 
-    const ids = rows.map((row) => row.id);
+    const ids = linhasIds.map((linha) => linha.id);
     const usuarios =
       ids.length === 0
         ? []
@@ -70,7 +70,7 @@ export class UserRepository {
     const usuariosPorId = new Map(usuarios.map((usuario) => [usuario.id, usuario]));
     const data = ids.map((id) => usuariosPorId.get(id)).filter((usuario) => usuario !== undefined);
 
-    return { data, total: Number(countRows[0]?.total ?? 0) };
+    return { data, total: Number(linhasTotal[0]?.total ?? 0) };
   }
 
   private montarFiltroBuscaClientesSql(search?: string): Prisma.Sql {
