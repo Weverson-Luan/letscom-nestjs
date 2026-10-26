@@ -63,8 +63,9 @@ export class UserRepository {
     const order = params.order ?? 'desc';
     const search = params.search ? `%${params.search}%` : null;
 
+    // created_at no SELECT: com DISTINCT, o MySQL 8 exige a coluna do ORDER BY no SELECT (erro 3065)
     const rows = await this.prisma.$queryRaw<{ id: bigint }[]>`
-      SELECT DISTINCT u.id
+      SELECT DISTINCT u.id, u.created_at
       FROM users u
       INNER JOIN role_user ru ON ru.user_id = u.id AND ru.ativo = 1
       INNER JOIN roles r ON r.id = ru.role_id
