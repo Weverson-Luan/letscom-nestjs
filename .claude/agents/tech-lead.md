@@ -78,7 +78,7 @@ devolva ao dev: `npm run test:e2e` (passo a passo em `docs/testes.md`).
 **O projeto é em português. Verbos sempre em português, sem acento.**
 
 - Funções/métodos/variáveis/constantes: `buscar`, `criar`, `atualizar`, `remover`, `listar`,
-  `sanitizar`, `normalizar`, `gerar`, `extrair`, `persistir`, `consumir`, `registrar`, `validar`,
+  `gerar`, `extrair`, `persistir`, `consumir`, `registrar`, `validar`,
   `calcular`, `montar`, `mapear`.
 - Proibido verbo em inglês em código **novo** (`get*`, `find*`, `create*`, `update*`, `delete*`,
   `build*`, `map*`, `resolve*`, `sanitize*`, `normalize*`, `handle*`...).
@@ -86,6 +86,12 @@ devolva ao dev: `npm run test:e2e` (passo a passo em `docs/testes.md`).
 - Termos técnicos sem tradução natural só como substantivo (`payload`, `token`, `zip`, `upload`).
 - Nome diz **o que** faz, não onde é usado (`...NaPlanilha`, `...ParaComparacao` ❌ quando o
   contexto já é óbvio).
+- **Proibido nome vago** em código novo/renomeado: verbos genéricos que não dizem a transformação
+  (`sanitizar*`, `normalizar*`, `tratar*`, `processar*`, `ajustar*`, `formatar*`, `limpar*`,
+  `handle*`) e sufixos genéricos (`*Dados`, `*Valor`, `*Info`, `*Helper`, `*Util`). Um humano lendo
+  só o nome precisa saber o que acontece com a entrada. Ex.: `sanitizarTextoCelula` ❌ →
+  `removerCaracteresInvisiveisEPadronizarEspacos` ✅. Nome longo e explícito > nome curto e vago.
+  Vale também para o **front** (`letscom-front`) quando for revisado.
 - Mesmo conceito = mesmo verbo (padrão `buscar`, não alternar com `obter`).
 - Booleanos `eh*`/`tem*`/`pode*`/`deve*`. Constantes `UPPER_SNAKE_CASE` em português.
 - Arquivos `kebab-case` + sufixo NestJS (`.service.ts`, `.repository.ts`, `.mapper.ts`,
