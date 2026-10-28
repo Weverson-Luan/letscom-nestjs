@@ -129,7 +129,7 @@ describe('ConversaParticipanteRepository', () => {
     const sql = sqlDaChamada();
     expect(sql.sql).toContain('u.ativo = 1');
     expect(sql.sql).toContain('u.deleted_at IS NULL');
-    expect(sql.values).toEqual([8n, 'admin', 'consultor', 'producao', 'recepcao']);
+    expect(sql.values).toEqual([8n, 'admin', 'consultor', 'producao', 'recepcao', 'expedicao']);
   });
 
   it('subordinado só conta se for do mesmo cliente e ativo', async () => {
@@ -149,7 +149,16 @@ describe('ConversaParticipanteRepository', () => {
     const sql = sqlDaChamada();
     expect(sql.sql).toContain("p.status IN ('pendente', 'aceito', 'inativo')");
     expect(sql.values).toEqual(
-      expect.arrayContaining([5n, '%50\\%\\_%', 50, 'admin', 'consultor', 'producao', 'recepcao']),
+      expect.arrayContaining([
+        5n,
+        '%50\\%\\_%',
+        50,
+        'admin',
+        'consultor',
+        'producao',
+        'recepcao',
+        'expedicao',
+      ]),
     );
   });
 

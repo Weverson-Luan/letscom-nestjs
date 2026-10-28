@@ -6,6 +6,7 @@ export const PAPEIS_AGENDA_INTERNO = [
   Role.CONSULTOR,
   Role.PRODUCAO,
   Role.RECEPCAO,
+  Role.EXPEDICAO,
 ] as const;
 
 /** Papéis do lado do cliente que acessam /minha-agenda. */

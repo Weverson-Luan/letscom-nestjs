@@ -22,7 +22,7 @@ describe('ResponsavelCompromissoRepository', () => {
     expect(sql.sql).toContain('u.ativo = 1');
     expect(sql.sql).toContain('u.deleted_at IS NULL');
     expect(sql.sql).toContain('ru.ativo = 1');
-    expect(sql.values).toEqual([8n, 'admin', 'consultor', 'producao', 'recepcao']);
+    expect(sql.values).toEqual([8n, 'admin', 'consultor', 'producao', 'recepcao', 'expedicao']);
   });
 
   it('devolve false quando não é interno ativo', async () => {
@@ -52,7 +52,18 @@ describe('ResponsavelCompromissoRepository', () => {
     expect(sql.sql).toContain('FROM users_cliente uc');
     expect(sql.sql).toContain('ORDER BY t.ordem ASC, COALESCE(t.nome, t.email) ASC, t.id ASC');
     expect(sql.sql).not.toContain('LIKE');
-    expect(sql.values).toEqual([5n, 'admin', 'consultor', 'producao', 'recepcao', 5n, 5n, 20, 20]);
+    expect(sql.values).toEqual([
+      5n,
+      'admin',
+      'consultor',
+      'producao',
+      'recepcao',
+      'expedicao',
+      5n,
+      5n,
+      20,
+      20,
+    ]);
     expect(sqlDaChamada(1).sql).toContain('COUNT(*)');
   });
 
