@@ -1,17 +1,28 @@
+/**
+ * IMPORTS
+ */
 import { HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma, TipoEndereco } from '@prisma/client';
-import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
+
+// services
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { HashService } from 'src/shared/utils/hash.service';
-import { CadastroDuplicadoException } from '../exceptions/cadastro-duplicado.exception';
 import { CreateFullClientService } from '../services/create-full-client.service';
+
+// repository / roles user
+import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
+
+// utils
+import { HashService } from 'src/shared/utils/hash.service';
+
+// exceptions
+import { CadastroDuplicadoException } from '../exceptions/cadastro-duplicado.exception';
 
 describe('CreateFullClientService', () => {
   let service: CreateFullClientService;
 
-  const tx = {
+  const transacao = {
     user: { create: jest.fn() },
     clienteConsultor: { create: jest.fn() },
     tipoEntregaUser: { create: jest.fn() },
@@ -58,12 +69,18 @@ describe('CreateFullClientService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    prisma.$transaction.mockImplementation((callback: (t: typeof tx) => unknown) => callback(tx));
+    prisma.$transaction.mockImplementation((callback: (t: typeof transacao) => unknown) =>
+      callback(transacao),
+    );
     hash.make.mockImplementation(async (senha: string) => `hash:${senha}`);
     config.get.mockReturnValue('senha-padrao');
-    tx.user.create.mockResolvedValue({ id: 10n, email: 'contato@empresa.com', senha: 'hash' });
-    tx.endereco.create.mockResolvedValue({ id: 1n });
-    tx.userCliente.create.mockImplementation(async ({ data }) => ({ id: 20n, ...data }));
+    transacao.user.create.mockResolvedValue({
+      id: 10n,
+      email: 'contato@empresa.com',
+      senha: 'hash',
+    });
+    transacao.endereco.create.mockResolvedValue({ id: 1n });
+    transacao.userCliente.create.mockImplementation(async ({ data }) => ({ id: 20n, ...data }));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -81,13 +98,13 @@ describe('CreateFullClientService', () => {
   it('cria cliente, endereço com CEP formatado e o subordinado padrão, sem devolver senhas', async () => {
     const resultado = await service.executar(dados);
 
-    expect(tx.user.create).toHaveBeenCalledWith({
+    expect(transacao.user.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ email: 'contato@empresa.com', senha: 'hash:senha123' }),
     });
-    expect(tx.endereco.create).toHaveBeenCalledWith({
+    expect(transacao.endereco.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ userId: 10n, cep: '01001-000', tipoEndereco: 'entrega' }),
     });
-    expect(tx.userCliente.create).toHaveBeenCalledWith({
+    expect(transacao.userCliente.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         clienteId: 10n,
         nome: 'Letscom Comercial',
@@ -99,8 +116,8 @@ describe('CreateFullClientService', () => {
     expect(resultado.usuarios_cliente).toHaveLength(1);
     resultado.usuarios_cliente.forEach((u) => expect(u).not.toHaveProperty('senha'));
     expect(roleUserRepo.attachToUser).not.toHaveBeenCalled();
-    expect(tx.clienteConsultor.create).not.toHaveBeenCalled();
-    expect(tx.tipoEntregaUser.create).not.toHaveBeenCalled();
+    expect(transacao.clienteConsultor.create).not.toHaveBeenCalled();
+    expect(transacao.tipoEntregaUser.create).not.toHaveBeenCalled();
   });
 
   it('vincula papel, consultor, tipo de entrega e papel do subordinado quando informados', async () => {
@@ -110,14 +127,14 @@ describe('CreateFullClientService', () => {
       usuarios_cliente: [{ email: 'sub@empresa.com', senha: 'senha123', ativo: true, role_id: 6 }],
     });
 
-    expect(roleUserRepo.attachToUser).toHaveBeenCalledWith(tx, 10n, 3n, true);
-    expect(tx.clienteConsultor.create).toHaveBeenCalledWith({
+    expect(roleUserRepo.attachToUser).toHaveBeenCalledWith(transacao, 10n, 3n, true);
+    expect(transacao.clienteConsultor.create).toHaveBeenCalledWith({
       data: { clienteId: 10n, consultorId: 4n },
     });
-    expect(tx.tipoEntregaUser.create).toHaveBeenCalledWith({
+    expect(transacao.tipoEntregaUser.create).toHaveBeenCalledWith({
       data: { clienteId: 10n, tipoEntregaId: 5n },
     });
-    expect(roleUserRepo.attachToUserCliente).toHaveBeenCalledWith(tx, 20n, 6n, true);
+    expect(roleUserRepo.attachToUserCliente).toHaveBeenCalledWith(transacao, 20n, 6n, true);
   });
 
   it('lança CadastroDuplicadoException (409) quando um índice único é violado', async () => {

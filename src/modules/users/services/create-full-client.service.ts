@@ -48,9 +48,9 @@ export class CreateFullClientService {
     const senhaHash = await this.hashPassword.make(clientePayload.senha);
 
     return this.prisma
-      .$transaction(async (tx) => {
+      .$transaction(async (transacao) => {
         // 1) cliente principal
-        const user = await tx.user.create({
+        const user = await transacao.user.create({
           data: {
             nome: clientePayload.nome,
             email: clientePayload.email,
@@ -63,22 +63,27 @@ export class CreateFullClientService {
         });
 
         if (clientePayload.roles) {
-          await this.roleUserRepo.attachToUser(tx, user.id, BigInt(clientePayload.roles), true);
+          await this.roleUserRepo.attachToUser(
+            transacao,
+            user.id,
+            BigInt(clientePayload.roles),
+            true,
+          );
         }
         if (clientePayload.consultor_id) {
-          await tx.clienteConsultor.create({
+          await transacao.clienteConsultor.create({
             data: { clienteId: user.id, consultorId: BigInt(clientePayload.consultor_id) },
           });
         }
         if (clientePayload.tipo_entrega_id) {
-          await tx.tipoEntregaUser.create({
+          await transacao.tipoEntregaUser.create({
             data: { clienteId: user.id, tipoEntregaId: BigInt(clientePayload.tipo_entrega_id) },
           });
         }
 
         // 2) endereço
         const end = data.endereco;
-        const endereco = await tx.endereco.create({
+        const endereco = await transacao.endereco.create({
           data: {
             userId: user.id,
             logradouro: end.logradouro ?? null,
@@ -99,7 +104,7 @@ export class CreateFullClientService {
         // 3) subordinados informados
         const usuariosCliente: any[] = [];
         for (const sub of data.usuarios_cliente ?? []) {
-          const created = await tx.userCliente.create({
+          const created = await transacao.userCliente.create({
             data: {
               clienteId: user.id,
               nome: sub.nome,
@@ -110,7 +115,12 @@ export class CreateFullClientService {
             },
           });
           if (sub.role_id) {
-            await this.roleUserRepo.attachToUserCliente(tx, created.id, BigInt(sub.role_id), true);
+            await this.roleUserRepo.attachToUserCliente(
+              transacao,
+              created.id,
+              BigInt(sub.role_id),
+              true,
+            );
           }
           usuariosCliente.push(created);
         }
@@ -118,7 +128,7 @@ export class CreateFullClientService {
         // 4) subordinado padrão "Letscom Comercial"
         const senhaDefault =
           this.config.get<string>('business.senhaUsuarioSubordinadoDefault') ?? 'letscom';
-        const padrao = await tx.userCliente.create({
+        const padrao = await transacao.userCliente.create({
           data: {
             clienteId: user.id,
             nome: 'Letscom Comercial',

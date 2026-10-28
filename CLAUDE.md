@@ -15,10 +15,11 @@ Padrões de revisão: subagente `tech-lead` em `.claude/agents/tech-lead.md` —
    ele executar no terminal (formato em `docs/arquitetura.md` → "Banco e migrations").
 2. **Todo código novo ou alterado vem com testes**: unitário em `src/modules/<modulo>/tests/*.spec.ts`
    e, para endpoint novo/alterado, e2e em `test/e2e/<modulo>/*.e2e-spec.ts`.
-3. **Um service por funcionalidade** (espelhar `src/modules/auth/services`): arquivo
-   `<acao>-<recurso>.service.ts`, classe com um único `execute(...)`. Funcionalidade nova = arquivo novo,
-   nunca método novo em service existente.
-4. **Nomes em português** (verbos inclusive, sem acento). Legado em inglês é migrado aos poucos —
+3. **Uma funcionalidade por arquivo em controller, service e repository** (referência: `src/modules/users`):
+   `<acao>-<recurso>.controller.ts` (um endpoint), `<acao>-<recurso>.service.ts` (um único `execute(...)`)
+   e `<acao>-<recurso>.repository.ts` (só as queries da funcionalidade). Funcionalidade nova = arquivos novos,
+   nunca método/endpoint novo em arquivo existente.
+4. **Nomes em português** (verbos inclusive, sem acento), **sem abreviação** (`transacao`, não `tx`; `conexao`, não `db`). Legado em inglês é migrado aos poucos —
    não renomear em massa.
 
 ## Comandos

@@ -91,7 +91,34 @@ Regras:
   genérico (`remessa.service.ts`, `*-manager`, `*-handler`).
 - Um spec por service: `tests/<acao>-<recurso>.service.spec.ts`.
 
-Dívida conhecida (dividir aos poucos, quando o arquivo for tocado):
+### Controller e repository seguem o mesmo corte
+
+A funcionalidade é a unidade nas três camadas. Referência: módulo `users`.
+
+```
+src/modules/users/
+├── controllers/listar-clientes.controller.ts   # GET /users        → ListarClientesController
+├── services/listar-clientes.service.ts         # execute(query)    → ListarClientesService
+├── repositories/listar-clientes.repository.ts  # paginar(params)   → ListarClientesRepository
+├── controllers/excluir-usuario.controller.ts   # DELETE /users/:id
+├── services/excluir-usuario.service.ts
+└── repositories/excluir-usuario.repository.ts  # buscarPorId, marcarComoExcluido
+```
+
+- **Controller**: `<acao>-<recurso>.controller.ts` → `<Acao><Recurso>Controller`, **um endpoint**,
+  injeta só o service da funcionalidade. Endpoint novo = controller novo.
+- **Ordem de rotas**: o Nest registra na ordem do array `controllers` do módulo. Controllers com
+  rota literal (`dados`, `consultores`) vêm **antes** dos que têm `:id` no mesmo prefixo/verbo.
+- **Repository**: `<acao>-<recurso>.repository.ts` → `<Acao><Recurso>Repository`, só com as
+  queries daquela funcionalidade, métodos com nome descritivo em português. Proibido repository
+  genérico com o CRUD do recurso inteiro. Duplicar um `findUnique` de uma linha é aceitável;
+  query complexa usada por várias funcionalidades vai para um repository técnico focado
+  (ex.: `RoleUserRepository`).
+- Service só injeta o repository da própria funcionalidade (+ repositories técnicos).
+- Spec por repository com query não trivial: `tests/<acao>-<recurso>.repository.spec.ts`.
+
+Dívida conhecida (dividir aos poucos, quando o arquivo for tocado — nas três camadas; a maioria
+dos módulos ainda tem controller/repository por recurso):
 `remessas/services/remessa.service.ts` (543 linhas), `modelos-tecnicos/services/modelo-tecnico.service.ts`,
 `credit-sales/services/credit-sale.service.ts`, `auth/services/refresh-token.service.ts`
 (5 métodos públicos: logout, refresh, issue, revokeAll, rotate).
@@ -111,7 +138,7 @@ sequenceDiagram
   G->>Ct: autorizado
   Ct->>Ct: ValidationPipe valida DTO
   Ct->>S: chama caso de uso
-  S->>R: consulta/persiste (tx opcional)
+  S->>R: consulta/persiste (transacao opcional)
   R->>DB: query
   DB-->>R: entidade
   R-->>S: entidade
@@ -132,9 +159,11 @@ sequenceDiagram
 
 Padrões obrigatórios:
 
-- **Transação**: o service abre `this.prisma.$transaction(async (tx) => ...)` e repassa `tx`
-  aos repositories. Todo método de escrita de repository aceita `tx?: Prisma.TransactionClient`
-  e usa `(tx ?? this.prisma)`.
+- **Transação**: o service abre `this.prisma.$transaction(async (transacao) => ...)` e repassa
+  `transacao` aos repositories. Todo método de escrita de repository aceita
+  `transacao?: Prisma.TransactionClient` e usa `(transacao ?? this.prisma)` (se precisar guardar
+  numa variável: `const conexao = transacao ?? this.prisma`). Nada de `tx`/`db` — ver "Nomes"
+  no tech-lead; legado é renomeado quando o arquivo for tocado.
 - **Erros**: regra de negócio lança `BusinessException` (ou subclasse em `exceptions/`).
   Repository nunca lança `HttpException`. `AllExceptionsFilter` formata a resposta.
 - **Autorização**: via decorators `@Roles`, `@Features`, `@Public` + guards de `shared/guards`.

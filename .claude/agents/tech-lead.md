@@ -23,7 +23,7 @@ Bloqueie:
 - Controller que usa `PrismaService` ou repository direto, ou contém regra de negócio.
 - Service que faz query com `PrismaService` direto (permitido só `$transaction`).
 - Repository com regra de negócio, chamada a service ou `HttpException`.
-- Método de escrita de repository sem `tx?: Prisma.TransactionClient` / `(tx ?? this.prisma)`.
+- Método de escrita de repository sem `transacao?: Prisma.TransactionClient` / `(transacao ?? this.prisma)`.
 - Escrita em múltiplas tabelas sem `$transaction` no service.
 - Módulo registrando em `providers` um repository/service de **outro** módulo
   (correto: `exports` no dono + `imports: [OutroModule]` no consumidor).
@@ -34,10 +34,11 @@ Bloqueie:
 - Env lida via `process.env` fora de `src/config`; env nova sem `env.validation.ts` e `test/jest.setup.ts`.
 - `console.log`.
 
-### 1.1 Um service por funcionalidade (bloqueante)
+### 1.1 Uma funcionalidade por arquivo — controller, service e repository (bloqueante)
 
-Referência: módulo `auth` (`auth-client-user.service.ts`, `auth-subordinate-user.service.ts`,
-`request-password-reset.service.ts`...). Bloqueie:
+Referência completa (as três camadas): módulo `users` (`listar-clientes.controller.ts` →
+`listar-clientes.service.ts` → `listar-clientes.repository.ts`, idem `criar-usuario`,
+`atualizar-usuario`, `excluir-usuario`...). Referência só de services: módulo `auth`. Bloqueie:
 - **Service novo com mais de um método público.** Padrão: uma classe por funcionalidade
   (`<acao>-<recurso>.service.ts` → `<Acao><Recurso>Service`) com um único `execute(...)`;
   auxiliares `private`. `execute` é o contrato fixo e fica em inglês (exceção à regra de nomes).
@@ -47,9 +48,24 @@ Referência: módulo `auth` (`auth-client-user.service.ts`, `auth-subordinate-us
 - Service de funcionalidade chamando outro service de funcionalidade. Passo compartilhado vai
   para `services/helpers/` (puro), repository (dados) ou service técnico focado (ex.: `JwtTokenService`).
 - Controller chamando qualquer coisa além de `execute` do service da rota.
+- **Controller novo com mais de um endpoint**, ou **endpoint novo adicionado** num controller
+  existente. Padrão: `<acao>-<recurso>.controller.ts` → `<Acao><Recurso>Controller`, um único
+  handler, injetando só o service daquela funcionalidade.
+- Módulo que registra controller com rota literal (ex.: `dados`, `consultores`) **depois** de um
+  controller com `:id` no mesmo prefixo e verbo — a rota literal nunca é alcançada.
+- **Repository genérico novo** (`<recurso>.repository.ts` com o CRUD inteiro) ou **método novo**
+  de outra funcionalidade adicionado num repository existente. Padrão:
+  `<acao>-<recurso>.repository.ts` → `<Acao><Recurso>Repository`, só com as queries que aquela
+  funcionalidade usa, métodos com nome descritivo em português (`buscarPorId`,
+  `marcarComoExcluido`, `contarRemessasEmAndamento`). Duplicar um `findUnique` de uma linha entre
+  repositories é aceitável; query complexa compartilhada vai para repository técnico focado
+  (ex.: `RoleUserRepository`).
+- Service injetando repository de outra funcionalidade (ex.: `ExcluirUsuarioService` usando
+  `AtualizarUsuarioRepository`).
 
-Sugestão (não bloqueia): service legado com 150+ linhas ou vários métodos públicos que foi
-tocado no diff — sugerir extrair a funcionalidade alterada para arquivo próprio.
+Sugestão (não bloqueia): service, controller ou repository legado com vários métodos públicos
+/ endpoints que foi tocado no diff — sugerir extrair a funcionalidade alterada para arquivo próprio
+nas três camadas.
 Dívida conhecida: `remessa.service.ts`, `modelo-tecnico.service.ts`, `credit-sale.service.ts`,
 `refresh-token.service.ts`.
 
@@ -92,6 +108,12 @@ devolva ao dev: `npm run test:e2e` (passo a passo em `docs/testes.md`).
   só o nome precisa saber o que acontece com a entrada. Ex.: `sanitizarTextoCelula` ❌ →
   `removerCaracteresInvisiveisEPadronizarEspacos` ✅. Nome longo e explícito > nome curto e vago.
   Vale também para o **front** (`letscom-front`) quando for revisado.
+- **Proibido abreviação** em variável, parâmetro ou propriedade de código novo/alterado: `tx`,
+  `db`, `res`, `req`, `err`, `e`, `cb`, `fn`, `ctx`, `cfg`, `repo`, `svc`, `idx`, `obj`, `arr`,
+  `val`, `tmp` etc. Use a palavra inteira em português: `transacao` (`Prisma.TransactionClient`),
+  `conexao` (`transacao ?? this.prisma`), `erro`, `resposta`, `indice`. Não vale para callbacks de
+  uma linha com nome do domínio (`usuarios.map((usuario) => ...)` ✅, `.map((u) => ...)` ❌).
+  Legado com `tx` em arquivo não tocado → sugestão; arquivo tocado → renomear no próprio arquivo.
 - Mesmo conceito = mesmo verbo (padrão `buscar`, não alternar com `obter`).
 - Booleanos `eh*`/`tem*`/`pode*`/`deve*`. Constantes `UPPER_SNAKE_CASE` em português.
 - Arquivos `kebab-case` + sufixo NestJS (`.service.ts`, `.repository.ts`, `.mapper.ts`,
