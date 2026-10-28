@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, RemessaPosicao, RemessaSituacao, RemessaStatusEtapa } from '@prisma/client';
+import { Prisma, RemessaPosicao, RemessaStatusEtapa } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
@@ -10,6 +10,7 @@ import { ImageService } from 'src/shared/utils/image.service';
 import { SpreadsheetService } from 'src/shared/utils/spreadsheet.service';
 import { ZipService } from 'src/shared/utils/zip.service';
 import { RemessaRepository, AuthContext } from '../repositories/remessa.repository';
+import { converterSituacaoParaEnum } from './helpers/converter-situacao-para-enum.helper';
 import {
   resolverMatriculaNaPlanilha,
   sanitizarChaveMatricula,
@@ -178,7 +179,7 @@ export class RemessaService {
         modeloTecnicoId: BigInt(data.modelo_tecnico_id),
         tecnologiaId: BigInt(data.tecnologia_id),
         totalSolicitacoes: qtdSolicitacao,
-        situacao: data.situacao as RemessaSituacao,
+        situacao: converterSituacaoParaEnum(data.situacao),
         status: data.status,
         posicao: this.normalizarPosicao(data.posicao),
         observacao: data.observacao ?? null,
@@ -302,7 +303,7 @@ export class RemessaService {
 
   private mapUpdatePayload(data: Record<string, any>): Prisma.RemessaUncheckedUpdateInput {
     const out: Prisma.RemessaUncheckedUpdateInput = {};
-    if (data.situacao !== undefined) out.situacao = data.situacao;
+    if (data.situacao !== undefined) out.situacao = converterSituacaoParaEnum(data.situacao);
     if (data.status !== undefined) out.status = data.status;
     if (data.observacao !== undefined) out.observacao = data.observacao;
     if (data.posicao !== undefined) out.posicao = this.normalizarPosicao(data.posicao);
