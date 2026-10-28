@@ -809,6 +809,7 @@ async function seedFeatureFlags() {
     { key: 'acessar_produtos', nome: 'Acessar Produtos (Cropix)', descricao: 'Permite acessar a tela de produtos no Backoffice Cropix.' },
     { key: 'acessar_tecnologias', nome: 'Acessar Tecnologias (Cropix)', descricao: 'Permite acessar a tela de tecnologias no Backoffice Cropix.' },
     { key: 'acessar_feature_flags', nome: 'Acessar Feature Flags (Cropix)', descricao: 'Permite acessar o gerenciamento de feature flags no Backoffice Cropix.' },
+    { key: 'acessar_dashboard', nome: 'Acessar Dashboard (Cropix)', descricao: 'Exibe o item "Dashboard" no menu lateral do Backoffice Cropix e permite abrir a tela de indicadores.', tipoUsuario: 'admin' },
     { key: 'acessar_backoffice', nome: 'Acessar Backoffice', descricao: 'Exibe o item "Backoffice" no menu lateral e permite abri-lo.', tipoUsuario: 'admin,producao' },
     { key: 'acessar_admin', nome: 'Acessar Admin', descricao: 'Permite acessar o painel administrativo.', tipoUsuario: 'admin,producao' },
     { key: 'acessar_remessas', nome: 'Acessar Remessas', descricao: 'Exibe o item "Remessas" no menu lateral e permite abrir a tela de tarefas de remessas (pegar tarefa / minhas tarefas).', tipoUsuario: 'admin,producao' },

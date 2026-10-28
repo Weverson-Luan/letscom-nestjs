@@ -26,6 +26,7 @@ export const Feature = {
   ACESSAR_PRODUTOS: 'acessar_produtos',
   ACESSAR_TECNOLOGIAS: 'acessar_tecnologias',
   ACESSAR_FEATURE_FLAGS: 'acessar_feature_flags',
+  ACESSAR_DASHBOARD: 'acessar_dashboard',
 
   // CLIENTE
   VISUALIZAR_CLIENTE: 'visualizar_cliente',

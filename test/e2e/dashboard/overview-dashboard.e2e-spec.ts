@@ -59,7 +59,7 @@ describe('Dashboard — GET /dashboard/overview (e2e)', () => {
   }
 
   it('devolve as canceladas junto com a taxa de sucesso', async () => {
-    await liberarFeature(prisma, Feature.ACESSAR_BACKOFFICE, [Role.ADMIN]);
+    await liberarFeature(prisma, Feature.ACESSAR_DASHBOARD, [Role.ADMIN]);
     const { token } = await criarUsuarioAutenticado(app, Role.ADMIN);
     await criarRemessas(['concluido', 'concluido', 'concluido', 'cancelada', 'em_producao']);
     const excluida = await prisma.remessa.findFirst({ where: { status: 'cancelada' } });
@@ -85,7 +85,7 @@ describe('Dashboard — GET /dashboard/overview (e2e)', () => {
   });
 
   it('devolve zero canceladas quando não há remessas', async () => {
-    await liberarFeature(prisma, Feature.ACESSAR_BACKOFFICE, [Role.ADMIN]);
+    await liberarFeature(prisma, Feature.ACESSAR_DASHBOARD, [Role.ADMIN]);
     const { token } = await criarUsuarioAutenticado(app, Role.ADMIN);
 
     const resposta = await request(app.getHttpServer())
@@ -102,8 +102,20 @@ describe('Dashboard — GET /dashboard/overview (e2e)', () => {
     expect(resposta.status).toBe(401);
   });
 
-  it('recusa sem a feature de acesso ao backoffice', async () => {
+  it('recusa sem a feature de acesso ao dashboard', async () => {
     const { token } = await criarUsuarioAutenticado(app, Role.ADMIN);
+
+    const resposta = await request(app.getHttpServer())
+      .get(rota())
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(resposta.status).toBe(403);
+  });
+
+  it('recusa produção que acessa o backoffice mas não tem a feature do dashboard', async () => {
+    await liberarFeature(prisma, Feature.ACESSAR_BACKOFFICE, [Role.ADMIN, Role.PRODUCAO]);
+    await liberarFeature(prisma, Feature.ACESSAR_DASHBOARD, [Role.ADMIN]);
+    const { token } = await criarUsuarioAutenticado(app, Role.PRODUCAO);
 
     const resposta = await request(app.getHttpServer())
       .get(rota())

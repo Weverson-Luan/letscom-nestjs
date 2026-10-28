@@ -19,7 +19,7 @@ export class DashboardController {
   ) {}
 
   @Get('overview')
-  @RequireFeatures(Feature.ACESSAR_BACKOFFICE)
+  @RequireFeatures(Feature.ACESSAR_DASHBOARD)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiOperation({ summary: 'KPIs do dashboard' })
   async overview() {
@@ -28,7 +28,7 @@ export class DashboardController {
   }
 
   @Get('atividades-recentes')
-  @RequireFeatures(Feature.ACESSAR_BACKOFFICE)
+  @RequireFeatures(Feature.ACESSAR_DASHBOARD)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiOperation({ summary: 'Atividades recentes do dashboard (paginadas)' })
   async atividadesRecentes(@Query() query: ListarAtividadesRecentesQueryDto) {

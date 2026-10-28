@@ -29,7 +29,7 @@ describe('Dashboard — GET /dashboard/atividades-recentes (e2e)', () => {
   });
 
   async function autenticarAdmin(): Promise<string> {
-    await liberarFeature(prisma, Feature.ACESSAR_BACKOFFICE, [Role.ADMIN]);
+    await liberarFeature(prisma, Feature.ACESSAR_DASHBOARD, [Role.ADMIN]);
     const { token } = await criarUsuarioAutenticado(app, Role.ADMIN);
     return token;
   }
@@ -246,7 +246,7 @@ describe('Dashboard — GET /dashboard/atividades-recentes (e2e)', () => {
     expect(resposta.status).toBe(401);
   });
 
-  it('recusa sem a feature de acesso ao backoffice', async () => {
+  it('recusa sem a feature de acesso ao dashboard', async () => {
     const { token } = await criarUsuarioAutenticado(app, Role.ADMIN);
 
     const resposta = await request(app.getHttpServer())
@@ -257,7 +257,7 @@ describe('Dashboard — GET /dashboard/atividades-recentes (e2e)', () => {
   });
 
   it('recusa papel sem acesso mesmo com a feature liberada', async () => {
-    await liberarFeature(prisma, Feature.ACESSAR_BACKOFFICE, [Role.CLIENTE]);
+    await liberarFeature(prisma, Feature.ACESSAR_DASHBOARD, [Role.CLIENTE]);
     const { token } = await criarUsuarioAutenticado(app, Role.CLIENTE);
 
     const resposta = await request(app.getHttpServer())
