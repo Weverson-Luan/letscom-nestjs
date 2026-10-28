@@ -148,6 +148,8 @@ describe('Acesso ao backoffice com código de uso único (e2e)', () => {
 
     it('o access token emitido acessa rota do backoffice', async () => {
       await liberarFeature(prisma, Feature.ACESSAR_BACKOFFICE, [Role.ADMIN]);
+      // a rota usada de exemplo (dashboard) exige a própria feature de acesso
+      await liberarFeature(prisma, Feature.ACESSAR_DASHBOARD, [Role.ADMIN]);
       const { token } = await criarUsuarioAutenticado(app, Role.ADMIN);
       const { body } = await gerarCodigo(token);
       const troca = await trocarCodigo(body.data.codigo);
