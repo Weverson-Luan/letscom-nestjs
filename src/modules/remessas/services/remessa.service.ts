@@ -11,6 +11,7 @@ import { SpreadsheetService } from 'src/shared/utils/spreadsheet.service';
 import { ZipService } from 'src/shared/utils/zip.service';
 import { RemessaRepository, AuthContext } from '../repositories/remessa.repository';
 import { converterSituacaoParaEnum } from './helpers/converter-situacao-para-enum.helper';
+import { RemessasCacheService } from './remessas-cache.service';
 import {
   resolverMatriculaNaPlanilha,
   sanitizarChaveMatricula,
@@ -39,6 +40,7 @@ export class RemessaService {
     private readonly spreadsheet: SpreadsheetService,
     private readonly zip: ZipService,
     private readonly config: ConfigService,
+    private readonly cache: RemessasCacheService,
   ) {}
 
   private authContext(user: AuthUser): AuthContext {
@@ -281,6 +283,7 @@ export class RemessaService {
       await tx.remessa.update({ where: { id }, data: this.mapUpdatePayload(payload) });
     });
 
+    await this.cache.invalidarTudo(Number(remessa.clienteId));
     return true;
   }
 

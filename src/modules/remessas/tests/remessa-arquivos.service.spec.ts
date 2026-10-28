@@ -35,6 +35,7 @@ describe('RemessaService — arquivos da solicitação na pasta raiz do storage'
       {} as never,
       zip as never,
       { get: jest.fn() } as never,
+      {} as never,
     );
   });
 
