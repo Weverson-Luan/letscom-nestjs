@@ -10,13 +10,19 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { normalizarBooleano } from 'src/shared/utils/boolean-filter';
 
-function toBool(value: unknown): unknown {
-  if (typeof value === 'boolean') return value;
-  if (value === 'true' || value === '1' || value === 1) return true;
-  if (value === 'false' || value === '0' || value === 0) return false;
-  return value;
-}
+/**
+ * Lê o valor bruto do multipart: com enableImplicitConversion o `value` já chega
+ * convertido por Boolean(), e '0' viraria true.
+ */
+const transformarBooleanoMultipart = ({
+  obj,
+  key,
+}: {
+  obj: Record<string, unknown>;
+  key: string;
+}) => normalizarBooleano(obj[key]);
 
 /** Campos de formulário multipart do store (fotos validadas no controller). */
 export class CreateModeloTecnicoDto {
@@ -56,7 +62,7 @@ export class CreateModeloTecnicoDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => toBool(value))
+  @Transform(transformarBooleanoMultipart)
   @IsBoolean()
   tem_furo?: boolean;
 
@@ -67,19 +73,19 @@ export class CreateModeloTecnicoDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => toBool(value))
+  @Transform(transformarBooleanoMultipart)
   @IsBoolean()
   tem_carga_foto?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => toBool(value))
+  @Transform(transformarBooleanoMultipart)
   @IsBoolean()
   tem_dados_variaveis?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => toBool(value))
+  @Transform(transformarBooleanoMultipart)
   @IsBoolean()
   is_provisorio?: boolean;
 
