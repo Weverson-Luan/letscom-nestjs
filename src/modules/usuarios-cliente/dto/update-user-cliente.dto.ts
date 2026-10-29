@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsBoolean, IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
-import { normalizarAtivo } from './normalizar-ativo';
+import { normalizarBooleano } from 'src/shared/utils/boolean-filter';
 
 export class UpdateUserClienteDto {
   @ApiPropertyOptional({ example: 'sub@empresa.com' })
@@ -27,7 +27,7 @@ export class UpdateUserClienteDto {
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
-  @Transform(({ value }) => normalizarAtivo(value))
+  @Transform(({ obj, key }) => normalizarBooleano(obj[key]))
   @IsBoolean()
   ativo?: boolean;
 }

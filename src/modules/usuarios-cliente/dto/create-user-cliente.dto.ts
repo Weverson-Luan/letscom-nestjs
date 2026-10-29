@@ -10,7 +10,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { normalizarAtivo } from './normalizar-ativo';
+import { normalizarBooleano } from 'src/shared/utils/boolean-filter';
 
 export class CreateUserClienteDto {
   @ApiProperty({ example: 1, description: 'ID do cliente principal' })
@@ -47,7 +47,7 @@ export class CreateUserClienteDto {
 
   @ApiPropertyOptional({ example: true, default: true })
   @IsOptional()
-  @Transform(({ value }) => normalizarAtivo(value))
+  @Transform(({ obj, key }) => normalizarBooleano(obj[key]))
   @IsBoolean()
   ativo?: boolean;
 }
