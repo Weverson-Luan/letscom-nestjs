@@ -1,10 +1,25 @@
+/**
+ * IMPORTS
+ */
 import { HttpStatus } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { BusinessException } from 'src/shared/exceptions/business.exception';
+
+// shared / prisma (conexão com o banco)
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// shared / exceptions
+import { BusinessException } from 'src/shared/exceptions/business.exception';
+
+// shared / repositories
 import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
+
+// shared / utils (hash de senha)
 import { HashService } from 'src/shared/utils/hash.service';
+
+// repositories
 import { CriarUsuarioClienteRepository } from '../repositories/criar-usuario-cliente.repository';
+
+// services
 import { CriarUsuarioClienteService } from '../services/criar-usuario-cliente.service';
 
 describe('CriarUsuarioClienteService', () => {

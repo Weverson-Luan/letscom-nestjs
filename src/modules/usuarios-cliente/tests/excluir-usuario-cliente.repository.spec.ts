@@ -1,4 +1,11 @@
+/**
+ * IMPORTS
+ */
+
+// shared / prisma (conexão com o banco)
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// repositories
 import { ExcluirUsuarioClienteRepository } from '../repositories/excluir-usuario-cliente.repository';
 
 describe('ExcluirUsuarioClienteRepository', () => {

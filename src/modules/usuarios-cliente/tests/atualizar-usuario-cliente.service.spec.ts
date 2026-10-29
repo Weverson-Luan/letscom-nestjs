@@ -1,11 +1,26 @@
+/**
+ * IMPORTS
+ */
 import { ForbiddenException, HttpStatus } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+
+// shared / auth (features e mensagens de permissão)
 import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
 import { Feature, MENSAGEM_SEM_PERMISSAO } from 'src/shared/auth/features';
+
+// shared / decorators (usuário autenticado)
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
+
+// shared / exceptions
 import { BusinessException } from 'src/shared/exceptions/business.exception';
+
+// shared / utils (hash de senha)
 import { HashService } from 'src/shared/utils/hash.service';
+
+// repositories
 import { AtualizarUsuarioClienteRepository } from '../repositories/atualizar-usuario-cliente.repository';
+
+// services
 import { AtualizarUsuarioClienteService } from '../services/atualizar-usuario-cliente.service';
 
 describe('AtualizarUsuarioClienteService', () => {

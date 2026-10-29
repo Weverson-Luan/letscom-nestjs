@@ -90,7 +90,8 @@ em `test/jest-e2e.json` localmente: como o teste falhou, os containers continuam
 
 ## 3. Escrevendo um teste e2e
 
-Arquivo em `test/e2e/<modulo>/<recurso>.e2e-spec.ts`. Exemplo real:
+Arquivo em `test/e2e/<modulo>/<acao>-<recurso>.e2e-spec.ts`, **um por endpoint** (regra em
+[arquitetura.md](arquitetura.md) → "E2E"; módulo de referência: `test/e2e/usuarios-cliente/`). Exemplo real:
 [`test/e2e/health/testar-conexao.e2e-spec.ts`](../test/e2e/health/testar-conexao.e2e-spec.ts).
 
 ```ts

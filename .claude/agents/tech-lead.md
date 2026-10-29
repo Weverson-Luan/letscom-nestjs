@@ -79,11 +79,21 @@ Todo comportamento novo ou alterado precisa de teste. Sem teste = BLOQUEADO.
 - Mínimo: caminho feliz, cada `BusinessException` possível, bordas, e asserção dos argumentos
   passados ao repository/transação.
 
-**E2E** — `test/e2e/<modulo>/<recurso>.e2e-spec.ts`, usando `test/e2e/helpers/criar-app-e2e.ts`
+**E2E** — `test/e2e/<modulo>/<acao>-<recurso>.e2e-spec.ts`, usando `test/e2e/helpers/criar-app-e2e.ts`
+- **Um arquivo por endpoint**, com o nome da funcionalidade (igual ao controller). Bloqueie e2e
+  novo que junte vários endpoints num arquivo só (ex.: `gerenciar-*.e2e-spec.ts`) ou teste de
+  endpoint novo adicionado num arquivo de outra funcionalidade. Setup compartilhado do módulo vai
+  em `test/e2e/<modulo>/<modulo>.fixtures.ts`. Referência: `test/e2e/usuarios-cliente/`.
+  Legado agrupado (`usuarios-internos`, `conversas-clientes`, `clientes-agenda`) → sugestão de dividir quando tocado.
 - Obrigatório para todo endpoint novo ou com contrato alterado.
 - Mínimo por endpoint: 401 sem token (se não `@Public`), 403 sem papel/feature (se aplicável),
   400 com DTO inválido, 2xx validando formato da resposta, e efeito persistido no banco.
 - Cada teste cria e limpa os próprios dados.
+
+**Imports nos testes** (unitário e e2e, arquivo novo ou alterado): cabeçalho `/** IMPORTS */` e
+imports agrupados com comentário claro por grupo, na ordem externos → `shared` (por pasta) →
+helpers e2e → `dto`/`repositories`/`services` do módulo → fixtures. Modelo em `docs/arquitetura.md`
+→ "Imports nos testes". Arquivo de teste novo fora do padrão → bloqueante; legado só tocado → sugestão.
 
 Verifique que os testes existem **e passam**: rode `npm test -- <arquivos alterados>`.
 E2E: nunca rode `npm run test:e2e` (sobe containers e aplica migration). Não bloqueie por isso —

@@ -1,5 +1,12 @@
+/**
+ * IMPORTS
+ */
 import { Test } from '@nestjs/testing';
+
+// repositories
 import { BuscarUsuarioClienteRepository } from '../repositories/buscar-usuario-cliente.repository';
+
+// services
 import { BuscarUsuarioClienteService } from '../services/buscar-usuario-cliente.service';
 
 describe('BuscarUsuarioClienteService', () => {

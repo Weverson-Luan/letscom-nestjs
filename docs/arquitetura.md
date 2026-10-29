@@ -188,10 +188,44 @@ Toda mudança de comportamento vem com testes. PR sem teste é bloqueado.
 - Nome do `describe` = classe/função; nome do `it` em português descrevendo o comportamento
   (`it('lança erro quando o saldo de créditos é insuficiente')`).
 
+### Imports nos testes (unitários e e2e)
+
+Todo arquivo de teste abre com o cabeçalho `/** IMPORTS */` e agrupa os imports com um comentário
+curto e claro dizendo o que o grupo traz. Ordem: bibliotecas externas (sem comentário) → `shared`
+(um grupo por pasta) → helpers e2e → camadas do módulo (`dto`, `repositories`, `services`) →
+fixtures do módulo. Referência: `test/e2e/usuarios-cliente/criar-usuario-cliente.e2e-spec.ts`.
+
+```ts
+/**
+ * IMPORTS
+ */
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+
+// shared / prisma (conexão com o banco)
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// shared / auth (features e mensagens de permissão)
+import { MENSAGEM_SEM_PERMISSAO } from 'src/shared/auth/features';
+
+// helpers e2e (app, banco e autenticação)
+import { criarAppE2e } from '../helpers/criar-app-e2e';
+import { limparBanco } from '../helpers/limpar-banco';
+
+// fixtures do módulo (rota, features e dados de teste)
+import { autenticarAdmin, ROTA_USUARIOS_CLIENTE as ROTA } from './usuarios-cliente.fixtures';
+```
+
 ### E2E (`npm run test:e2e`)
 
-- Local: `test/e2e/<modulo>/<recurso>.e2e-spec.ts`. Bootstrap com
-  `test/e2e/helpers/criar-app-e2e.ts` (mesmo prefixo, pipes e filtros do `main.ts`).
+- Local: `test/e2e/<modulo>/<acao>-<recurso>.e2e-spec.ts` — **um arquivo por endpoint**, com o
+  mesmo nome da funcionalidade (`criar-usuario-cliente.controller.ts` →
+  `criar-usuario-cliente.e2e-spec.ts`). Proibido arquivo único com todos os endpoints do módulo
+  (`gerenciar-*.e2e-spec.ts`): fica longo, ninguém lê, e mexer num teste afeta outra funcionalidade.
+  Referência: `test/e2e/usuarios-cliente/`.
+- Setup repetido entre os arquivos do módulo (rota, features, criação de dados) vai em
+  `test/e2e/<modulo>/<modulo>.fixtures.ts`; o que serve a vários módulos, em `test/e2e/helpers/`.
+- Bootstrap com `test/e2e/helpers/criar-app-e2e.ts` (mesmo prefixo, pipes e filtros do `main.ts`).
 - Obrigatório para todo endpoint **novo ou com contrato alterado**.
 - Roda no host contra o `docker-compose.test.yml` (`letscom-bd-test` + `letscom-redis-test`), com as variáveis do `.env.test`.
   Como executar: [docs/testes.md](testes.md).

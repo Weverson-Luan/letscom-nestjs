@@ -1,7 +1,16 @@
+/**
+ * IMPORTS
+ */
 import { HttpStatus } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+
+// shared / exceptions
 import { BusinessException } from 'src/shared/exceptions/business.exception';
+
+// repositories
 import { ExcluirUsuarioClienteRepository } from '../repositories/excluir-usuario-cliente.repository';
+
+// services
 import { ExcluirUsuarioClienteService } from '../services/excluir-usuario-cliente.service';
 
 describe('ExcluirUsuarioClienteService', () => {

@@ -1,4 +1,11 @@
+/**
+ * IMPORTS
+ */
+
+// shared / prisma (conexão com o banco)
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// repositories
 import { ListarUsuariosDoClienteRepository } from '../repositories/listar-usuarios-do-cliente.repository';
 
 describe('ListarUsuariosDoClienteRepository', () => {
