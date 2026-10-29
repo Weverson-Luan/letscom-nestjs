@@ -33,7 +33,7 @@ import { UsuariosInternosModule } from './modules/usuarios-internos/usuarios-int
 import { ConversasClientesModule } from './modules/conversas-clientes/conversas-clientes.module';
 import { ClientesAgendaModule } from './modules/clientes-agenda/clientes-agenda.module';
 import { NotificacoesModule } from './modules/notificacoes/notificacoes.module';
-import { UsersAtendimentosModule } from './modules/users-atendimentos/users-atendimentos.module';
+import { UsuariosAtendimentosModule } from './modules/usuarios-atendimentos/usuarios-atendimentos.module';
 import { TecnologiasModule } from './modules/tecnologias/tecnologias.module';
 import { TiposEntregaModule } from './modules/tipos-entrega/tipos-entrega.module';
 import { TutorialsModule } from './modules/tutorials/tutorials.module';
@@ -95,7 +95,7 @@ import { UtilsModule } from './shared/utils/utils.module';
     EntregasClienteModule,
     TiposEntregaModule,
     TutorialsModule,
-    UsersAtendimentosModule,
+    UsuariosAtendimentosModule,
     UsuariosInternosModule,
     UsuariosClienteModule,
     ConversasClientesModule,
