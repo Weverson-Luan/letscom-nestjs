@@ -1,14 +1,35 @@
+/**
+ * IMPORTS
+ */
 import { Module } from '@nestjs/common';
-import { RemessaUploadsController } from './controllers/remessa-uploads.controller';
-import { RemessaUploadService } from './services/remessa-upload.service';
+
+// controller
+import { EnviarFotosRemessaController } from './controllers/enviar-fotos-remessa.controller';
+import { EnviarPlanilhaRemessaController } from './controllers/enviar-planilha-remessa.controller';
+
+// service / uploads
+import { EnviarFotosRemessaService } from './services/enviar-fotos-remessa.service';
+import { EnviarPlanilhaRemessaService } from './services/enviar-planilha-remessa.service';
+
+// repository / uploads
+import { EnviarFotosRemessaRepository } from './repositories/enviar-fotos-remessa.repository';
+import { EnviarPlanilhaRemessaRepository } from './repositories/enviar-planilha-remessa.repository';
 
 /**
- * Módulo de uploads avulsos (fotos ZIP / planilha) para remessas existentes.
+ * Uploads avulsos (fotos ZIP / planilha) para remessas existentes.
  * O fluxo principal de solicitação (POST /remessas) continua em RemessasModule.
  */
 @Module({
-  controllers: [RemessaUploadsController],
-  providers: [RemessaUploadService],
-  exports: [RemessaUploadService],
+  controllers: [EnviarFotosRemessaController, EnviarPlanilhaRemessaController],
+  providers: [
+    EnviarFotosRemessaService,
+    EnviarPlanilhaRemessaService,
+    EnviarFotosRemessaRepository,
+    EnviarPlanilhaRemessaRepository,
+  ],
 })
+
+/**
+ * EXPORTS
+ */
 export class UploadsModule {}

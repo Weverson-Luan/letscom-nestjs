@@ -10,6 +10,8 @@ Teste de carga (k6): [teste-de-carga.md](teste-de-carga.md).
 npm install                 # uma vez
 npm test                    # unitários (não precisam de Docker)
 npm run test:e2e            # sobe letscom-bd-test + letscom-redis-test, migra, roda os e2e e para os containers
+npm run test:e2e -- test/e2e/uploads
+
 ```
 
 ## Pré-requisitos
