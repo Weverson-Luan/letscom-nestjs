@@ -84,7 +84,7 @@ Todo comportamento novo ou alterado precisa de teste. Sem teste = BLOQUEADO.
   novo que junte vários endpoints num arquivo só (ex.: `gerenciar-*.e2e-spec.ts`) ou teste de
   endpoint novo adicionado num arquivo de outra funcionalidade. Setup compartilhado do módulo vai
   em `test/e2e/<modulo>/<modulo>.fixtures.ts`. Referência: `test/e2e/usuarios-cliente/`.
-  Legado agrupado (`usuarios-internos`, `conversas-clientes`, `clientes-agenda`) → sugestão de dividir quando tocado.
+  Legado agrupado (`conversas-clientes`, `clientes-agenda`) → sugestão de dividir quando tocado.
 - Obrigatório para todo endpoint novo ou com contrato alterado.
 - Mínimo por endpoint: 401 sem token (se não `@Public`), 403 sem papel/feature (se aplicável),
   400 com DTO inválido, 2xx validando formato da resposta, e efeito persistido no banco.

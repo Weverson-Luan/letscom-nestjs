@@ -1,22 +1,33 @@
+/**
+ * IMPORTS
+ */
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+
+// shared
 import { HashService } from 'src/shared/utils/hash.service';
+
+// dto / repository / mappers
 import { AtualizarUsuarioInternoDto } from '../dto/atualizar-usuario-interno.dto';
-import { UsuarioInternoNaoEncontradoException } from '../exceptions/usuario-interno-nao-encontrado.exception';
+import { AtualizarUsuarioInternoRepository } from '../repositories/atualizar-usuario-interno.repository';
+import { UsuarioInternoComPapelRepository } from '../repositories/usuario-interno-com-papel.repository';
 import { mapearUsuarioInterno } from '../mappers/usuario-interno.mapper';
-import { UsuarioInternoRepository } from '../repositories/usuario-interno.repository';
+
+// exceptions / helpers
+import { UsuarioInternoNaoEncontradoException } from '../exceptions/usuario-interno-nao-encontrado.exception';
 import { traduzirErroDuplicidade } from './helpers/traduzir-erro-duplicidade.helper';
 
 /** Edita dados do usuário interno. E-mail e papel nunca são alterados aqui. */
 @Injectable()
 export class AtualizarUsuarioInternoService {
   constructor(
-    private readonly repository: UsuarioInternoRepository,
+    private readonly repository: AtualizarUsuarioInternoRepository,
+    private readonly usuarioInternoComPapelRepository: UsuarioInternoComPapelRepository,
     private readonly hash: HashService,
   ) {}
 
   async execute(id: bigint, dados: AtualizarUsuarioInternoDto) {
-    const encontrado = await this.repository.buscarPorId(id);
+    const encontrado = await this.usuarioInternoComPapelRepository.buscarPorId(id);
     if (!encontrado) throw new UsuarioInternoNaoEncontradoException();
 
     const alteracoes: Prisma.UserUpdateInput = {};

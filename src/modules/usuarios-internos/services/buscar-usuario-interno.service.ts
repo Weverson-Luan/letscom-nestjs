@@ -1,11 +1,18 @@
+/**
+ * IMPORTS
+ */
 import { Injectable } from '@nestjs/common';
-import { UsuarioInternoNaoEncontradoException } from '../exceptions/usuario-interno-nao-encontrado.exception';
+
+// repository / mappers
+import { UsuarioInternoComPapelRepository } from '../repositories/usuario-interno-com-papel.repository';
 import { mapearUsuarioInterno } from '../mappers/usuario-interno.mapper';
-import { UsuarioInternoRepository } from '../repositories/usuario-interno.repository';
+
+// exceptions
+import { UsuarioInternoNaoEncontradoException } from '../exceptions/usuario-interno-nao-encontrado.exception';
 
 @Injectable()
 export class BuscarUsuarioInternoService {
-  constructor(private readonly repository: UsuarioInternoRepository) {}
+  constructor(private readonly repository: UsuarioInternoComPapelRepository) {}
 
   async execute(id: bigint) {
     const encontrado = await this.repository.buscarPorId(id);

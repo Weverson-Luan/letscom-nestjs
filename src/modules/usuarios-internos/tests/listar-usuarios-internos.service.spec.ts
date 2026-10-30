@@ -1,6 +1,15 @@
+/**
+ * IMPORTS
+ */
 import { Test } from '@nestjs/testing';
-import { UsuarioInternoRepository } from '../repositories/usuario-interno.repository';
+
+// repositories
+import { ListarUsuariosInternosRepository } from '../repositories/listar-usuarios-internos.repository';
+
+// services
 import { ListarUsuariosInternosService } from '../services/listar-usuarios-internos.service';
+
+// fixtures do módulo (usuário do Prisma)
 import { criarUsuarioFake } from './fixtures';
 
 describe('ListarUsuariosInternosService', () => {
@@ -12,7 +21,7 @@ describe('ListarUsuariosInternosService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         ListarUsuariosInternosService,
-        { provide: UsuarioInternoRepository, useValue: repository },
+        { provide: ListarUsuariosInternosRepository, useValue: repository },
       ],
     }).compile();
     service = moduleRef.get(ListarUsuariosInternosService);

@@ -48,6 +48,7 @@ src/modules/<modulo>/
 ├── services/                 # regra de negócio e orquestração (transações)
 │   └── helpers/              # funções puras e use-cases auxiliares usados pelos services
 ├── repositories/             # único lugar com acesso ao Prisma
+│   └── helpers/              # fragmentos puros de query (Prisma.Sql, include/select) usados só por repositories
 ├── mappers/                  # entidade Prisma -> resposta HTTP (formato do Laravel)
 ├── exceptions/               # exceções específicas do módulo (estendem BusinessException)
 └── tests/                    # testes unitários *.spec.ts

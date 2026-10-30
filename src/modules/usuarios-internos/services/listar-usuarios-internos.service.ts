@@ -1,13 +1,20 @@
+/**
+ * IMPORTS
+ */
 import { Injectable } from '@nestjs/common';
+
+// shared
 import { resolvePagination } from 'src/shared/database/pagination';
 import { buildPagination } from 'src/shared/utils/api-response';
+
+// dto / repository / mappers
 import { ListarUsuariosInternosQueryDto } from '../dto/listar-usuarios-internos-query.dto';
+import { ListarUsuariosInternosRepository } from '../repositories/listar-usuarios-internos.repository';
 import { mapearUsuarioInterno } from '../mappers/usuario-interno.mapper';
-import { UsuarioInternoRepository } from '../repositories/usuario-interno.repository';
 
 @Injectable()
 export class ListarUsuariosInternosService {
-  constructor(private readonly repository: UsuarioInternoRepository) {}
+  constructor(private readonly repository: ListarUsuariosInternosRepository) {}
 
   async execute(query: ListarUsuariosInternosQueryDto) {
     const { page, perPage, skip, take } = resolvePagination(

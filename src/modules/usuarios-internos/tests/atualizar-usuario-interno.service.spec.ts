@@ -1,15 +1,32 @@
+/**
+ * IMPORTS
+ */
 import { Test } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+
+// shared / utils (hash de senha)
 import { HashService } from 'src/shared/utils/hash.service';
+
+// dto
 import { AtualizarUsuarioInternoDto } from '../dto/atualizar-usuario-interno.dto';
+
+// exceptions
 import { UsuarioInternoNaoEncontradoException } from '../exceptions/usuario-interno-nao-encontrado.exception';
-import { UsuarioInternoRepository } from '../repositories/usuario-interno.repository';
+
+// repositories
+import { AtualizarUsuarioInternoRepository } from '../repositories/atualizar-usuario-interno.repository';
+import { UsuarioInternoComPapelRepository } from '../repositories/usuario-interno-com-papel.repository';
+
+// services
 import { AtualizarUsuarioInternoService } from '../services/atualizar-usuario-interno.service';
+
+// fixtures do módulo (usuário do Prisma)
 import { criarUsuarioFake } from './fixtures';
 
 describe('AtualizarUsuarioInternoService', () => {
-  const repository = { buscarPorId: jest.fn(), atualizar: jest.fn() };
+  const repository = { atualizar: jest.fn() };
+  const usuarioInternoComPapelRepository = { buscarPorId: jest.fn() };
   const hash = { make: jest.fn() };
   let service: AtualizarUsuarioInternoService;
 
@@ -18,12 +35,19 @@ describe('AtualizarUsuarioInternoService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AtualizarUsuarioInternoService,
-        { provide: UsuarioInternoRepository, useValue: repository },
+        { provide: AtualizarUsuarioInternoRepository, useValue: repository },
+        {
+          provide: UsuarioInternoComPapelRepository,
+          useValue: usuarioInternoComPapelRepository,
+        },
         { provide: HashService, useValue: hash },
       ],
     }).compile();
     service = moduleRef.get(AtualizarUsuarioInternoService);
-    repository.buscarPorId.mockResolvedValue({ usuario: criarUsuarioFake(), papel: 'consultor' });
+    usuarioInternoComPapelRepository.buscarPorId.mockResolvedValue({
+      usuario: criarUsuarioFake(),
+      papel: 'consultor',
+    });
     repository.atualizar.mockImplementation(async (_id, dados) =>
       criarUsuarioFake({ nome: dados.nome ?? 'Maria Silva', ativo: dados.ativo ?? true }),
     );
@@ -74,7 +98,7 @@ describe('AtualizarUsuarioInternoService', () => {
   });
 
   it('lança 404 quando não é usuário interno', async () => {
-    repository.buscarPorId.mockResolvedValue(null);
+    usuarioInternoComPapelRepository.buscarPorId.mockResolvedValue(null);
 
     await expect(service.execute(99n, { nome: 'X' })).rejects.toBeInstanceOf(
       UsuarioInternoNaoEncontradoException,

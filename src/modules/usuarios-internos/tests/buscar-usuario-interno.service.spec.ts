@@ -1,8 +1,19 @@
+/**
+ * IMPORTS
+ */
 import { Test } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
+
+// exceptions
 import { UsuarioInternoNaoEncontradoException } from '../exceptions/usuario-interno-nao-encontrado.exception';
-import { UsuarioInternoRepository } from '../repositories/usuario-interno.repository';
+
+// repositories
+import { UsuarioInternoComPapelRepository } from '../repositories/usuario-interno-com-papel.repository';
+
+// services
 import { BuscarUsuarioInternoService } from '../services/buscar-usuario-interno.service';
+
+// fixtures do módulo (usuário do Prisma)
 import { criarUsuarioFake } from './fixtures';
 
 describe('BuscarUsuarioInternoService', () => {
@@ -14,7 +25,7 @@ describe('BuscarUsuarioInternoService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         BuscarUsuarioInternoService,
-        { provide: UsuarioInternoRepository, useValue: repository },
+        { provide: UsuarioInternoComPapelRepository, useValue: repository },
       ],
     }).compile();
     service = moduleRef.get(BuscarUsuarioInternoService);

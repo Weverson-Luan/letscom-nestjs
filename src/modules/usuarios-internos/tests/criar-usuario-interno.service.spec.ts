@@ -1,21 +1,44 @@
+/**
+ * IMPORTS
+ */
 import { Test } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+
+// shared / exceptions
 import { BusinessException } from 'src/shared/exceptions/business.exception';
+
+// shared / prisma (conexão com o banco)
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// shared / repositories (vínculo usuário x papel)
 import { RoleUserRepository } from 'src/shared/repositories/role-user.repository';
+
+// shared / utils (hash de senha)
 import { HashService } from 'src/shared/utils/hash.service';
+
+// dto
 import { CriarUsuarioInternoDto } from '../dto/criar-usuario-interno.dto';
+
+// exceptions
 import { UsuarioInternoDuplicadoException } from '../exceptions/usuario-interno-duplicado.exception';
-import { UsuarioInternoRepository } from '../repositories/usuario-interno.repository';
+
+// repositories
+import { CriarUsuarioInternoRepository } from '../repositories/criar-usuario-interno.repository';
+
+// services
 import { CriarUsuarioInternoService } from '../services/criar-usuario-interno.service';
+
+// fixtures do módulo (usuário do Prisma)
 import { criarUsuarioFake } from './fixtures';
 
 describe('CriarUsuarioInternoService', () => {
-  const tx = { marcador: 'tx' };
-  const prisma = { $transaction: jest.fn((fn: (t: unknown) => unknown) => fn(tx)) };
+  const transacao = { marcador: 'transacao' };
+  const prisma = {
+    $transaction: jest.fn((callback: (cliente: unknown) => unknown) => callback(transacao)),
+  };
   const repository = { buscarIdPapel: jest.fn(), criar: jest.fn() };
-  const roleUserRepo = { attachToUser: jest.fn() };
+  const roleUserRepository = { attachToUser: jest.fn() };
   const hash = { make: jest.fn() };
 
   let service: CriarUsuarioInternoService;
@@ -35,8 +58,8 @@ describe('CriarUsuarioInternoService', () => {
       providers: [
         CriarUsuarioInternoService,
         { provide: PrismaService, useValue: prisma },
-        { provide: UsuarioInternoRepository, useValue: repository },
-        { provide: RoleUserRepository, useValue: roleUserRepo },
+        { provide: CriarUsuarioInternoRepository, useValue: repository },
+        { provide: RoleUserRepository, useValue: roleUserRepository },
         { provide: HashService, useValue: hash },
       ],
     }).compile();
@@ -49,7 +72,7 @@ describe('CriarUsuarioInternoService', () => {
   it('cria o usuário com senha em hash e vincula o papel na mesma transação', async () => {
     const resultado = await service.execute(dados);
 
-    expect(repository.buscarIdPapel).toHaveBeenCalledWith('producao', tx);
+    expect(repository.buscarIdPapel).toHaveBeenCalledWith('producao', transacao);
     expect(repository.criar).toHaveBeenCalledWith(
       {
         nome: 'Maria Silva',
@@ -60,9 +83,9 @@ describe('CriarUsuarioInternoService', () => {
         documento: null,
         ativo: true,
       },
-      tx,
+      transacao,
     );
-    expect(roleUserRepo.attachToUser).toHaveBeenCalledWith(tx, 12n, 3n, true);
+    expect(roleUserRepository.attachToUser).toHaveBeenCalledWith(transacao, 12n, 3n, true);
     expect(resultado).toMatchObject({ id: 12n, papel: 'producao' });
   });
 
@@ -71,7 +94,7 @@ describe('CriarUsuarioInternoService', () => {
 
     expect(repository.criar).toHaveBeenCalledWith(
       expect.objectContaining({ ativo: false, documento: '12345678901' }),
-      tx,
+      transacao,
     );
   });
 
@@ -98,6 +121,6 @@ describe('CriarUsuarioInternoService', () => {
       message: 'Já existe um usuário com este e-mail.',
       status: HttpStatus.CONFLICT,
     });
-    expect(roleUserRepo.attachToUser).not.toHaveBeenCalled();
+    expect(roleUserRepository.attachToUser).not.toHaveBeenCalled();
   });
 });
