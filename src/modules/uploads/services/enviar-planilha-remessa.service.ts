@@ -35,6 +35,7 @@ export class EnviarPlanilhaRemessaService {
     if (!remessa) throw new RemessaNaoEncontradaException();
 
     const extensao = (arquivo.originalname.split('.').pop() ?? 'xlsx').toLowerCase();
+
     const caminho = this.storage.montarCaminho(
       `remessas/planilhas/${remessaId}/${uuidv4()}.${extensao}`,
     );

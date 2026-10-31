@@ -36,7 +36,7 @@ import { NotificacoesModule } from './modules/notificacoes/notificacoes.module';
 import { UsuariosAtendimentosModule } from './modules/usuarios-atendimentos/usuarios-atendimentos.module';
 import { TecnologiasModule } from './modules/tecnologias/tecnologias.module';
 import { TiposEntregaModule } from './modules/tipos-entrega/tipos-entrega.module';
-import { TutorialsModule } from './modules/tutorials/tutorials.module';
+import { TutoriaisModule } from './modules/tutoriais/tutoriais.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 
 // shared / cache
@@ -94,7 +94,7 @@ import { UtilsModule } from './shared/utils/utils.module';
     EnderecosEntregaModule,
     EntregasClienteModule,
     TiposEntregaModule,
-    TutorialsModule,
+    TutoriaisModule,
     UsuariosAtendimentosModule,
     UsuariosInternosModule,
     UsuariosClienteModule,

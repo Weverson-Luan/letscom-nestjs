@@ -1,27 +1,31 @@
+/**
+ * IMPORTS
+ */
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { basename } from 'path';
+
+// shared
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { StorageService } from 'src/shared/storage/storage.service';
 
+/** Gera a URL assinada do vídeo tutorial configurado em `tutoriais.caminhoVideo`. */
 @Injectable()
-export class VideoTutorialService {
+export class BuscarVideoTutorialService {
   constructor(
     private readonly storage: StorageService,
     private readonly config: ConfigService,
   ) {}
 
-  async obterUrl(): Promise<{ nome: string; url: string }> {
-    const path =
-      this.config.get<string>('tutorials.videoPath') ??
-      'videos-tutorias/video-tutotial-pequeno.mp4';
+  async execute(): Promise<{ nome: string; url: string }> {
+    const caminho = this.config.getOrThrow<string>('tutoriais.caminhoVideo');
 
-    const exists = await this.storage.exists(path);
-    if (!exists) {
+    const existe = await this.storage.exists(caminho);
+    if (!existe) {
       throw new BusinessException('Vídeo tutorial não encontrado.', HttpStatus.NOT_FOUND);
     }
 
-    const url = await this.storage.getSignedUrl(path);
-    return { nome: basename(path), url };
+    const url = await this.storage.getSignedUrl(caminho);
+    return { nome: basename(caminho), url };
   }
 }
