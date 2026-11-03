@@ -4,6 +4,7 @@ import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { MailService } from 'src/shared/mail/mail.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
+import { buscarDestinatarioPriorizandoSubordinado } from '../helpers/buscar-destinatario-remessa.helper';
 
 type RemessaComSolicitantes = Remessa & {
   solicitante?: Pick<User, 'email' | 'nome'> | null;
@@ -79,28 +80,6 @@ export class LiberacaoRemessaBalcaoEmailService {
     }
   }
 
-  resolverDestinatario(remessa: RemessaComSolicitantes): { email: string; nome: string } | null {
-    if (remessa.userIdSolicitanteRemessa) {
-      const solicitante = remessa.solicitante;
-      if (!solicitante?.email) return null;
-      return {
-        email: solicitante.email,
-        nome: solicitante.nome ?? 'Solicitante',
-      };
-    }
-
-    if (remessa.usersSolicitanteSubordinadoId) {
-      const subordinado = remessa.solicitanteSubordinado;
-      if (!subordinado?.email) return null;
-      return {
-        email: subordinado.email,
-        nome: subordinado.nome ?? 'Solicitante',
-      };
-    }
-
-    return null;
-  }
-
   private async enviarInterno(
     remessa: RemessaComSolicitantes,
     liberador: Liberador,
@@ -111,7 +90,7 @@ export class LiberacaoRemessaBalcaoEmailService {
     assunto?: string | null,
   ): Promise<void> {
     try {
-      const destinatario = this.resolverDestinatario(remessa);
+      const destinatario = buscarDestinatarioPriorizandoSubordinado(remessa);
       if (!destinatario) {
         throw new BusinessException('Remessa sem solicitante com e-mail cadastrado.');
       }

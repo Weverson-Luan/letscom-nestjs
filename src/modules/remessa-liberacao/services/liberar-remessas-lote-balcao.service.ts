@@ -7,6 +7,7 @@ import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { LiberarRemessasLoteDto } from '../dto/liberar-remessas-lote.dto';
 import { LoteValidacaoException } from '../exceptions/lote-validacao.exception';
+import { buscarDestinatarioPriorizandoSubordinado } from '../helpers/buscar-destinatario-remessa.helper';
 import { LiberacaoRemessaMensagemHelper } from '../helpers/liberacao-remessa-mensagem.helper';
 import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
 import { LiberacaoRemessaBalcaoEmailService } from './liberacao-remessa-balcao-email.service';
@@ -57,8 +58,8 @@ export class LiberarRemessasLoteBalcaoService {
       throw new BusinessException('Usuário liberador não encontrado.');
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.remessaLiberadaBalcao.createMany({
+    await this.prisma.$transaction(async (transacao) => {
+      await transacao.remessaLiberadaBalcao.createMany({
         data: validacao.remessasValidas.map((remessa) => ({
           remessaId: remessa.id,
           userIdExecutor: liberador.id,
@@ -68,8 +69,8 @@ export class LiberarRemessasLoteBalcaoService {
         })),
       });
 
-      await tx.remessa.updateMany({
-        where: { id: { in: validacao.remessasValidas.map((r) => r.id) } },
+      await transacao.remessa.updateMany({
+        where: { id: { in: validacao.remessasValidas.map((remessa) => remessa.id) } },
         data: {
           status: 'pedido_liberado',
           situacao: RemessaSituacao.pedido_liberado,
@@ -77,7 +78,7 @@ export class LiberarRemessasLoteBalcaoService {
       });
     });
 
-    await this.dispararEmailsPorCliente(
+    await this.dispararEmailsPorDestinatario(
       validacao.remessasValidas,
       {
         id: liberador.id,
@@ -228,37 +229,44 @@ export class LiberarRemessasLoteBalcaoService {
   }
 
   /**
-   * Um e-mail por cliente com todas as remessas liberadas dele. A observação
-   * digitada pelo usuário só substitui a mensagem padrão quando o lote é de um
-   * único cliente.
+   * Um e-mail por solicitante (dentro de cada cliente) com todas as remessas que ele
+   * pediu. A observação digitada pelo usuário só substitui a mensagem padrão quando
+   * o lote é de um único cliente.
    */
-  private async dispararEmailsPorCliente(
+  private async dispararEmailsPorDestinatario(
     remessas: RemessaComCliente[],
     liberador: { id: bigint; nome: string; roles: { nome: string }[] },
     tiposPorRemessa: Map<string, bigint>,
     observacaoUsuario: string | null,
   ) {
-    const porCliente = new Map<string, RemessaComCliente[]>();
+    const porDestinatario = new Map<string, RemessaComCliente[]>();
     for (const remessa of remessas) {
-      const key = remessa.clienteId.toString();
-      porCliente.set(key, [...(porCliente.get(key) ?? []), remessa]);
+      const destinatario = buscarDestinatarioPriorizandoSubordinado(remessa);
+      const chave = `${remessa.clienteId}|${destinatario?.email.toLowerCase() ?? ''}`;
+      porDestinatario.set(chave, [...(porDestinatario.get(chave) ?? []), remessa]);
     }
 
-    const clienteIds = [...porCliente.keys()].map((id) => BigInt(id));
+    const clienteIds = [...new Set(remessas.map((remessa) => remessa.clienteId.toString()))].map(
+      (id) => BigInt(id),
+    );
     const enderecosPorCliente =
       await this.mensagemHelper.carregarEnderecosResidenciaisPorClientes(clienteIds);
     const mesmoClienteUnico = clienteIds.length === 1;
     const observacaoUsuarioPreenchida = (observacaoUsuario ?? '').trim() !== '';
     const delayMs = this.config.get<number>('mail.sendDelayMs') ?? 500;
 
-    for (const [clienteId, remessasDoCliente] of porCliente) {
-      const primeira = remessasDoCliente[0];
+    for (const remessasDoDestinatario of porDestinatario.values()) {
+      const primeira = remessasDoDestinatario[0];
+      const clienteId = primeira.clienteId.toString();
       const tipoEntregaId = tiposPorRemessa.get(primeira.id.toString());
       if (!tipoEntregaId) continue;
 
-      const numeros = remessasDoCliente
-        .map((r) => r.numeroRemessa)
-        .filter((n) => n !== null && n !== undefined && String(n) !== '')
+      const numeros = remessasDoDestinatario
+        .map((remessa) => remessa.numeroRemessa)
+        .filter(
+          (numeroRemessa) =>
+            numeroRemessa !== null && numeroRemessa !== undefined && String(numeroRemessa) !== '',
+        )
         .join(', ');
       const nomeCliente = primeira.cliente?.nome ?? 'Cliente';
       const endereco = enderecosPorCliente.get(clienteId) ?? null;
@@ -269,7 +277,7 @@ export class LiberarRemessasLoteBalcaoService {
           : await this.mensagemHelper.gerarMensagem(tipoEntregaId, nomeCliente, numeros, endereco);
 
       const assunto =
-        remessasDoCliente.length > 1
+        remessasDoDestinatario.length > 1
           ? `Atualização das suas remessas Nº ${numeros}`
           : `Atualização da sua remessa Nº ${numeros}`;
 
