@@ -4,7 +4,7 @@ import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { MailService } from 'src/shared/mail/mail.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
-import { buscarDestinatarioPriorizandoSubordinado } from '../helpers/buscar-destinatario-remessa.helper';
+import { buscarDestinatarioPriorizandoSolicitante } from '../helpers/buscar-destinatario-remessa.helper';
 
 type RemessaComSolicitantes = Remessa & {
   solicitante?: Pick<User, 'email' | 'nome'> | null;
@@ -37,7 +37,7 @@ export class LiberacaoRemessaBalcaoEmailService {
 
   async enviar(
     remessa: RemessaComSolicitantes,
-    liberador: Liberador,
+    solicitante: Liberador,
     tipoEntregaId: bigint,
     observacao: string,
     filePath?: string | null,
@@ -45,7 +45,7 @@ export class LiberacaoRemessaBalcaoEmailService {
   ): Promise<void> {
     await this.enviarInterno(
       remessa,
-      liberador,
+      solicitante,
       tipoEntregaId,
       observacao,
       filePath,
@@ -82,7 +82,7 @@ export class LiberacaoRemessaBalcaoEmailService {
 
   private async enviarInterno(
     remessa: RemessaComSolicitantes,
-    liberador: Liberador,
+    solicitante: Liberador,
     tipoEntregaId: bigint,
     observacao: string,
     filePath: string | null | undefined,
@@ -90,12 +90,13 @@ export class LiberacaoRemessaBalcaoEmailService {
     assunto?: string | null,
   ): Promise<void> {
     try {
-      const destinatario = buscarDestinatarioPriorizandoSubordinado(remessa);
+      // users (solicitante) primeiro; se não houver, users_cliente (subordinado)
+      const destinatario = buscarDestinatarioPriorizandoSolicitante(remessa);
       if (!destinatario) {
         throw new BusinessException('Remessa sem solicitante com e-mail cadastrado.');
       }
 
-      const content = await this.renderEmailTemplate(liberador, tipoEntregaId, observacao);
+      const content = await this.renderEmailTemplate(solicitante, tipoEntregaId, observacao);
       const html = this.mail.render('layout-remessa', {
         titulo: `Remessa Nº ${remessa.numeroRemessa}`,
         content,

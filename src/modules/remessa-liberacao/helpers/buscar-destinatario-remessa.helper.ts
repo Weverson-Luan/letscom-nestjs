@@ -33,3 +33,28 @@ export function buscarDestinatarioPriorizandoSubordinado(
 
   return null;
 }
+
+/**
+ * Liberação de balcão: o e-mail vai para user_id_solicitante_remessa (tabela users).
+ * Quando não houver solicitante com e-mail lá, usa o subordinado do cliente
+ * (users_solicitante_subordinado_id → tabela users_cliente).
+ */
+export function buscarDestinatarioPriorizandoSolicitante(
+  remessa: RemessaComSolicitantes,
+): DestinatarioRemessa | null {
+  if (remessa.userIdSolicitanteRemessa && remessa.solicitante?.email) {
+    return {
+      email: remessa.solicitante.email,
+      nome: remessa.solicitante.nome ?? 'Solicitante',
+    };
+  }
+
+  if (remessa.usersSolicitanteSubordinadoId && remessa.solicitanteSubordinado?.email) {
+    return {
+      email: remessa.solicitanteSubordinado.email,
+      nome: remessa.solicitanteSubordinado.nome ?? 'Solicitante',
+    };
+  }
+
+  return null;
+}

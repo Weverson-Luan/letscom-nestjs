@@ -4,6 +4,7 @@ import { StorageService } from 'src/shared/storage/storage.service';
 import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
 import { mapCampoVariavel } from 'src/modules/modelos-tecnicos/mappers/modelo-tecnico.mapper';
 import { basename } from 'path';
+import { buscarDestinatarioPriorizandoSolicitante } from 'src/modules/remessa-liberacao/helpers/buscar-destinatario-remessa.helper';
 
 const STEP_LABELS: Record<string, { id: number; label: string; color: string }> = {
   envio_de_dados: { id: 1, label: 'Envio de Dados', color: 'bg-gray-300' },
@@ -162,6 +163,8 @@ export class RemessasResponseMapper {
       prazo,
       cliente: serializeUser(remessa.cliente ?? null),
       solicitante: serializeUser(solicitante),
+      // mesma regra do e-mail de liberação de balcão: o nome da mensagem bate com quem recebe
+      destinatario_email_liberacao: buscarDestinatarioPriorizandoSolicitante(remessa),
       consultor: serializeUser(remessa.consultor ?? null),
       designer: serializeUser(remessa.executor ?? null),
       tecnologia: remessa.tecnologia ?? null,

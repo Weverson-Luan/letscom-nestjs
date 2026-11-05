@@ -59,18 +59,19 @@ describe('LiberacaoRemessaBalcaoEmailService — destinatário do e-mail', () =>
     service = modulo.get(LiberacaoRemessaBalcaoEmailService);
   });
 
-  it('envia ao subordinado quando a remessa tem titular e subordinado', async () => {
+  it('envia ao solicitante (user_id_solicitante_remessa) mesmo quando a remessa tem subordinado', async () => {
     await service.enviar(remessaComTitularESubordinado as never, liberador as never, 2n, '');
 
     expect(prisma.tipoEntrega.findUnique).toHaveBeenCalledWith({ where: { id: 2n } });
     expect(mail.send).toHaveBeenCalledWith(
       expect.objectContaining({
-        to: subordinado.email,
-        toName: subordinado.nome,
+        to: titular.email,
+        toName: titular.nome,
         subject: 'Atualização da sua remessa Nº 123',
-        text: 'Olá Subordinado, sua remessa Nº 123 foi liberada com sucesso. Acesse o sistema para acompanhar os detalhes.',
+        text: `Olá ${titular.nome}, sua remessa Nº 123 foi liberada com sucesso. Acesse o sistema para acompanhar os detalhes.`,
       }),
     );
+    expect(mail.send).not.toHaveBeenCalledWith(expect.objectContaining({ to: subordinado.email }));
   });
 
   it('envia ao solicitante quando não há subordinado', async () => {
@@ -80,6 +81,20 @@ describe('LiberacaoRemessaBalcaoEmailService — destinatário do e-mail', () =>
 
     expect(mail.send).toHaveBeenCalledWith(
       expect.objectContaining({ to: titular.email, toName: titular.nome }),
+    );
+  });
+
+  it('envia ao subordinado (users_cliente) quando não há solicitante em users', async () => {
+    const remessa = {
+      ...remessaBase,
+      usersSolicitanteSubordinadoId: 8n,
+      solicitanteSubordinado: subordinado,
+    };
+
+    await service.enviar(remessa as never, liberador as never, 2n, '');
+
+    expect(mail.send).toHaveBeenCalledWith(
+      expect.objectContaining({ to: subordinado.email, toName: subordinado.nome }),
     );
   });
 
@@ -94,10 +109,10 @@ describe('LiberacaoRemessaBalcaoEmailService — destinatário do e-mail', () =>
     expect(mail.send).toHaveBeenCalledWith(expect.objectContaining({ to: titular.email }));
   });
 
-  it('usa "Solicitante" como nome quando o subordinado não tem nome', async () => {
+  it('usa "Solicitante" como nome quando o solicitante não tem nome', async () => {
     const remessa = {
       ...remessaComTitularESubordinado,
-      solicitanteSubordinado: { email: subordinado.email, nome: null },
+      solicitante: { email: titular.email, nome: null },
     };
 
     await service.enviar(remessa as never, liberador as never, 2n, '');
