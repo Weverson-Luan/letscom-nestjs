@@ -1,6 +1,10 @@
 import { Role } from 'src/shared/constants/roles';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
-import { LadoConversa, PessoaConversa } from '../../conversas-clientes.constants';
+import {
+  LadoConversa,
+  PAPEIS_ENTRAM_SEM_CONVITE_CONVERSA,
+  PessoaConversa,
+} from '../../conversas-clientes.constants';
 import { ParticipanteConversaInvalidoException } from '../../exceptions/participante-conversa-invalido.exception';
 import { ParticipanteConversaNaoEncontradoException } from '../../exceptions/participante-conversa-nao-encontrado.exception';
 import { SemPermissaoConviteConversaException } from '../../exceptions/sem-permissao-convite-conversa.exception';
@@ -36,7 +40,16 @@ export function ladoDoUsuario(usuario: AuthUser, clienteId: bigint): LadoConvers
   );
 }
 
-/** Admin vê e modera qualquer conversa, mesmo sem convite (não convida: isso é dos donos). */
+/**
+ * Admin e produção entram em qualquer conversa sem convite (não convidam: isso é dos donos).
+ * Papéis em `PAPEIS_ENTRAM_SEM_CONVITE_CONVERSA`.
+ */
+export function entraSemConviteConversa(usuario: AuthUser): boolean {
+  if (usuario.tipoLogin === 'subordinado') return false;
+  return PAPEIS_ENTRAM_SEM_CONVITE_CONVERSA.some((papel) => usuario.roles.includes(papel));
+}
+
+/** Admin vê todo o histórico de qualquer conversa; produção entra sem convite, mas com corte. */
 export function ehAdminConversa(usuario: AuthUser): boolean {
   return usuario.tipoLogin !== 'subordinado' && usuario.roles.includes(Role.ADMIN);
 }
@@ -64,6 +77,11 @@ export type AcessoConversa = {
    * dono (início da conversa, ou o operador que iniciou foi desativado).
    */
   semDonoInterno: boolean;
+  /**
+   * Data da primeira mensagem do próprio usuário nesta conversa (excluída também conta). Só é
+   * buscada para quem entra sem convite e não é admin (produção); para os demais, undefined.
+   */
+  primeiraMensagemDoUsuarioEm?: Date | null;
 };
 
 /** Dono interno com cadastro ativo (um operador desativado não trava a conversa). */
@@ -79,18 +97,25 @@ export function montarAcessoConversa(
   participante: ParticipanteComPessoa | null,
   donos: DonoConversa[],
   clienteId: bigint,
+  primeiraMensagemDoUsuarioEm?: Date | null,
 ): AcessoConversa {
   return {
     participante,
     iniciada: donos.length > 0,
     semDonoInterno: !donos.some((dono) => ehDonoInternoAtivo(dono, clienteId)),
+    primeiraMensagemDoUsuarioEm,
   };
 }
 
+/** Precisa da data da primeira mensagem do usuário para calcular o corte (produção sem convite). */
+export function precisaPrimeiraMensagemDoUsuario(usuario: AuthUser): boolean {
+  return entraSemConviteConversa(usuario) && !ehAdminConversa(usuario);
+}
+
 /**
- * Entra: participante com convite aceito; admin; enquanto não há dono interno ativo, qualquer
+ * Entra: participante com convite aceito; admin/produção; enquanto não há dono interno ativo, qualquer
  * interno; e, antes de iniciada (sem mensagens), o lado do cliente vê a conversa vazia.
- * Participante com acesso inativado só entra se for admin.
+ * Participante com acesso inativado só entra se for admin/produção.
  */
 export function temAcessoConversa(
   acesso: AcessoConversa,
@@ -98,15 +123,18 @@ export function temAcessoConversa(
   usuario: AuthUser,
 ): boolean {
   if (acesso.participante?.status === 'aceito') return true;
-  if (acesso.participante?.status === 'inativo') return ehAdminConversa(usuario);
+  if (acesso.participante?.status === 'inativo') return entraSemConviteConversa(usuario);
   if (ladoDoUsuario(usuario, clienteId) === 'cliente') return !acesso.iniciada;
-  return ehAdminConversa(usuario) || acesso.semDonoInterno;
+  return entraSemConviteConversa(usuario) || acesso.semDonoInterno;
 }
 
 /**
- * A partir de quando o usuário vê as mensagens (como no WhatsApp): o convidado só vê o que foi
- * enviado depois de aceitar o convite (`respondidoEm` é zerado a cada novo convite). Dono, admin e
- * o interno que entra sem dono interno ativo veem todo o histórico (null = sem corte).
+ * A partir de quando o usuário vê as mensagens (como no WhatsApp). null = sem corte.
+ * - Admin e o interno que entra sem dono interno ativo veem todo o histórico.
+ * - Dono vê tudo; convidado só vê o que foi enviado depois de aceitar o convite (`respondidoEm` é
+ *   zerado a cada novo convite).
+ * - Produção que entrou sem convite só vê a partir da primeira mensagem que ele mesmo enviou;
+ *   antes de interagir, não vê nada (só escreve).
  */
 export function calcularVisivelDesde(
   acesso: AcessoConversa,
@@ -117,8 +145,12 @@ export function calcularVisivelDesde(
   if (ehAdminConversa(usuario)) return null;
   // sem dono interno ativo, qualquer interno entra e vê tudo: ser convidado não pode dar menos
   if (acesso.semDonoInterno && ladoDoUsuario(usuario, clienteId) === 'interno') return null;
-  if (participante?.papel !== 'convidado' || participante.status !== 'aceito') return null;
-  return participante.respondidoEm ?? participante.createdAt;
+  if (participante?.status === 'aceito') {
+    if (participante.papel !== 'convidado') return null;
+    return participante.respondidoEm ?? participante.createdAt;
+  }
+  if (entraSemConviteConversa(usuario)) return acesso.primeiraMensagemDoUsuarioEm ?? new Date();
+  return null;
 }
 
 /** Só os dois donos (com acesso aceito) convidam e removem participantes; admin não. */

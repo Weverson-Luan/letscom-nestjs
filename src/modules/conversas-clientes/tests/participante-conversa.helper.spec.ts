@@ -4,7 +4,8 @@ import { SemPermissaoConviteConversaException } from '../exceptions/sem-permissa
 import {
   AcessoConversa,
   calcularVisivelDesde,
-  ehAdminConversa,
+  entraSemConviteConversa,
+  precisaPrimeiraMensagemDoUsuario,
   ehDonoInternoAtivo,
   ehMesmaPessoa,
   ladoDoParticipante,
@@ -47,11 +48,14 @@ describe('participante-conversa.helper', () => {
     );
   });
 
-  it('admin só vale para login interno', () => {
-    expect(ehAdminConversa(criarUsuarioLogadoFake({ roles: ['admin'] }))).toBe(true);
-    expect(ehAdminConversa(criarUsuarioLogadoFake())).toBe(false);
+  it('admin e produção entram sem convite, só com login interno', () => {
+    expect(entraSemConviteConversa(criarUsuarioLogadoFake({ roles: ['admin'] }))).toBe(true);
+    expect(entraSemConviteConversa(criarUsuarioLogadoFake({ roles: ['producao'] }))).toBe(true);
+    expect(entraSemConviteConversa(criarUsuarioLogadoFake())).toBe(false);
     expect(
-      ehAdminConversa(criarUsuarioLogadoFake({ tipoLogin: 'subordinado', roles: ['admin'] })),
+      entraSemConviteConversa(
+        criarUsuarioLogadoFake({ tipoLogin: 'subordinado', roles: ['admin'] }),
+      ),
     ).toBe(false);
   });
 
@@ -153,6 +157,70 @@ describe('participante-conversa.helper', () => {
       },
     );
 
+    describe('produção que entrou sem convite', () => {
+      const producao = criarUsuarioLogadoFake({ roles: ['producao'] });
+      const semConvite: AcessoConversa = {
+        participante: null,
+        iniciada: true,
+        semDonoInterno: false,
+      };
+
+      it('vê a partir da primeira mensagem que ele enviou', () => {
+        const primeiraEm = new Date('2026-10-20T10:00:00.000Z');
+        expect(
+          calcularVisivelDesde(
+            { ...semConvite, primeiraMensagemDoUsuarioEm: primeiraEm },
+            5n,
+            producao,
+          ),
+        ).toEqual(primeiraEm);
+      });
+
+      it('antes de interagir não vê o histórico (corte em agora)', () => {
+        const antes = Date.now();
+        const corte = calcularVisivelDesde(
+          { ...semConvite, primeiraMensagemDoUsuarioEm: null },
+          5n,
+          producao,
+        );
+        expect(corte?.getTime()).toBeGreaterThanOrEqual(antes);
+      });
+
+      it('com acesso inativado mantém o corte da primeira mensagem', () => {
+        const primeiraEm = new Date('2026-10-20T10:00:00.000Z');
+        expect(
+          calcularVisivelDesde(
+            {
+              ...comParticipante({ papel: 'convidado', status: 'inativo' }),
+              primeiraMensagemDoUsuarioEm: primeiraEm,
+            },
+            5n,
+            producao,
+          ),
+        ).toEqual(primeiraEm);
+      });
+
+      it('dono, convidado aceito e sem dono interno ativo seguem a regra de sempre', () => {
+        expect(calcularVisivelDesde(comParticipante({ papel: 'dono' }), 5n, producao)).toBeNull();
+        expect(
+          calcularVisivelDesde(
+            comParticipante({ papel: 'convidado', respondidoEm: aceitouEm }),
+            5n,
+            producao,
+          ),
+        ).toEqual(aceitouEm);
+        expect(
+          calcularVisivelDesde({ ...semConvite, semDonoInterno: true }, 5n, producao),
+        ).toBeNull();
+      });
+
+      it('só busca a primeira mensagem para produção (admin vê tudo)', () => {
+        expect(precisaPrimeiraMensagemDoUsuario(producao)).toBe(true);
+        expect(precisaPrimeiraMensagemDoUsuario(admin)).toBe(false);
+        expect(precisaPrimeiraMensagemDoUsuario(operador)).toBe(false);
+      });
+    });
+
     it('interno convidado vê tudo quando não há dono interno ativo', () => {
       const acesso = {
         ...comParticipante({ papel: 'convidado', respondidoEm: aceitouEm }),
@@ -220,8 +288,11 @@ describe('participante-conversa.helper', () => {
       ).toBe(true);
     });
 
-    it('admin entra sem convite; interno comum não', () => {
+    it('admin e produção entram sem convite; interno comum não', () => {
       expect(temAcessoConversa(iniciada, 5n, criarUsuarioLogadoFake({ roles: ['admin'] }))).toBe(
+        true,
+      );
+      expect(temAcessoConversa(iniciada, 5n, criarUsuarioLogadoFake({ roles: ['producao'] }))).toBe(
         true,
       );
       expect(temAcessoConversa(iniciada, 5n, operador)).toBe(false);

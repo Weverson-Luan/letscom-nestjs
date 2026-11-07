@@ -1,11 +1,13 @@
 import { Test } from '@nestjs/testing';
 import { SemAcessoConversaException } from '../exceptions/sem-acesso-conversa.exception';
+import { ConversaMensagemRepository } from '../repositories/conversa-mensagem.repository';
 import { ConversaParticipanteRepository } from '../repositories/conversa-participante.repository';
 import { ConversaAcessoService } from '../services/conversa-acesso.service';
 import { criarDonoFake, criarParticipanteFake, criarUsuarioLogadoFake } from './fixtures';
 
 describe('ConversaAcessoService', () => {
   const repository = { buscarDaPessoa: jest.fn(), listarDonos: jest.fn() };
+  const mensagemRepository = { buscarDataPrimeiraMensagemDoAutor: jest.fn() };
   const operador = criarUsuarioLogadoFake();
   let service: ConversaAcessoService;
 
@@ -15,6 +17,7 @@ describe('ConversaAcessoService', () => {
       providers: [
         ConversaAcessoService,
         { provide: ConversaParticipanteRepository, useValue: repository },
+        { provide: ConversaMensagemRepository, useValue: mensagemRepository },
       ],
     }).compile();
     service = moduleRef.get(ConversaAcessoService);
@@ -33,8 +36,10 @@ describe('ConversaAcessoService', () => {
       participante,
       iniciada: true,
       semDonoInterno: false,
+      primeiraMensagemDoUsuarioEm: undefined,
     });
     expect(repository.buscarDaPessoa).toHaveBeenCalledWith(5n, { userId: 7n }, undefined);
+    expect(mensagemRepository.buscarDataPrimeiraMensagemDoAutor).not.toHaveBeenCalled();
   });
 
   it('lança 403 para quem está fora da conversa iniciada', async () => {
@@ -51,5 +56,21 @@ describe('ConversaAcessoService', () => {
 
     expect(repository.buscarDaPessoa).toHaveBeenCalledWith(5n, { userId: 7n }, tx);
     expect(repository.listarDonos).toHaveBeenCalledWith(5n, tx);
+  });
+
+  it('produção sem convite entra e recebe a data da primeira mensagem dele', async () => {
+    const producao = criarUsuarioLogadoFake({ roles: ['producao'] });
+    const primeiraEm = new Date('2026-10-20T10:00:00.000Z');
+    mensagemRepository.buscarDataPrimeiraMensagemDoAutor.mockResolvedValue(primeiraEm);
+
+    await expect(service.garantirAcesso(5n, producao)).resolves.toMatchObject({
+      participante: null,
+      primeiraMensagemDoUsuarioEm: primeiraEm,
+    });
+    expect(mensagemRepository.buscarDataPrimeiraMensagemDoAutor).toHaveBeenCalledWith(
+      5n,
+      7n,
+      undefined,
+    );
   });
 });

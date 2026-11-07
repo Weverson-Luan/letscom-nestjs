@@ -16,7 +16,7 @@ export type MensagemComRelacoes = Prisma.ConversaMensagemGetPayload<{
 type FiltrosListagem = {
   clienteId: bigint;
   search?: string;
-  /** Convidado só vê mensagens a partir de quando entrou (ver `calcularVisivelDesde`). */
+  /** Corte de visibilidade (convidado, produção sem convite): ver `calcularVisivelDesde`. */
   visivelDesde?: Date | null;
 };
 
@@ -72,6 +72,23 @@ export class ConversaMensagemRepository {
       where: { id, clienteId, deletedAt: null },
       include: INCLUIR_RELACOES,
     });
+  }
+
+  /**
+   * Data da primeira mensagem do usuário interno (users.id) na conversa do cliente, ou null se
+   * nunca escreveu. Conta mensagem excluída: apagar a própria mensagem não esconde o histórico.
+   */
+  async buscarDataPrimeiraMensagemDoAutor(
+    clienteId: bigint,
+    autorId: bigint,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Date | null> {
+    const primeira = await (tx ?? this.prisma).conversaMensagem.findFirst({
+      where: { clienteId, autorId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select: { createdAt: true },
+    });
+    return primeira?.createdAt ?? null;
   }
 
   criar(data: Prisma.ConversaMensagemUncheckedCreateInput, tx?: Prisma.TransactionClient) {

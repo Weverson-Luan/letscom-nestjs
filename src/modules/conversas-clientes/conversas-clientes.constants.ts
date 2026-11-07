@@ -53,6 +53,13 @@ export const PAPEIS_CONVITE_CONVERSA = [
   ...PAPEIS_CONVERSA_CLIENTE,
 ] as const;
 
+/**
+ * Papéis internos que entram em qualquer conversa sem convite e iniciam direto com o cliente ou o
+ * subordinado. Só o admin vê todo o histórico; produção vê a partir da primeira mensagem dele
+ * (ver `calcularVisivelDesde`). Moderar mensagens de outros continua só do admin.
+ */
+export const PAPEIS_ENTRAM_SEM_CONVITE_CONVERSA = [Role.ADMIN, Role.PRODUCAO] as const;
+
 /** Papéis internos que podem ser convidados para a conversa. */
 export const PAPEIS_INTERNOS_CONVIDAVEIS = PAPEIS_CONVERSA_INTERNO;
 
