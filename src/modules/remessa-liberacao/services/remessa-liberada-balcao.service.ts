@@ -53,16 +53,17 @@ export class RemessaLiberadaBalcaoService {
       outros: dto.outros ?? null,
     });
 
-    await this.emailService.enviar(
-      remessa,
-      {
-        id: liberador.id,
-        nome: liberador.nome,
-        roles: user.roles.map((nome) => ({ nome })),
-      },
-      BigInt(dto.tipo_entrega_id),
-      dto.observacao ?? '',
-    );
+    // TODO: disparo de e-mail da liberação desativado temporariamente. Descomentar para reativar.
+    // await this.emailService.enviar(
+    //   remessa,
+    //   {
+    //     id: liberador.id,
+    //     nome: liberador.nome,
+    //     roles: user.roles.map((nome) => ({ nome })),
+    //   },
+    //   BigInt(dto.tipo_entrega_id),
+    //   dto.observacao ?? '',
+    // );
 
     return mapRemessaLiberadaBalcao(registro);
   }

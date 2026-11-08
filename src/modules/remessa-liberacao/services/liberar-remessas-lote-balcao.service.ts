@@ -78,16 +78,17 @@ export class LiberarRemessasLoteBalcaoService {
       });
     });
 
-    await this.dispararEmailsPorDestinatario(
-      validacao.remessasValidas,
-      {
-        id: liberador.id,
-        nome: liberador.nome,
-        roles: user.roles.map((nome) => ({ nome })),
-      },
-      validacao.tiposPorRemessa,
-      dto.observacao ?? null,
-    );
+    // TODO: disparo de e-mail da liberação desativado temporariamente. Descomentar para reativar.
+    // await this.dispararEmailsPorDestinatario(
+    //   validacao.remessasValidas,
+    //   {
+    //     id: liberador.id,
+    //     nome: liberador.nome,
+    //     roles: user.roles.map((nome) => ({ nome })),
+    //   },
+    //   validacao.tiposPorRemessa,
+    //   dto.observacao ?? null,
+    // );
 
     return {
       liberadas: validacao.remessasValidas.map((r) => ({

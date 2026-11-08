@@ -17,7 +17,8 @@ import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberad
 import { LiberacaoRemessaBalcaoEmailService } from '../services/liberacao-remessa-balcao-email.service';
 import { LiberarRemessasLoteBalcaoService } from '../services/liberar-remessas-lote-balcao.service';
 
-describe('LiberarRemessasLoteBalcaoService — e-mails por destinatário', () => {
+// TODO: e-mail da liberação desativado temporariamente; reativar junto com o disparo no service.
+describe.skip('LiberarRemessasLoteBalcaoService — e-mails por destinatário', () => {
   const transacao = {
     remessaLiberadaBalcao: { createMany: jest.fn() },
     remessa: { updateMany: jest.fn() },
