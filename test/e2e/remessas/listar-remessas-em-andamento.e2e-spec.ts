@@ -1,8 +1,19 @@
+/**
+ * IMPORTS
+ */
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { Feature, MENSAGEM_SEM_PERMISSAO } from 'src/shared/auth/features';
-import { Role } from 'src/shared/constants/roles';
+
+// shared / prisma (conexão com o banco)
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// shared / auth (features e mensagens de permissão)
+import { Feature, MENSAGEM_SEM_PERMISSAO } from 'src/shared/auth/features';
+
+// shared / roles
+import { Role } from 'src/shared/constants/roles';
+
+// helpers e2e (app, banco, cache, autenticação e features)
 import { criarAppE2e, PREFIXO_API } from '../helpers/criar-app-e2e';
 import { criarUsuarioAutenticado } from '../helpers/criar-usuario-autenticado';
 import { liberarFeature } from '../helpers/liberar-feature';
