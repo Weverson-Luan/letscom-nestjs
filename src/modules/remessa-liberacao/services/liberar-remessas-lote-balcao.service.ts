@@ -9,6 +9,7 @@ import { LiberarRemessasLoteDto } from '../dto/liberar-remessas-lote.dto';
 import { LoteValidacaoException } from '../exceptions/lote-validacao.exception';
 import { buscarDestinatarioPriorizandoSubordinado } from '../helpers/buscar-destinatario-remessa.helper';
 import { LiberacaoRemessaMensagemHelper } from '../helpers/liberacao-remessa-mensagem.helper';
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
 import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
 import { LiberacaoRemessaBalcaoEmailService } from './liberacao-remessa-balcao-email.service';
 
@@ -35,6 +36,7 @@ export class LiberarRemessasLoteBalcaoService {
     private readonly emailService: LiberacaoRemessaBalcaoEmailService,
     private readonly mensagemHelper: LiberacaoRemessaMensagemHelper,
     private readonly config: ConfigService,
+    private readonly remessasCache: RemessasCacheService,
   ) {}
 
   async liberarEmLote(dto: LiberarRemessasLoteDto, user: AuthUser) {
@@ -77,6 +79,11 @@ export class LiberarRemessasLoteBalcaoService {
         },
       });
     });
+
+    // reflete a liberação nas listagens do front sem esperar o TTL do cache
+    await this.remessasCache.invalidarTudoDosClientes(
+      validacao.remessasValidas.map((remessa) => Number(remessa.clienteId)),
+    );
 
     // TODO: disparo de e-mail da liberação desativado temporariamente. Descomentar para reativar.
     // await this.dispararEmailsPorDestinatario(

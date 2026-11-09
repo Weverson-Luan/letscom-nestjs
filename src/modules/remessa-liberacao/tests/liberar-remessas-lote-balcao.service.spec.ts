@@ -13,6 +13,9 @@ import { LiberacaoRemessaMensagemHelper } from '../helpers/liberacao-remessa-men
 // repositories do módulo (liberações já registradas)
 import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
 
+// services de remessas (cache das listagens)
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
+
 // services do módulo (serviço testado e envio de e-mail)
 import { LiberacaoRemessaBalcaoEmailService } from '../services/liberacao-remessa-balcao-email.service';
 import { LiberarRemessasLoteBalcaoService } from '../services/liberar-remessas-lote-balcao.service';
@@ -90,6 +93,7 @@ describe.skip('LiberarRemessasLoteBalcaoService — e-mails por destinatário', 
         { provide: LiberacaoRemessaMensagemHelper, useValue: mensagemHelper },
         { provide: LiberacaoRemessaBalcaoEmailService, useValue: emailService },
         { provide: ConfigService, useValue: config },
+        { provide: RemessasCacheService, useValue: { invalidarTudoDosClientes: jest.fn() } },
       ],
     }).compile();
 

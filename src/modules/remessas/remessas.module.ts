@@ -27,6 +27,6 @@ import { SolicitarRemessaUseCase } from './services/helpers/solicitar-remessa.us
     RemessasResponseMapper,
     SolicitarRemessaUseCase,
   ],
-  exports: [RemessaService, RemessaStatusService],
+  exports: [RemessaService, RemessaStatusService, RemessasCacheService],
 })
 export class RemessasModule {}

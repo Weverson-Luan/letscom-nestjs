@@ -11,6 +11,7 @@ describe('RemessaLiberadaClienteService — arquivo na pasta raiz do storage', (
     user: { findUnique: jest.fn() },
   };
   const repository = { create: jest.fn() };
+  const remessasCache = { invalidarTudo: jest.fn() };
   const storage = {
     put: jest.fn(),
     montarCaminho: jest.fn((relativo: string) => `homologacao/${relativo}`),
@@ -22,13 +23,14 @@ describe('RemessaLiberadaClienteService — arquivo na pasta raiz do storage', (
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.remessa.findFirst.mockResolvedValue({ id: 10n });
+    prisma.remessa.findFirst.mockResolvedValue({ id: 10n, clienteId: 3n });
     prisma.user.findUnique.mockResolvedValue({ id: 7n });
     repository.create.mockImplementation((data: unknown) => Promise.resolve(data));
     service = new RemessaLiberadaClienteService(
       prisma as never,
       repository as never,
       storage as never,
+      remessasCache as never,
     );
   });
 
@@ -50,5 +52,20 @@ describe('RemessaLiberadaClienteService — arquivo na pasta raiz do storage', (
 
     expect(storage.put).not.toHaveBeenCalled();
     expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({ filePath: null }));
+  });
+
+  it('invalida o cache das listagens do cliente após liberar', async () => {
+    await service.liberarRemessaParaCliente(dto as never, usuario as never);
+
+    expect(remessasCache.invalidarTudo).toHaveBeenCalledWith(3);
+  });
+
+  it('não invalida o cache quando a remessa não existe', async () => {
+    prisma.remessa.findFirst.mockResolvedValue(null);
+
+    await expect(service.liberarRemessaParaCliente(dto as never, usuario as never)).rejects.toThrow(
+      'Remessa não encontrada!',
+    );
+    expect(remessasCache.invalidarTudo).not.toHaveBeenCalled();
   });
 });

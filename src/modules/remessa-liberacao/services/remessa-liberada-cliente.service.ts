@@ -9,6 +9,7 @@ import { buildPagination } from 'src/shared/utils/api-response';
 import { LiberarRemessaClienteDto } from '../dto/liberar-remessa-cliente.dto';
 import { UpdateRemessaLiberadaClienteDto } from '../dto/update-remessa-liberada-cliente.dto';
 import { mapRemessaLiberadaCliente } from '../mappers/remessa-liberada.mapper';
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
 import { RemessaLiberadaClienteRepository } from '../repositories/remessa-liberada-cliente.repository';
 
 type MulterFile = { buffer: Buffer; originalname: string; mimetype?: string };
@@ -21,6 +22,7 @@ export class RemessaLiberadaClienteService {
     private readonly prisma: PrismaService,
     private readonly repository: RemessaLiberadaClienteRepository,
     private readonly storage: StorageService,
+    private readonly remessasCache: RemessasCacheService,
   ) {}
 
   async liberarRemessaParaCliente(
@@ -55,6 +57,9 @@ export class RemessaLiberadaClienteService {
       outros: dto.outros ?? null,
       filePath,
     });
+
+    // reflete a liberação nas listagens do front sem esperar o TTL do cache
+    await this.remessasCache.invalidarTudo(Number(remessa.clienteId));
 
     return mapRemessaLiberadaCliente(registro);
   }

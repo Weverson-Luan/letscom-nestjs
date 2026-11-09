@@ -4,6 +4,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { LiberarRemessaBalcaoDto } from '../dto/liberar-remessa-balcao.dto';
 import { mapRemessaLiberadaBalcao } from '../mappers/remessa-liberada.mapper';
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
 import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
 import { LiberacaoRemessaBalcaoEmailService } from './liberacao-remessa-balcao-email.service';
 
@@ -13,6 +14,7 @@ export class RemessaLiberadaBalcaoService {
     private readonly prisma: PrismaService,
     private readonly repository: RemessaLiberadaBalcaoRepository,
     private readonly emailService: LiberacaoRemessaBalcaoEmailService,
+    private readonly remessasCache: RemessasCacheService,
   ) {}
 
   async liberarRemessaParaBalcao(dto: LiberarRemessaBalcaoDto, user: AuthUser) {
@@ -52,6 +54,9 @@ export class RemessaLiberadaBalcaoService {
       observacao: dto.observacao ?? null,
       outros: dto.outros ?? null,
     });
+
+    // reflete a liberação nas listagens do front sem esperar o TTL do cache
+    await this.remessasCache.invalidarTudo(Number(remessa.clienteId));
 
     // TODO: disparo de e-mail da liberação desativado temporariamente. Descomentar para reativar.
     // await this.emailService.enviar(

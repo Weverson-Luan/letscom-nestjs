@@ -84,6 +84,24 @@ export class RemessasCacheService {
     ]);
   }
 
+  /**
+   * Invalida as listagens de vários clientes de uma vez (liberação em lote):
+   * as versões globais sobem uma única vez e as por cliente, uma vez por cliente.
+   */
+  async invalidarTudoDosClientes(clienteIds: number[]) {
+    const clientesUnicos = [...new Set(clienteIds)];
+    await Promise.all([
+      this.invalidarMinhasTarefas(),
+      this.invalidarTarefasDisponiveis(),
+      this.invalidarTarefasEmExpedicao(),
+      this.invalidarTarefasBalcao(),
+      ...clientesUnicos.flatMap((clienteId) => [
+        this.invalidarAndamento(clienteId),
+        this.invalidarHistorico(clienteId),
+      ]),
+    ]);
+  }
+
   remember<T>(key: string, ttlSeconds: number, factory: () => Promise<T>) {
     return this.cache.remember(key, ttlSeconds, factory);
   }

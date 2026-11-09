@@ -13,6 +13,9 @@ import { LiberacaoRemessaMensagemHelper } from '../helpers/liberacao-remessa-men
 // repositories do módulo (liberações já registradas)
 import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
 
+// services de remessas (cache das listagens)
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
+
 // services do módulo (serviços testados e envio de e-mail)
 import { LiberacaoRemessaBalcaoEmailService } from '../services/liberacao-remessa-balcao-email.service';
 import { LiberarRemessasLoteBalcaoService } from '../services/liberar-remessas-lote-balcao.service';
@@ -46,6 +49,7 @@ describe('Liberação de remessa — disparo de e-mail desativado', () => {
   };
   const emailService = { enviar: jest.fn(), enviarSemExcecao: jest.fn() };
   const config = { get: jest.fn(() => 0) };
+  const remessasCache = { invalidarTudo: jest.fn(), invalidarTudoDosClientes: jest.fn() };
   const usuario = { id: 1n, roles: ['expedicao'] };
 
   const criarRemessa = (id: bigint) => ({
@@ -92,6 +96,7 @@ describe('Liberação de remessa — disparo de e-mail desativado', () => {
         { provide: LiberacaoRemessaMensagemHelper, useValue: mensagemHelper },
         { provide: LiberacaoRemessaBalcaoEmailService, useValue: emailService },
         { provide: ConfigService, useValue: config },
+        { provide: RemessasCacheService, useValue: remessasCache },
       ],
     }).compile();
 
@@ -118,6 +123,7 @@ describe('Liberação de remessa — disparo de e-mail desativado', () => {
     await servicoLote.liberarEmLote({ remessa_ids: [1, 2] } as never, usuario as never);
 
     expect(transacao.remessaLiberadaBalcao.createMany).toHaveBeenCalled();
+    expect(remessasCache.invalidarTudoDosClientes).toHaveBeenCalledWith([100, 100]);
     expect(emailService.enviar).not.toHaveBeenCalled();
     expect(emailService.enviarSemExcecao).not.toHaveBeenCalled();
   });

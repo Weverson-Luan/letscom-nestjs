@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { RemessasModule } from 'src/modules/remessas/remessas.module';
 import { LiberarRemessaController } from './controllers/liberar-remessa.controller';
 import { RemessaLiberadaClienteController } from './controllers/remessa-liberada-cliente.controller';
 import { LiberacaoRemessaMensagemHelper } from './helpers/liberacao-remessa-mensagem.helper';
@@ -15,6 +16,7 @@ import { RemessaLiberadaClienteService } from './services/remessa-liberada-clien
  * Espelha RemessaLiberadaBalcaoController + RemessaLiberadaClienteController.
  */
 @Module({
+  imports: [RemessasModule],
   controllers: [LiberarRemessaController, RemessaLiberadaClienteController],
   providers: [
     RemessaLiberadaBalcaoRepository,
