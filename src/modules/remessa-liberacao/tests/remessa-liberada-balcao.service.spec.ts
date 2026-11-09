@@ -1,3 +1,19 @@
+/**
+ * IMPORTS
+ */
+import { Test } from '@nestjs/testing';
+
+// shared / prisma (conexão com o banco)
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// services de remessas (cache das listagens)
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
+
+// repositories do módulo (liberações no balcão)
+import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
+
+// services do módulo (serviço testado e envio de e-mail)
+import { LiberacaoRemessaBalcaoEmailService } from '../services/liberacao-remessa-balcao-email.service';
 import { RemessaLiberadaBalcaoService } from '../services/remessa-liberada-balcao.service';
 
 jest.mock('../mappers/remessa-liberada.mapper', () => ({
@@ -17,17 +33,23 @@ describe('RemessaLiberadaBalcaoService — cache das listagens', () => {
   const dto = { remessa_id: 10, tipo_entrega_id: 2 };
   const usuario = { id: 7n, roles: ['expedicao'] };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
     prisma.remessa.findFirst.mockResolvedValue({ id: 10n, clienteId: 3n, userIdExecutor: null });
     prisma.user.findUnique.mockResolvedValue({ id: 7n, nome: 'Expedidor' });
     repository.create.mockImplementation((data: unknown) => Promise.resolve(data));
-    service = new RemessaLiberadaBalcaoService(
-      prisma as never,
-      repository as never,
-      emailService as never,
-      remessasCache as never,
-    );
+
+    const modulo = await Test.createTestingModule({
+      providers: [
+        RemessaLiberadaBalcaoService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: RemessaLiberadaBalcaoRepository, useValue: repository },
+        { provide: LiberacaoRemessaBalcaoEmailService, useValue: emailService },
+        { provide: RemessasCacheService, useValue: remessasCache },
+      ],
+    }).compile();
+
+    service = modulo.get(RemessaLiberadaBalcaoService);
   });
 
   it('invalida o cache das listagens do cliente após liberar', async () => {

@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
 import { LiberarRemessaBalcaoDto } from '../dto/liberar-remessa-balcao.dto';
 import { mapRemessaLiberadaBalcao } from '../mappers/remessa-liberada.mapper';
-import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
 import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
 import { LiberacaoRemessaBalcaoEmailService } from './liberacao-remessa-balcao-email.service';
 

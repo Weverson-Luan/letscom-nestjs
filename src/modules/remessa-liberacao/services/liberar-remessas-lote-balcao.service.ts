@@ -5,11 +5,11 @@ import { Remessa, RemessaSituacao, User, UserCliente } from '@prisma/client';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
 import { LiberarRemessasLoteDto } from '../dto/liberar-remessas-lote.dto';
 import { LoteValidacaoException } from '../exceptions/lote-validacao.exception';
 import { buscarDestinatarioPriorizandoSubordinado } from '../helpers/buscar-destinatario-remessa.helper';
 import { LiberacaoRemessaMensagemHelper } from '../helpers/liberacao-remessa-mensagem.helper';
-import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
 import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
 import { LiberacaoRemessaBalcaoEmailService } from './liberacao-remessa-balcao-email.service';
 

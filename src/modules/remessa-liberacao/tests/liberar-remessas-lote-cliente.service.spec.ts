@@ -1,3 +1,22 @@
+/**
+ * IMPORTS
+ */
+import { Test } from '@nestjs/testing';
+
+// shared / prisma (conexão com o banco)
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// services de remessas (cache das listagens)
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
+
+// exceptions do módulo (lote recusado na validação)
+import { LoteValidacaoException } from '../exceptions/lote-validacao.exception';
+
+// repositories do módulo (liberações já registradas no balcão e na recepção)
+import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
+import { RemessaLiberadaClienteRepository } from '../repositories/remessa-liberada-cliente.repository';
+
+// services do módulo (serviço testado)
 import { LiberarRemessasLoteClienteService } from '../services/liberar-remessas-lote-cliente.service';
 
 describe('LiberarRemessasLoteClienteService — cache das listagens', () => {
@@ -29,7 +48,7 @@ describe('LiberarRemessasLoteClienteService — cache das listagens', () => {
     cliente: { nome: `Cliente ${clienteId}` },
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
     prisma.user.findUnique.mockResolvedValue({ id: 1n, nome: 'Recepção' });
     prisma.tipoEntregaUser.findMany.mockResolvedValue([
@@ -42,12 +61,18 @@ describe('LiberarRemessasLoteClienteService — cache das listagens', () => {
       { remessaId: 2n },
       { remessaId: 3n },
     ]);
-    service = new LiberarRemessasLoteClienteService(
-      prisma as never,
-      repository as never,
-      balcaoRepository as never,
-      remessasCache as never,
-    );
+
+    const modulo = await Test.createTestingModule({
+      providers: [
+        LiberarRemessasLoteClienteService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: RemessaLiberadaClienteRepository, useValue: repository },
+        { provide: RemessaLiberadaBalcaoRepository, useValue: balcaoRepository },
+        { provide: RemessasCacheService, useValue: remessasCache },
+      ],
+    }).compile();
+
+    service = modulo.get(LiberarRemessasLoteClienteService);
   });
 
   it('invalida o cache dos clientes das remessas liberadas', async () => {
@@ -68,7 +93,7 @@ describe('LiberarRemessasLoteClienteService — cache das listagens', () => {
 
     await expect(
       service.liberarEmLote({ remessa_ids: [1] } as never, usuario as never),
-    ).rejects.toThrow();
+    ).rejects.toBeInstanceOf(LoteValidacaoException);
     expect(remessasCache.invalidarTudoDosClientes).not.toHaveBeenCalled();
   });
 });

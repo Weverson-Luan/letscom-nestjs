@@ -3,9 +3,9 @@ import { Remessa, RemessaSituacao, User } from '@prisma/client';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
 import { LiberarRemessasLoteDto } from '../dto/liberar-remessas-lote.dto';
 import { LoteValidacaoException } from '../exceptions/lote-validacao.exception';
-import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
 import { RemessaLiberadaBalcaoRepository } from '../repositories/remessa-liberada-balcao.repository';
 import { RemessaLiberadaClienteRepository } from '../repositories/remessa-liberada-cliente.repository';
 

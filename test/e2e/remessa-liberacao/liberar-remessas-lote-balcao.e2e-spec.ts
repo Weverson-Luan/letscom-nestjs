@@ -1,15 +1,28 @@
+/**
+ * IMPORTS
+ */
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
-import { Feature } from 'src/shared/auth/features';
-import { Role } from 'src/shared/constants/roles';
+
+// shared / prisma (conexão com o banco)
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+// shared / auth (features)
+import { Feature } from 'src/shared/auth/features';
+
+// shared / roles
+import { Role } from 'src/shared/constants/roles';
+
+// helpers e2e (app, banco, autenticação e features)
 import { criarAppE2e, PREFIXO_API } from '../helpers/criar-app-e2e';
 import { criarUsuarioAutenticado } from '../helpers/criar-usuario-autenticado';
 import { liberarFeature } from '../helpers/liberar-feature';
 import { limparBanco } from '../helpers/limpar-banco';
 
-describe('Liberação em lote no balcão — POST /liberar-remessa/lote reflete nas listagens (e2e)', () => {
+// services de remessas (cache das listagens)
+import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
+
+describe('Liberação em lote no balcão — POST /liberar-remessa/lote (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
 

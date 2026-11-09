@@ -1,12 +1,26 @@
+/**
+ * IMPORTS
+ */
+import { Test } from '@nestjs/testing';
+
+// shared / cache (versões das chaves no Redis)
+import { VersionedCacheService } from 'src/shared/cache/versioned-cache.service';
+
+// services do módulo (serviço testado)
 import { RemessasCacheService } from '../services/remessas-cache.service';
 
 describe('RemessasCacheService.invalidarTudoDosClientes', () => {
   const cache = { bumpVersion: jest.fn(), getVersion: jest.fn(), md5: jest.fn() };
   let service: RemessasCacheService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
-    service = new RemessasCacheService(cache as never);
+
+    const modulo = await Test.createTestingModule({
+      providers: [RemessasCacheService, { provide: VersionedCacheService, useValue: cache }],
+    }).compile();
+
+    service = modulo.get(RemessasCacheService);
   });
 
   it('sobe as versões globais uma vez e as por cliente uma vez por cliente distinto', async () => {
@@ -25,5 +39,11 @@ describe('RemessasCacheService.invalidarTudoDosClientes', () => {
         'remessas_historico_ver:9',
       ].sort(),
     );
+  });
+
+  it('com lista vazia sobe só as versões globais', async () => {
+    await service.invalidarTudoDosClientes([]);
+
+    expect(cache.bumpVersion).toHaveBeenCalledTimes(4);
   });
 });
