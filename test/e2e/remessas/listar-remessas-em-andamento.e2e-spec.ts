@@ -7,6 +7,7 @@ import { criarAppE2e, PREFIXO_API } from '../helpers/criar-app-e2e';
 import { criarUsuarioAutenticado } from '../helpers/criar-usuario-autenticado';
 import { liberarFeature } from '../helpers/liberar-feature';
 import { limparBanco } from '../helpers/limpar-banco';
+import { limparCache } from '../helpers/limpar-cache';
 
 describe('Remessas em andamento do cliente — GET /remessas/cliente/:id/remessas-em-andamento (e2e)', () => {
   let app: INestApplication;
@@ -19,6 +20,7 @@ describe('Remessas em andamento do cliente — GET /remessas/cliente/:id/remessa
 
   beforeEach(async () => {
     await limparBanco(prisma);
+    await limparCache(app);
   });
 
   afterAll(async () => {

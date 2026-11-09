@@ -13,14 +13,12 @@ import { Feature } from 'src/shared/auth/features';
 // shared / roles
 import { Role } from 'src/shared/constants/roles';
 
-// helpers e2e (app, banco, autenticação e features)
+// helpers e2e (app, banco, cache, autenticação e features)
 import { criarAppE2e, PREFIXO_API } from '../helpers/criar-app-e2e';
 import { criarUsuarioAutenticado } from '../helpers/criar-usuario-autenticado';
 import { liberarFeature } from '../helpers/liberar-feature';
 import { limparBanco } from '../helpers/limpar-banco';
-
-// services de remessas (cache das listagens)
-import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cache.service';
+import { limparCache } from '../helpers/limpar-cache';
 
 describe('Liberação em lote no balcão — POST /liberar-remessa/lote (e2e)', () => {
   let app: INestApplication;
@@ -33,6 +31,7 @@ describe('Liberação em lote no balcão — POST /liberar-remessa/lote (e2e)', 
 
   beforeEach(async () => {
     await limparBanco(prisma);
+    await limparCache(app);
   });
 
   afterAll(async () => {
@@ -89,9 +88,6 @@ describe('Liberação em lote no balcão — POST /liberar-remessa/lote (e2e)', 
     );
     const { token: tokenExpedicao } = await criarUsuarioAutenticado(app, Role.EXPEDICAO);
     const remessa = await criarRemessaConferida(cliente.id);
-
-    // o banco é truncado entre execuções, mas o Redis não: descarta cache antigo deste cliente
-    await app.get(RemessasCacheService).invalidarTudo(Number(cliente.id));
 
     // 1ª leitura grava a listagem no cache
     const antes = await listarEmAndamento(cliente.id, tokenCliente);
