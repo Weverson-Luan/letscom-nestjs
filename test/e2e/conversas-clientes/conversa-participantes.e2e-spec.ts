@@ -14,7 +14,7 @@ const MINHAS = `${PREFIXO_API}/minha-conversa/mensagens`;
 const MEUS_PARTICIPANTES = `${PREFIXO_API}/minha-conversa/participantes`;
 const NOTIFICACOES = `${PREFIXO_API}/notificacoes`;
 const CONVITES = `${PREFIXO_API}/convites-conversa`;
-const PAPEIS_INTERNOS = [Role.ADMIN, Role.CONSULTOR, Role.PRODUCAO, Role.RECEPCAO];
+const PAPEIS_INTERNOS = [Role.ADMIN, Role.CONSULTOR, Role.PRODUCAO, Role.RECEPCAO, Role.EXPEDICAO];
 const MENSAGEM_SEM_ACESSO =
   'Você não participa desta conversa. Peça um convite a quem iniciou a conversa.';
 
@@ -74,6 +74,8 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
       Role.SUBORDINADO,
     ]);
     const consultor = await criarUsuarioAutenticado(app, Role.CONSULTOR);
+    // interno que depende de convite (produção e admin entram sem convite: ver PAPEIS_ENTRAM_SEM_CONVITE_CONVERSA)
+    const expedicao = await criarUsuarioAutenticado(app, Role.EXPEDICAO);
     const producao = await criarUsuarioAutenticado(app, Role.PRODUCAO);
     const recepcao = await criarUsuarioAutenticado(app, Role.RECEPCAO);
     const admin = await criarUsuarioAutenticado(app, Role.ADMIN);
@@ -92,6 +94,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
     const participantes = `${PREFIXO_API}/clientes/${cliente.usuario.id}/conversa/participantes`;
     return {
       consultor,
+      expedicao,
       producao,
       recepcao,
       admin,
@@ -179,7 +182,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
       const vazio = await convidar(cenario.participantes, cenario.consultor.token, {});
       const ambos = await convidar(cenario.participantes, cenario.consultor.token, {
-        user_id: Number(cenario.producao.usuario.id),
+        user_id: Number(cenario.expedicao.usuario.id),
         subordinado_id: Number(cenario.compras.subordinado.id),
       });
 
@@ -367,26 +370,54 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
     });
   });
 
-  it('interno fora da conversa recebe 403 ao listar, baixar anexo, escrever, editar e excluir', async () => {
+  it('produção entra sem convite: escreve e só vê a partir da primeira mensagem dele', async () => {
     const cenario = await prepararCenario();
     const { producao, mensagens, participantes } = cenario;
-    const mensagem = await iniciarConversa(cenario);
+    await iniciarConversa(cenario);
 
-    const lista = await listarMensagens(mensagens, producao.token);
-    const anexo = await request(app.getHttpServer())
-      .get(`${mensagens}/${mensagem.id}/anexos/${mensagem.anexos[0].id}`)
+    // antes de interagir: tem acesso, mas não vê o histórico
+    const estado = await request(app.getHttpServer())
+      .get(participantes)
       .set('Authorization', `Bearer ${producao.token}`);
+    expect(estado.status).toBe(200);
+    expect(estado.body.data.tem_acesso).toBe(true);
+    const antes = await listarMensagens(mensagens, producao.token);
+    expect(antes.status).toBe(200);
+    expect(antes.body.data).toEqual([]);
+
     const escrita = await request(app.getHttpServer())
       .post(mensagens)
       .set('Authorization', `Bearer ${producao.token}`)
+      .field('conteudo', 'Produção aqui, posso ajudar?');
+    expect(escrita.status).toBe(201);
+
+    const depois = await listarMensagens(mensagens, producao.token);
+    expect(depois.status).toBe(200);
+    expect(depois.body.data.map((mensagem: { conteudo: string }) => mensagem.conteudo)).toEqual([
+      'Produção aqui, posso ajudar?',
+    ]);
+  });
+
+  it('interno fora da conversa recebe 403 ao listar, baixar anexo, escrever, editar e excluir', async () => {
+    const cenario = await prepararCenario();
+    const { expedicao, mensagens, participantes } = cenario;
+    const mensagem = await iniciarConversa(cenario);
+
+    const lista = await listarMensagens(mensagens, expedicao.token);
+    const anexo = await request(app.getHttpServer())
+      .get(`${mensagens}/${mensagem.id}/anexos/${mensagem.anexos[0].id}`)
+      .set('Authorization', `Bearer ${expedicao.token}`);
+    const escrita = await request(app.getHttpServer())
+      .post(mensagens)
+      .set('Authorization', `Bearer ${expedicao.token}`)
       .field('conteudo', 'Posso entrar?');
     const edicao = await request(app.getHttpServer())
       .put(`${mensagens}/${mensagem.id}`)
-      .set('Authorization', `Bearer ${producao.token}`)
+      .set('Authorization', `Bearer ${expedicao.token}`)
       .send({ conteudo: 'x' });
     const exclusao = await request(app.getHttpServer())
       .delete(`${mensagens}/${mensagem.id}`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
 
     expect(lista.status).toBe(403);
     expect(lista.body.message).toBe(MENSAGEM_SEM_ACESSO);
@@ -400,7 +431,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
     // o estado da conversa continua visível, mas sem a lista de participantes
     const estado = await request(app.getHttpServer())
       .get(participantes)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     expect(estado.status).toBe(200);
     expect(estado.body.data).toEqual({
       iniciada: true,
@@ -413,7 +444,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('admin lê a conversa e baixa anexo sem convite, mas não convida', async () => {
     const cenario = await prepararCenario();
-    const { admin, producao, mensagens, participantes } = cenario;
+    const { admin, expedicao, mensagens, participantes } = cenario;
     const mensagem = await iniciarConversa(cenario);
 
     const lista = await listarMensagens(mensagens, admin.token);
@@ -422,7 +453,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
       .set('Authorization', `Bearer ${admin.token}`)
       .buffer(true);
     const convite = await convidar(participantes, admin.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
 
     expect(lista.status).toBe(200);
@@ -434,11 +465,11 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('convite aceito libera o acesso e as notificações das mensagens seguintes', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, cliente, mensagens, participantes } = cenario;
+    const { consultor, expedicao, cliente, mensagens, participantes } = cenario;
     await iniciarConversa(cenario);
 
     const convite = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     expect(convite.status).toBe(201);
     expect(convite.body).toMatchObject({
@@ -449,7 +480,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
         papel: 'convidado',
         status: 'pendente',
         lado: 'interno',
-        pessoa: { id: Number(producao.usuario.id) },
+        pessoa: { id: Number(expedicao.usuario.id) },
       },
     });
     const conviteId = convite.body.data.id as number;
@@ -459,7 +490,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
     const caixa = await request(app.getHttpServer())
       .get(NOTIFICACOES)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     expect(caixa.status).toBe(200);
     expect(caixa.body.data).toEqual([
       expect.objectContaining({
@@ -471,18 +502,18 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
       }),
     ]);
 
-    const pendente = await listarMensagens(mensagens, producao.token);
+    const pendente = await listarMensagens(mensagens, expedicao.token);
     expect(pendente.status).toBe(403);
 
     const duplicado = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     expect(duplicado.status).toBe(400);
     expect(duplicado.body.message).toBe('Esta pessoa já tem um convite pendente.');
 
     const aceito = await request(app.getHttpServer())
       .post(`${CONVITES}/${conviteId}/aceitar`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     expect(aceito.status).toBe(200);
     expect(aceito.body).toMatchObject({
       message: 'Convite aceito!',
@@ -495,16 +526,16 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
     const caixaDepois = await request(app.getHttpServer())
       .get(NOTIFICACOES)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     expect(caixaDepois.body.data[0].convite).toEqual({ id: conviteId, status: 'aceito' });
 
     // como no WhatsApp: o convidado só vê o que vier depois de entrar
-    const liberada = await listarMensagens(mensagens, producao.token);
+    const liberada = await listarMensagens(mensagens, expedicao.token);
     expect(liberada.status).toBe(200);
     expect(liberada.body.data).toHaveLength(0);
 
     const jaParticipa = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     expect(jaParticipa.status).toBe(400);
     expect(jaParticipa.body.message).toBe('Esta pessoa já participa da conversa.');
@@ -520,13 +551,13 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
         where: { conversaMensagemId: BigInt(resposta.body.data.id) },
       })
     ).map((n) => n.destinatarioUserId);
-    expect(destinatarios.sort()).toEqual([consultor.usuario.id, producao.usuario.id].sort());
+    expect(destinatarios.sort()).toEqual([consultor.usuario.id, expedicao.usuario.id].sort());
 
     // mensagem do convidado: notifica o dono interno e o cliente, nunca o próprio autor
     const doConvidado = await request(app.getHttpServer())
       .post(mensagens)
-      .set('Authorization', `Bearer ${producao.token}`)
-      .field('conteudo', 'Em produção.');
+      .set('Authorization', `Bearer ${expedicao.token}`)
+      .field('conteudo', 'Na expedição.');
     expect(doConvidado.status).toBe(201);
     const notificacoes = await prisma.notificacao.findMany({
       where: { conversaMensagemId: BigInt(doConvidado.body.data.id) },
@@ -594,17 +625,17 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('recusar mantém o 403 e o dono pode convidar de novo', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, mensagens, participantes } = cenario;
+    const { consultor, expedicao, mensagens, participantes } = cenario;
     await iniciarConversa(cenario);
 
     const convite = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     const conviteId = convite.body.data.id as number;
 
     const recusado = await request(app.getHttpServer())
       .post(`${CONVITES}/${conviteId}/recusar`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     expect(recusado.status).toBe(200);
     expect(recusado.body).toMatchObject({
       message: 'Convite recusado.',
@@ -615,16 +646,16 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
     });
     expect(notificacaoConvite?.lidaEm).not.toBeNull();
 
-    expect((await listarMensagens(mensagens, producao.token)).status).toBe(403);
+    expect((await listarMensagens(mensagens, expedicao.token)).status).toBe(403);
 
     const aceitarDepois = await request(app.getHttpServer())
       .post(`${CONVITES}/${conviteId}/aceitar`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     expect(aceitarDepois.status).toBe(400);
     expect(aceitarDepois.body.message).toBe('Este convite já foi respondido.');
 
     const novoConvite = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     expect(novoConvite.status).toBe(201);
     expect(novoConvite.body.data).toMatchObject({ id: conviteId, status: 'pendente' });
@@ -636,40 +667,40 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
     const aceito = await request(app.getHttpServer())
       .post(`${CONVITES}/${conviteId}/aceitar`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     expect(aceito.status).toBe(200);
-    expect((await listarMensagens(mensagens, producao.token)).status).toBe(200);
+    expect((await listarMensagens(mensagens, expedicao.token)).status).toBe(200);
   });
 
   it('quem não é dono não convida nem remove (403), mesmo participando', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, recepcao, participantes } = cenario;
+    const { consultor, expedicao, recepcao, participantes } = cenario;
     await iniciarConversa(cenario);
 
     const foraDaConversa = await convidar(participantes, recepcao.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     expect(foraDaConversa.status).toBe(403);
 
     const convite = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     await request(app.getHttpServer())
       .post(`${CONVITES}/${convite.body.data.id}/aceitar`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
 
-    const convidadoConvida = await convidar(participantes, producao.token, {
+    const convidadoConvida = await convidar(participantes, expedicao.token, {
       user_id: Number(recepcao.usuario.id),
     });
     const convidadoRemove = await request(app.getHttpServer())
       .delete(`${participantes}/${convite.body.data.id}`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     const convidadoInativa = await request(app.getHttpServer())
       .post(`${participantes}/${convite.body.data.id}/inativar`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     const convidadoCandidatos = await request(app.getHttpServer())
       .get(`${participantes}/candidatos`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
 
     expect(convidadoConvida.status).toBe(403);
     expect(convidadoConvida.body.message).toBe(
@@ -683,7 +714,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('subordinado dono convida outro subordinado da empresa, mas não convida interno', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, cliente, compras, financeiro } = cenario;
+    const { consultor, expedicao, cliente, compras, financeiro } = cenario;
     await iniciarConversa(cenario, compras.subordinado.id);
 
     const donos = await prisma.conversaParticipante.findMany({ where: { papel: 'dono' } });
@@ -714,7 +745,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
     expect(principalConvida.status).toBe(403);
 
     const interno = await convidar(MEUS_PARTICIPANTES, compras.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     expect(interno.status).toBe(403);
     expect(interno.body.message).toBe('Você só pode convidar pessoas da sua empresa.');
@@ -781,10 +812,10 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('remover cancela o convite pendente e apaga a notificação do convite', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, participantes } = cenario;
+    const { consultor, expedicao, participantes } = cenario;
     await iniciarConversa(cenario);
     const convite = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     const conviteId = convite.body.data.id as number;
 
@@ -814,18 +845,18 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('inativar revoga o acesso sem apagar o participante; reativar devolve o acesso', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, mensagens, participantes } = cenario;
+    const { consultor, expedicao, mensagens, participantes } = cenario;
     await iniciarConversa(cenario);
     const convite = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     const participanteId = convite.body.data.id as number;
     await request(app.getHttpServer())
       .post(`${CONVITES}/${participanteId}/aceitar`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     const escrita = await request(app.getHttpServer())
       .post(mensagens)
-      .set('Authorization', `Bearer ${producao.token}`)
+      .set('Authorization', `Bearer ${expedicao.token}`)
       .field('conteudo', 'Mensagem antes de sair');
     expect(escrita.status).toBe(201);
 
@@ -856,10 +887,10 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
     expect(linhaInativa?.inativadoEm).not.toBeNull();
 
     // sem acesso: não lê nem escreve, mas a mensagem dele continua no histórico
-    expect((await listarMensagens(mensagens, producao.token)).status).toBe(403);
+    expect((await listarMensagens(mensagens, expedicao.token)).status).toBe(403);
     const escreveInativo = await request(app.getHttpServer())
       .post(mensagens)
-      .set('Authorization', `Bearer ${producao.token}`)
+      .set('Authorization', `Bearer ${expedicao.token}`)
       .field('conteudo', 'Ainda estou aqui?');
     expect(escreveInativo.status).toBe(403);
     const historico = await listarMensagens(mensagens, consultor.token);
@@ -872,14 +903,14 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
     await request(app.getHttpServer())
       .post(mensagens)
       .set('Authorization', `Bearer ${consultor.token}`)
-      .field('conteudo', 'Mensagem com produção inativa');
+      .field('conteudo', 'Mensagem com expedição inativa');
     expect(
-      await prisma.notificacao.count({ where: { destinatarioUserId: producao.usuario.id } }),
+      await prisma.notificacao.count({ where: { destinatarioUserId: expedicao.usuario.id } }),
     ).toBe(0);
 
     // não pode ser convidado de novo nem inativado duas vezes
     const reconvite = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     expect(reconvite.status).toBe(400);
     expect(reconvite.body.message).toBe(
@@ -898,7 +929,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
       message: 'Acesso do participante reativado.',
       data: { id: participanteId, status: 'aceito', inativado_em: null },
     });
-    expect((await listarMensagens(mensagens, producao.token)).status).toBe(200);
+    expect((await listarMensagens(mensagens, expedicao.token)).status).toBe(200);
 
     const reativarDeNovo = await request(app.getHttpServer())
       .post(`${participantes}/${participanteId}/reativar`)
@@ -908,19 +939,19 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('não reativa quem teve o cadastro desativado', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, participantes } = cenario;
+    const { consultor, expedicao, participantes } = cenario;
     await iniciarConversa(cenario);
     const convite = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     const participanteId = convite.body.data.id as number;
     await request(app.getHttpServer())
       .post(`${CONVITES}/${participanteId}/aceitar`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     await request(app.getHttpServer())
       .post(`${participantes}/${participanteId}/inativar`)
       .set('Authorization', `Bearer ${consultor.token}`);
-    await prisma.user.update({ where: { id: producao.usuario.id }, data: { ativo: false } });
+    await prisma.user.update({ where: { id: expedicao.usuario.id }, data: { ativo: false } });
 
     const reativado = await request(app.getHttpServer())
       .post(`${participantes}/${participanteId}/reativar`)
@@ -1021,11 +1052,11 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
   });
 
   it('antes de iniciar, o operador vê só o lado do cliente como candidatos para escolher com quem começar', async () => {
-    const { producao, cliente, compras, financeiro, participantes } = await prepararCenario();
+    const { expedicao, cliente, compras, financeiro, participantes } = await prepararCenario();
 
     const resposta = await request(app.getHttpServer())
       .get(`${participantes}/candidatos`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     const doCliente = await request(app.getHttpServer())
       .get(`${MEUS_PARTICIPANTES}/candidatos`)
       .set('Authorization', `Bearer ${cliente.token}`);
@@ -1049,8 +1080,17 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('candidatos excluem quem já participa ou tem convite pendente', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, recepcao, admin, cliente, compras, financeiro, participantes } =
-      cenario;
+    const {
+      consultor,
+      expedicao,
+      producao,
+      recepcao,
+      admin,
+      cliente,
+      compras,
+      financeiro,
+      participantes,
+    } = cenario;
     await iniciarConversa(cenario);
     await convidar(participantes, consultor.token, {
       subordinado_id: Number(compras.subordinado.id),
@@ -1068,6 +1108,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
     expect(chaves.sort()).toEqual(
       [
         `subordinado:${financeiro.subordinado.id}`,
+        `interno:${expedicao.usuario.id}`,
         `interno:${producao.usuario.id}`,
         `interno:${recepcao.usuario.id}`,
         `interno:${admin.usuario.id}`,
@@ -1104,10 +1145,10 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('aceitar ou recusar o convite de outra pessoa responde 404', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, recepcao, compras, participantes } = cenario;
+    const { consultor, expedicao, recepcao, compras, participantes } = cenario;
     await iniciarConversa(cenario);
     const convite = await convidar(participantes, consultor.token, {
-      user_id: Number(producao.usuario.id),
+      user_id: Number(expedicao.usuario.id),
     });
     const conviteId = convite.body.data.id as number;
 
@@ -1119,7 +1160,7 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
       .set('Authorization', `Bearer ${compras.token}`);
     const inexistente = await request(app.getHttpServer())
       .post(`${CONVITES}/999999/aceitar`)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
 
     expect(aceitarOutro.status).toBe(404);
     expect(aceitarOutro.body.message).toBe('Convite não encontrado.');
@@ -1207,28 +1248,28 @@ describe('Participantes da conversa com o cliente (e2e)', () => {
 
   it('operador dono desativado não trava a conversa: outro interno entra e, ao escrever, vira dono', async () => {
     const cenario = await prepararCenario();
-    const { consultor, producao, mensagens, participantes } = cenario;
+    const { consultor, expedicao, mensagens, participantes } = cenario;
     await iniciarConversa(cenario);
-    expect((await listarMensagens(mensagens, producao.token)).status).toBe(403);
+    expect((await listarMensagens(mensagens, expedicao.token)).status).toBe(403);
 
     await prisma.user.update({ where: { id: consultor.usuario.id }, data: { ativo: false } });
 
-    const lista = await listarMensagens(mensagens, producao.token);
+    const lista = await listarMensagens(mensagens, expedicao.token);
     expect(lista.status).toBe(200);
     expect(lista.body.data).toHaveLength(1);
 
     const escrita = await request(app.getHttpServer())
       .post(mensagens)
-      .set('Authorization', `Bearer ${producao.token}`)
+      .set('Authorization', `Bearer ${expedicao.token}`)
       .field('conteudo', 'Assumo daqui.');
     expect(escrita.status).toBe(201);
 
     expect(
-      await prisma.conversaParticipante.findFirst({ where: { userId: producao.usuario.id } }),
+      await prisma.conversaParticipante.findFirst({ where: { userId: expedicao.usuario.id } }),
     ).toMatchObject({ papel: 'dono', status: 'aceito' });
     const estado = await request(app.getHttpServer())
       .get(participantes)
-      .set('Authorization', `Bearer ${producao.token}`);
+      .set('Authorization', `Bearer ${expedicao.token}`);
     expect(estado.body.data).toMatchObject({
       tem_acesso: true,
       pode_convidar: true,
