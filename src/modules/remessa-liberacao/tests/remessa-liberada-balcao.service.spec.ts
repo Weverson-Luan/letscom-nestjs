@@ -20,7 +20,7 @@ jest.mock('../mappers/remessa-liberada.mapper', () => ({
   mapRemessaLiberadaBalcao: (registro: unknown) => registro,
 }));
 
-describe('RemessaLiberadaBalcaoService — cache das listagens', () => {
+describe('RemessaLiberadaBalcaoService', () => {
   const prisma = {
     remessa: { findFirst: jest.fn() },
     user: { findUnique: jest.fn() },
@@ -59,12 +59,27 @@ describe('RemessaLiberadaBalcaoService — cache das listagens', () => {
     expect(remessasCache.invalidarTudo).toHaveBeenCalledWith(3);
   });
 
-  it('não invalida o cache quando a remessa não existe', async () => {
+  it('não invalida o cache nem envia e-mail quando a remessa não existe', async () => {
     prisma.remessa.findFirst.mockResolvedValue(null);
 
     await expect(service.liberarRemessaParaBalcao(dto as never, usuario as never)).rejects.toThrow(
       'Remessa não encontrada!',
     );
     expect(remessasCache.invalidarTudo).not.toHaveBeenCalled();
+    expect(emailService.enviar).not.toHaveBeenCalled();
+  });
+
+  it('envia o e-mail da liberação ao solicitante com o tipo de entrega e a observação', async () => {
+    await service.liberarRemessaParaBalcao(
+      { ...dto, observacao: 'Retirar no balcão' } as never,
+      usuario as never,
+    );
+
+    expect(emailService.enviar).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 10n }),
+      { id: 7n, nome: 'Expedidor', roles: [{ nome: 'expedicao' }] },
+      2n,
+      'Retirar no balcão',
+    );
   });
 });

@@ -85,17 +85,16 @@ export class LiberarRemessasLoteBalcaoService {
       validacao.remessasValidas.map((remessa) => Number(remessa.clienteId)),
     );
 
-    // TODO: disparo de e-mail da liberação desativado temporariamente. Descomentar para reativar.
-    // await this.dispararEmailsPorDestinatario(
-    //   validacao.remessasValidas,
-    //   {
-    //     id: liberador.id,
-    //     nome: liberador.nome,
-    //     roles: user.roles.map((nome) => ({ nome })),
-    //   },
-    //   validacao.tiposPorRemessa,
-    //   dto.observacao ?? null,
-    // );
+    await this.dispararEmailsPorDestinatario(
+      validacao.remessasValidas,
+      {
+        id: liberador.id,
+        nome: liberador.nome,
+        roles: user.roles.map((nome) => ({ nome })),
+      },
+      validacao.tiposPorRemessa,
+      dto.observacao ?? null,
+    );
 
     return {
       liberadas: validacao.remessasValidas.map((r) => ({

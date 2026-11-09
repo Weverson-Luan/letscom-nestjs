@@ -20,8 +20,7 @@ import { RemessasCacheService } from 'src/modules/remessas/services/remessas-cac
 import { LiberacaoRemessaBalcaoEmailService } from '../services/liberacao-remessa-balcao-email.service';
 import { LiberarRemessasLoteBalcaoService } from '../services/liberar-remessas-lote-balcao.service';
 
-// TODO: e-mail da liberação desativado temporariamente; reativar junto com o disparo no service.
-describe.skip('LiberarRemessasLoteBalcaoService — e-mails por destinatário', () => {
+describe('LiberarRemessasLoteBalcaoService — e-mails por destinatário', () => {
   const transacao = {
     remessaLiberadaBalcao: { createMany: jest.fn() },
     remessa: { updateMany: jest.fn() },
@@ -41,6 +40,7 @@ describe.skip('LiberarRemessasLoteBalcaoService — e-mails por destinatário', 
   };
   const emailService = { enviarSemExcecao: jest.fn() };
   const config = { get: jest.fn(() => 0) };
+  const remessasCache = { invalidarTudoDosClientes: jest.fn() };
   let service: LiberarRemessasLoteBalcaoService;
 
   const usuario = { id: 1n, roles: ['expedicao'] };
@@ -93,7 +93,7 @@ describe.skip('LiberarRemessasLoteBalcaoService — e-mails por destinatário', 
         { provide: LiberacaoRemessaMensagemHelper, useValue: mensagemHelper },
         { provide: LiberacaoRemessaBalcaoEmailService, useValue: emailService },
         { provide: ConfigService, useValue: config },
-        { provide: RemessasCacheService, useValue: { invalidarTudoDosClientes: jest.fn() } },
+        { provide: RemessasCacheService, useValue: remessasCache },
       ],
     }).compile();
 
@@ -213,5 +213,16 @@ describe.skip('LiberarRemessasLoteBalcaoService — e-mails por destinatário', 
       where: { id: { in: [1n, 2n] } },
       data: { status: 'pedido_liberado', situacao: 'pedido_liberado' },
     });
+  });
+
+  it('invalida o cache das listagens dos clientes das remessas liberadas', async () => {
+    prisma.remessa.findMany.mockResolvedValue([
+      criarRemessa(1n, 100n, ana),
+      criarRemessa(2n, 200n, bruno),
+    ]);
+
+    await service.liberarEmLote({ remessa_ids: [1, 2] } as never, usuario as never);
+
+    expect(remessasCache.invalidarTudoDosClientes).toHaveBeenCalledWith([100, 200]);
   });
 });

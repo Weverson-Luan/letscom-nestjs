@@ -58,17 +58,16 @@ export class RemessaLiberadaBalcaoService {
     // reflete a liberação nas listagens do front sem esperar o TTL do cache
     await this.remessasCache.invalidarTudo(Number(remessa.clienteId));
 
-    // TODO: disparo de e-mail da liberação desativado temporariamente. Descomentar para reativar.
-    // await this.emailService.enviar(
-    //   remessa,
-    //   {
-    //     id: liberador.id,
-    //     nome: liberador.nome,
-    //     roles: user.roles.map((nome) => ({ nome })),
-    //   },
-    //   BigInt(dto.tipo_entrega_id),
-    //   dto.observacao ?? '',
-    // );
+    await this.emailService.enviar(
+      remessa,
+      {
+        id: liberador.id,
+        nome: liberador.nome,
+        roles: user.roles.map((nome) => ({ nome })),
+      },
+      BigInt(dto.tipo_entrega_id),
+      dto.observacao ?? '',
+    );
 
     return mapRemessaLiberadaBalcao(registro);
   }
