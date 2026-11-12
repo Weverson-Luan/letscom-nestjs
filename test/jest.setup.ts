@@ -19,6 +19,7 @@ const defaults: Record<string, string> = {
   JWT_ALGORITHM: 'HS256',
   BCRYPT_ROUNDS: '4',
   FILESYSTEM_DISK: 'local',
+  MONITOR_MEMORIA_INTERVALO_MS: '0',
   CLOUDFLARE_R2_ACCOUNT_ID: 'test-account',
   CLOUDFLARE_R2_ACCESS_KEY_ID: 'test-access-key',
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'test-secret-key',

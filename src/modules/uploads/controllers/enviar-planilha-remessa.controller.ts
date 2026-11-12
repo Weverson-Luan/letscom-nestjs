@@ -3,6 +3,8 @@
  */
 import { Body, Controller, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { LimitarConcorrenciaInterceptor } from 'src/shared/interceptors/limitar-concorrencia.interceptor';
+import { TAMANHO_MAXIMO_PLANILHA_BYTES } from 'src/shared/upload/limites-upload';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -39,7 +41,10 @@ export class EnviarPlanilhaRemessaController {
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: EnviarPlanilhaRemessaDto })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    LimitarConcorrenciaInterceptor,
+    FileInterceptor('file', { limits: { fileSize: TAMANHO_MAXIMO_PLANILHA_BYTES } }),
+  )
   @ApiParam({ name: 'remessaId', description: 'ID da remessa' })
   @ApiOperation({ summary: 'Upload de planilha para a remessa' })
   async enviarPlanilhaRemessa(

@@ -16,6 +16,9 @@ import { Role } from 'src/shared/constants/roles';
 // shared / storage
 import { StorageService } from 'src/shared/storage/storage.service';
 
+// shared / upload (limites)
+import { TAMANHO_MAXIMO_PLANILHA_BYTES } from 'src/shared/upload/limites-upload';
+
 // helpers e2e (app, banco e autenticação)
 import { criarAppE2e } from '../helpers/criar-app-e2e';
 import { criarUsuarioAutenticado } from '../helpers/criar-usuario-autenticado';
@@ -107,6 +110,19 @@ describe('POST /remessas/:remessaId/upload-planilha (e2e)', () => {
 
     expect(resposta.status).toBe(404);
     expect(resposta.body.message).toBe('Remessa não encontrada.');
+  });
+
+  it('responde 413 quando a planilha excede o tamanho máximo', async () => {
+    const { token } = await autenticarProducao(app);
+    const remessa = await criarRemessa(app);
+    const grande = Buffer.alloc(TAMANHO_MAXIMO_PLANILHA_BYTES + 1, 'a');
+
+    const resposta = await request(app.getHttpServer())
+      .post(rota(remessa.id))
+      .set('Authorization', `Bearer ${token}`)
+      .attach('file', grande, 'dados.csv');
+
+    expect(resposta.status).toBe(413);
   });
 
   it('grava a planilha (com a pasta raiz) usando a extensão como tipo e registra no banco', async () => {

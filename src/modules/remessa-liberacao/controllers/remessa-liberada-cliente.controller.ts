@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { TAMANHO_MAXIMO_COMPROVANTE_BYTES } from 'src/shared/upload/limites-upload';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
@@ -81,7 +82,9 @@ export class RemessaLiberadaClienteController {
   @RequireFeatures(Feature.LIBERACAO_REMESSAS_RECEPCAO)
   @Roles(...ROLES_LIBERACAO)
   @ApiConsumes('multipart/form-data', 'application/json')
-  @UseInterceptors(FileInterceptor('file_path'))
+  @UseInterceptors(
+    FileInterceptor('file_path', { limits: { fileSize: TAMANHO_MAXIMO_COMPROVANTE_BYTES } }),
+  )
   @ApiOperation({
     summary: 'Libera uma remessa para o cliente (não altera status da remessa)',
   })

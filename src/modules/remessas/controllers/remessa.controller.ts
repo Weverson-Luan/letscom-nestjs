@@ -16,6 +16,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { LimitarConcorrenciaInterceptor } from 'src/shared/interceptors/limitar-concorrencia.interceptor';
+import { TAMANHO_MAXIMO_ZIP_FOTOS_BYTES } from 'src/shared/upload/limites-upload';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
@@ -69,10 +71,13 @@ export class RemessaController {
   @Roles(Role.CLIENTE, Role.ADMIN, Role.SUBORDINADO)
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'csv_file', maxCount: 1 },
-      { name: 'zip_file', maxCount: 1 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'csv_file', maxCount: 1 },
+        { name: 'zip_file', maxCount: 1 },
+      ],
+      { limits: { fileSize: TAMANHO_MAXIMO_ZIP_FOTOS_BYTES } },
+    ),
   )
   @ApiOperation({ summary: 'Solicita uma remessa (com planilha e/ou ZIP de fotos)' })
   async solicitar(
@@ -243,6 +248,7 @@ export class RemessaController {
 
   // ---------------------------------------------------------------- DOWNLOADS
   @Get(':id/fotos/download')
+  @UseInterceptors(LimitarConcorrenciaInterceptor)
   @RequireFeatures(Feature.BAIXAR_REMESSAS)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiParam({ name: 'id', description: 'ID da remessa' })
@@ -258,6 +264,7 @@ export class RemessaController {
   }
 
   @Get(':id/planilha/download')
+  @UseInterceptors(LimitarConcorrenciaInterceptor)
   @RequireFeatures(Feature.BAIXAR_REMESSAS)
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiParam({ name: 'id', description: 'ID da remessa' })

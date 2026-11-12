@@ -16,6 +16,12 @@ import { Role } from 'src/shared/constants/roles';
 // shared / storage
 import { StorageService } from 'src/shared/storage/storage.service';
 
+// shared / upload (limites de upload e ZIP)
+import {
+  QUANTIDADE_MAXIMA_ENTRADAS_ZIP,
+  TAMANHO_MAXIMO_ZIP_FOTOS_BYTES,
+} from 'src/shared/upload/limites-upload';
+
 // helpers e2e (app, banco e autenticação)
 import { criarAppE2e } from '../helpers/criar-app-e2e';
 import { criarUsuarioAutenticado } from '../helpers/criar-usuario-autenticado';
@@ -106,6 +112,35 @@ describe('POST /remessas/:remessaId/upload-fotos (e2e)', () => {
 
     expect(resposta.status).toBe(404);
     expect(resposta.body.message).toBe('Remessa não encontrada.');
+  });
+
+  it('responde 413 quando o ZIP excede o tamanho máximo', async () => {
+    const { token } = await autenticarProducao(app);
+    const remessa = await criarRemessa(app);
+    const grande = Buffer.alloc(TAMANHO_MAXIMO_ZIP_FOTOS_BYTES + 1, 'a');
+
+    const resposta = await request(app.getHttpServer())
+      .post(rota(remessa.id))
+      .set('Authorization', `Bearer ${token}`)
+      .attach('zip_file', grande, 'fotos.zip');
+
+    expect(resposta.status).toBe(413);
+  });
+
+  it('responde 413 quando o ZIP tem entradas demais', async () => {
+    const { token } = await autenticarProducao(app);
+    const remessa = await criarRemessa(app);
+    const arquivos: Record<string, string> = {};
+    for (let indice = 0; indice <= QUANTIDADE_MAXIMA_ENTRADAS_ZIP; indice++) {
+      arquivos[`foto-${indice}.jpg`] = 'x';
+    }
+
+    const resposta = await request(app.getHttpServer())
+      .post(rota(remessa.id))
+      .set('Authorization', `Bearer ${token}`)
+      .attach('zip_file', montarZip(arquivos), 'fotos.zip');
+
+    expect(resposta.status).toBe(413);
   });
 
   it('extrai as fotos do ZIP, ignora metadados do macOS, grava no storage (com a pasta raiz) e registra cada foto', async () => {

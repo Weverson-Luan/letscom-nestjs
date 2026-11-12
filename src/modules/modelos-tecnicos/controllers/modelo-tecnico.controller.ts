@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { TAMANHO_MAXIMO_IMAGEM_BYTES } from 'src/shared/upload/limites-upload';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/shared/constants/roles';
 import { AuthUser, CurrentUser } from 'src/shared/decorators/current-user.decorator';
@@ -127,10 +128,13 @@ export class ModeloTecnicoController {
   @HttpCode(201)
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'foto_frente', maxCount: 1 },
-      { name: 'foto_verso', maxCount: 1 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'foto_frente', maxCount: 1 },
+        { name: 'foto_verso', maxCount: 1 },
+      ],
+      { limits: { fileSize: TAMANHO_MAXIMO_IMAGEM_BYTES } },
+    ),
   )
   @ApiOperation({ summary: 'Cria um modelo técnico (fotos obrigatórias)' })
   async store(
@@ -161,10 +165,13 @@ export class ModeloTecnicoController {
   @Roles(...ROLES_UPDATE)
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'foto_frente', maxCount: 1 },
-      { name: 'foto_verso', maxCount: 1 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'foto_frente', maxCount: 1 },
+        { name: 'foto_verso', maxCount: 1 },
+      ],
+      { limits: { fileSize: TAMANHO_MAXIMO_IMAGEM_BYTES } },
+    ),
   )
   @ApiOperation({ summary: 'Atualiza um modelo técnico (multipart)' })
   async update(

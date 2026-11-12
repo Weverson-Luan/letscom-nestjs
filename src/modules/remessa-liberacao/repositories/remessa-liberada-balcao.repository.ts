@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 
+export const LIMITE_LISTAGEM_LIBERACOES_BALCAO = 500;
+
 const includeRels = {
   remessa: true,
   executor: true,
@@ -27,8 +29,13 @@ export class RemessaLiberadaBalcaoRepository {
     });
   }
 
+  /** Teto defensivo: a listagem não é paginada e a tabela só cresce. */
   findAll() {
-    return this.prisma.remessaLiberadaBalcao.findMany({ include: includeRels });
+    return this.prisma.remessaLiberadaBalcao.findMany({
+      include: includeRels,
+      orderBy: { id: 'desc' },
+      take: LIMITE_LISTAGEM_LIBERACOES_BALCAO,
+    });
   }
 
   findRemessaIdsLiberadas(remessaIds: bigint[]) {

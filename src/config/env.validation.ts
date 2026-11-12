@@ -28,6 +28,20 @@ export class EnvironmentVariables {
   @IsString()
   APP_URL?: string;
 
+  /** Intervalo (ms) do log de memória do processo; 0 desliga. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  MONITOR_MEMORIA_INTERVALO_MS = 60000;
+
+  /** Percentual do heap do V8 a partir do qual o log vira alerta. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  MONITOR_MEMORIA_PERCENTUAL_ALERTA = 80;
+
   @IsOptional()
   @IsString()
   FRONTEND_URL?: string;

@@ -3,6 +3,8 @@
  */
 import { Controller, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { LimitarConcorrenciaInterceptor } from 'src/shared/interceptors/limitar-concorrencia.interceptor';
+import { TAMANHO_MAXIMO_ZIP_FOTOS_BYTES } from 'src/shared/upload/limites-upload';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -38,7 +40,10 @@ export class EnviarFotosRemessaController {
   @Roles(Role.ADMIN, Role.PRODUCAO, Role.CONSULTOR)
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: EnviarFotosRemessaDto })
-  @UseInterceptors(FileInterceptor('zip_file'))
+  @UseInterceptors(
+    LimitarConcorrenciaInterceptor,
+    FileInterceptor('zip_file', { limits: { fileSize: TAMANHO_MAXIMO_ZIP_FOTOS_BYTES } }),
+  )
   @ApiParam({ name: 'remessaId', description: 'ID da remessa' })
   @ApiOperation({ summary: 'Upload de fotos (ZIP) para a remessa' })
   async enviarFotosRemessa(

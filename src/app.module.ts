@@ -58,6 +58,7 @@ import { PrismaModule } from './shared/prisma/prisma.module';
 import { StorageModule } from './shared/storage/storage.module';
 
 // shared / utils
+import { MonitoramentoModule } from './shared/monitoramento/monitoramento.module';
 import { UtilsModule } from './shared/utils/utils.module';
 
 @Module({
@@ -75,6 +76,7 @@ import { UtilsModule } from './shared/utils/utils.module';
     StorageModule,
     MailModule,
     UtilsModule,
+    MonitoramentoModule,
     SecurityModule,
     // Módulos de domínio
     HealthModule,
