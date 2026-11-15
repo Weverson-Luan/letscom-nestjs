@@ -6,6 +6,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 
+import { Role } from 'src/shared/constants/roles';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
 
@@ -62,19 +63,23 @@ export class CreateFullClientService {
           },
         });
 
-        if (clientePayload.roles) {
-          await this.roleUserRepo.attachToUser(
-            transacao,
-            user.id,
-            BigInt(clientePayload.roles),
-            true,
-          );
-        }
+        // sem role não há feature flag: na falta do id, usa o papel padrão
+        const papelCliente = clientePayload.roles
+          ? BigInt(clientePayload.roles)
+          : await this.buscarIdPapel(transacao, Role.CLIENTE);
+        await this.roleUserRepo.attachToUser(transacao, user.id, papelCliente, true);
+
+        let papelSubordinadoPadrao: bigint | undefined;
+
+        const buscarPapelSubordinado = async () =>
+          (papelSubordinadoPadrao ??= await this.buscarIdPapel(transacao, Role.SUBORDINADO));
+
         if (clientePayload.consultor_id) {
           await transacao.clienteConsultor.create({
             data: { clienteId: user.id, consultorId: BigInt(clientePayload.consultor_id) },
           });
         }
+
         if (clientePayload.tipo_entrega_id) {
           await transacao.tipoEntregaUser.create({
             data: { clienteId: user.id, tipoEntregaId: BigInt(clientePayload.tipo_entrega_id) },
@@ -114,14 +119,12 @@ export class CreateFullClientService {
               ativo: sub.ativo !== undefined ? Boolean(sub.ativo) : true,
             },
           });
-          if (sub.role_id) {
-            await this.roleUserRepo.attachToUserCliente(
-              transacao,
-              created.id,
-              BigInt(sub.role_id),
-              true,
-            );
-          }
+          await this.roleUserRepo.attachToUserCliente(
+            transacao,
+            created.id,
+            sub.role_id ? BigInt(sub.role_id) : await buscarPapelSubordinado(),
+            true,
+          );
           usuariosCliente.push(created);
         }
 
@@ -138,6 +141,12 @@ export class CreateFullClientService {
             ativo: true,
           },
         });
+        await this.roleUserRepo.attachToUserCliente(
+          transacao,
+          padrao.id,
+          await buscarPapelSubordinado(),
+          true,
+        );
         usuariosCliente.push(padrao);
 
         return {
@@ -153,5 +162,18 @@ export class CreateFullClientService {
         }
         throw erro;
       });
+  }
+
+  /** Id do papel pelo nome (roles.nome pode estar como `cliente` ou `Cliente`). */
+  private async buscarIdPapel(transacao: Prisma.TransactionClient, papel: Role): Promise<bigint> {
+    const nomeCapitalizado = papel.charAt(0).toUpperCase() + papel.slice(1);
+    const encontrado = await transacao.role.findFirst({
+      where: { nome: { in: [papel, nomeCapitalizado] } },
+      select: { id: true },
+    });
+    if (!encontrado) {
+      throw new Error(`Role padrão "${nomeCapitalizado}" não encontrada.`);
+    }
+    return encontrado.id;
   }
 }
