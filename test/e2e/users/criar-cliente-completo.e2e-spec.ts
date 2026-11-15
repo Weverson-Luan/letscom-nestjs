@@ -58,6 +58,9 @@ describe('POST /users/cliente-completo (e2e)', () => {
 
   beforeEach(async () => {
     await limparBanco(prisma);
+    // papéis padrão usados quando o payload não traz os ids (como em produção)
+    await buscarOuCriarPapel(prisma, Role.CLIENTE);
+    await buscarOuCriarPapel(prisma, Role.SUBORDINADO);
   });
 
   afterAll(async () => {
@@ -229,6 +232,38 @@ describe('POST /users/cliente-completo (e2e)', () => {
     });
     expect(subordinados).toHaveLength(1);
     expect(subordinados[0]).toMatchObject({ nome: 'Letscom Comercial', ativo: true });
+  });
+
+  it('vincula os papéis padrão cliente e subordinado quando os ids não vêm no payload', async () => {
+    const { token } = await autenticarAdmin();
+    const papelCliente = await buscarOuCriarPapel(prisma, Role.CLIENTE);
+    const papelSubordinado = await buscarOuCriarPapel(prisma, Role.SUBORDINADO);
+
+    const resposta = await request(app.getHttpServer())
+      .post(ROTA)
+      .set('Authorization', `Bearer ${token}`)
+      .send(montarPayload());
+
+    expect(resposta.status).toBe(201);
+    const clienteId = BigInt(resposta.body.data.user.id);
+
+    const papeisCliente = await prisma.$queryRaw<{ role_id: bigint }[]>`
+      SELECT role_id FROM role_user WHERE user_id = ${clienteId} AND ativo = 1
+    `;
+    expect(papeisCliente.map((p) => p.role_id)).toEqual([papelCliente.id]);
+
+    // o subordinado informado e o "Letscom Comercial" recebem o papel subordinado
+    const papeisSubordinados = await prisma.$queryRaw<{ nome: string; role_id: bigint }[]>`
+      SELECT uc.nome, ru.role_id
+      FROM users_cliente uc
+      JOIN role_user ru ON ru.client_sub_id = uc.id AND ru.ativo = 1
+      WHERE uc.cliente_id = ${clienteId}
+      ORDER BY uc.id
+    `;
+    expect(papeisSubordinados).toEqual([
+      { nome: 'Subordinado', role_id: papelSubordinado.id },
+      { nome: 'Letscom Comercial', role_id: papelSubordinado.id },
+    ]);
   });
 
   it('responde 400 quando tipo_endereco não é um valor do enum TipoEndereco', async () => {

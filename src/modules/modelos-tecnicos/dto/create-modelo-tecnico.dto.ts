@@ -11,6 +11,7 @@ import {
   Min,
 } from 'class-validator';
 import { normalizarBooleano } from 'src/shared/utils/boolean-filter';
+import { converterTextoVazioEmNulo } from 'src/shared/utils/converter-texto-vazio-em-nulo';
 
 /**
  * Lê o valor bruto do multipart: com enableImplicitConversion o `value` já chega
@@ -50,11 +51,14 @@ export class CreateModeloTecnicoDto {
   @MaxLength(100)
   nome_modelo!: string;
 
-  @ApiProperty()
+  /** Obrigatório só com carga de foto ou dados variáveis (validado no service). */
+  @ApiPropertyOptional()
+  // ausente continua ausente (não apaga o valor salvo numa edição parcial)
+  @Transform(({ value }) => (value === undefined ? undefined : converterTextoVazioEmNulo(value)))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(50)
-  campo_chave!: string;
+  campo_chave?: string | null;
 
   @ApiProperty({ enum: ['horizontal', 'vertical'] })
   @IsIn(['horizontal', 'vertical'])

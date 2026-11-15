@@ -69,3 +69,39 @@ describe('CreateModeloTecnicoDto', () => {
     });
   });
 });
+
+describe('campo_chave nos DTOs de modelo técnico', () => {
+  const base = {
+    cliente_id: '1',
+    produto_id: '1',
+    tecnologia_id: '1',
+    nome_modelo: 'Colaborador',
+    posicionamento: 'vertical',
+  };
+
+  it.each(['undefined', 'null', '', '  '])('converte %p em null na criação', (valor) => {
+    const { instancia, campos } = validar(CreateModeloTecnicoDto, { ...base, campo_chave: valor });
+    expect(campos).toEqual([]);
+    expect(instancia.campo_chave).toBeNull();
+  });
+
+  it('aceita criar sem campo_chave (a obrigatoriedade é decidida no service)', () => {
+    const { campos } = validar(CreateModeloTecnicoDto, base);
+    expect(campos).toEqual([]);
+  });
+
+  it("na edição, 'undefined' vira null e campo ausente continua ausente", () => {
+    expect(
+      validar(UpdateModeloTecnicoDto, { campo_chave: 'undefined' }).instancia.campo_chave,
+    ).toBeNull();
+    expect(
+      validar(UpdateModeloTecnicoDto, { nome_modelo: 'Novo' }).instancia.campo_chave,
+    ).toBeUndefined();
+  });
+
+  it('mantém o campo chave informado, sem espaços nas pontas', () => {
+    expect(
+      validar(UpdateModeloTecnicoDto, { campo_chave: ' matricula ' }).instancia.campo_chave,
+    ).toBe('matricula');
+  });
+});

@@ -1,11 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import { resolvePagination } from 'src/shared/database/pagination';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
+import { BusinessException } from 'src/shared/exceptions/business.exception';
 import { buildPagination } from 'src/shared/utils/api-response';
+import { converterTextoVazioEmNulo } from 'src/shared/utils/converter-texto-vazio-em-nulo';
 import { CreateModeloTecnicoDto } from '../dto/create-modelo-tecnico.dto';
 import { UpdateModeloTecnicoDto } from '../dto/update-modelo-tecnico.dto';
 import { ModeloTecnicoMapper } from '../mappers/modelo-tecnico.mapper';
@@ -100,6 +102,11 @@ export class ModeloTecnicoService {
   async criar(dto: CreateModeloTecnicoDto, fotoFrente?: UploadFile, fotoVerso?: UploadFile) {
     this.validarFotoObrigatoria(fotoFrente, 'foto_frente');
     this.validarFotoObrigatoria(fotoVerso, 'foto_verso');
+    this.validarCampoChave(
+      dto.campo_chave ?? null,
+      dto.tem_carga_foto ?? false,
+      dto.tem_dados_variaveis ?? false,
+    );
     await this.validarFks(dto.cliente_id, dto.produto_id, dto.tecnologia_id);
 
     const uploaded: string[] = [];
@@ -114,7 +121,7 @@ export class ModeloTecnicoService {
         produto: { connect: { id: BigInt(dto.produto_id) } },
         tecnologia: { connect: { id: BigInt(dto.tecnologia_id) } },
         nomeModelo: dto.nome_modelo,
-        campoChave: dto.campo_chave,
+        campoChave: dto.campo_chave ?? null,
         posicionamento: dto.posicionamento,
         temFuro: dto.tem_furo ?? false,
         tipoFuro: dto.tipo_furo ?? null,
@@ -139,6 +146,21 @@ export class ModeloTecnicoService {
     fotoVerso?: UploadFile,
   ) {
     const atual = await this.buscar(id);
+    // só valida quando a edição mexe no campo chave ou nas flags que dependem dele,
+    // para não travar a edição de modelos antigos já salvos sem campo chave
+    if (
+      dto.campo_chave !== undefined ||
+      dto.tem_carga_foto !== undefined ||
+      dto.tem_dados_variaveis !== undefined
+    ) {
+      this.validarCampoChave(
+        dto.campo_chave !== undefined
+          ? dto.campo_chave
+          : converterTextoVazioEmNulo(atual.campoChave),
+        dto.tem_carga_foto ?? atual.temCargaFoto,
+        dto.tem_dados_variaveis ?? atual.temDadosVariaveis,
+      );
+    }
     if (fotoFrente) this.validarFoto(fotoFrente, 'foto_frente');
     if (fotoVerso) this.validarFoto(fotoVerso, 'foto_verso');
 
@@ -222,6 +244,20 @@ export class ModeloTecnicoService {
     const path = this.storage.montarCaminho(`modelos/${pasta}/${randomUUID()}.${ext}`);
     await this.storage.put(path, file.buffer);
     return path;
+  }
+
+  /** Campo chave é obrigatório quando o modelo recebe planilha (carga de foto ou dados variáveis). */
+  private validarCampoChave(
+    campoChave: string | null,
+    temCargaFoto: boolean,
+    temDadosVariaveis: boolean,
+  ) {
+    if ((temCargaFoto || temDadosVariaveis) && !campoChave) {
+      throw new BusinessException(
+        'Informe o campo chave: ele é obrigatório para modelos com carga de foto ou dados variáveis.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
   }
 
   private validarFotoObrigatoria(file: UploadFile | undefined, field: string) {

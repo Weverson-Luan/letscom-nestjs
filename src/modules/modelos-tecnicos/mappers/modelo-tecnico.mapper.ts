@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StorageService } from 'src/shared/storage/storage.service';
+import { converterTextoVazioEmNulo } from 'src/shared/utils/converter-texto-vazio-em-nulo';
 
 type ModeloWithRels = ModeloTecnico & {
   cliente?: User | null;
@@ -50,7 +51,7 @@ export class ModeloTecnicoMapper {
       is_provisorio: modelo.isProvisorio,
       ativo: modelo.ativo,
       tipo_furo: modelo.tipoFuro,
-      campo_chave: modelo.campoChave,
+      campo_chave: converterTextoVazioEmNulo(modelo.campoChave),
       foto_frente_path: modelo.fotoFrentePath,
       foto_verso_path: modelo.fotoVersoPath,
       observacoes: modelo.observacoes,

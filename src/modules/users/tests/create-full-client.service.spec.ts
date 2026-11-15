@@ -28,7 +28,9 @@ describe('CreateFullClientService', () => {
     tipoEntregaUser: { create: jest.fn() },
     endereco: { create: jest.fn() },
     userCliente: { create: jest.fn() },
+    role: { findFirst: jest.fn() },
   };
+  const PAPEIS: Record<string, bigint> = { cliente: 2n, subordinado: 7n };
   const prisma = { $transaction: jest.fn() };
   const hash = { make: jest.fn() };
   const config = { get: jest.fn() };
@@ -81,6 +83,12 @@ describe('CreateFullClientService', () => {
     });
     transacao.endereco.create.mockResolvedValue({ id: 1n });
     transacao.userCliente.create.mockImplementation(async ({ data }) => ({ id: 20n, ...data }));
+    transacao.role.findFirst.mockImplementation(
+      async ({ where }: { where: { nome: { in: string[] } } }) => {
+        const id = PAPEIS[where.nome.in[0]];
+        return id ? { id } : null;
+      },
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -115,7 +123,6 @@ describe('CreateFullClientService', () => {
     expect(resultado.user).not.toHaveProperty('senha');
     expect(resultado.usuarios_cliente).toHaveLength(1);
     resultado.usuarios_cliente.forEach((u) => expect(u).not.toHaveProperty('senha'));
-    expect(roleUserRepo.attachToUser).not.toHaveBeenCalled();
     expect(transacao.clienteConsultor.create).not.toHaveBeenCalled();
     expect(transacao.tipoEntregaUser.create).not.toHaveBeenCalled();
   });
@@ -135,6 +142,31 @@ describe('CreateFullClientService', () => {
       data: { clienteId: 10n, tipoEntregaId: 5n },
     });
     expect(roleUserRepo.attachToUserCliente).toHaveBeenCalledWith(transacao, 20n, 6n, true);
+    expect(roleUserRepo.attachToUserCliente).toHaveBeenCalledTimes(2);
+  });
+
+  it('usa os papéis padrão cliente e subordinado quando os ids não vêm (inclusive no Letscom Comercial)', async () => {
+    await service.executar({
+      ...dados,
+      usuarios_cliente: [{ email: 'sub@empresa.com', senha: 'senha123', ativo: true }],
+    });
+
+    expect(roleUserRepo.attachToUser).toHaveBeenCalledWith(transacao, 10n, 2n, true);
+    expect(roleUserRepo.attachToUserCliente).toHaveBeenCalledTimes(2);
+    expect(roleUserRepo.attachToUserCliente).toHaveBeenNthCalledWith(1, transacao, 20n, 7n, true);
+    expect(roleUserRepo.attachToUserCliente).toHaveBeenNthCalledWith(2, transacao, 20n, 7n, true);
+    expect(transacao.role.findFirst).toHaveBeenCalledWith({
+      where: { nome: { in: ['subordinado', 'Subordinado'] } },
+      select: { id: true },
+    });
+    expect(transacao.role.findFirst).toHaveBeenCalledTimes(2);
+  });
+
+  it('lança erro quando o papel padrão não existe no banco', async () => {
+    transacao.role.findFirst.mockResolvedValue(null);
+
+    await expect(service.executar(dados)).rejects.toThrow('Role padrão "Cliente" não encontrada.');
+    expect(transacao.endereco.create).not.toHaveBeenCalled();
   });
 
   it('lança CadastroDuplicadoException (409) quando um índice único é violado', async () => {
