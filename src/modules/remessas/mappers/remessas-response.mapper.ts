@@ -5,6 +5,7 @@ import { serializeUser } from 'src/modules/auth/mappers/auth-response.mapper';
 import { mapCampoVariavel } from 'src/modules/modelos-tecnicos/mappers/modelo-tecnico.mapper';
 import { basename } from 'path';
 import { buscarDestinatarioPriorizandoSolicitante } from 'src/modules/remessa-liberacao/helpers/buscar-destinatario-remessa.helper';
+import { converterTextoVazioEmNulo } from 'src/shared/utils/converter-texto-vazio-em-nulo';
 
 const STEP_LABELS: Record<string, { id: number; label: string; color: string }> = {
   envio_de_dados: { id: 1, label: 'Envio de Dados', color: 'bg-gray-300' },
@@ -208,7 +209,7 @@ export class RemessasResponseMapper {
       is_provisorio: modelo.isProvisorio,
       ativo: modelo.ativo,
       tipo_furo: modelo.tipoFuro,
-      campo_chave: modelo.campoChave,
+      campo_chave: converterTextoVazioEmNulo(modelo.campoChave),
       foto_frente_path: modelo.fotoFrentePath,
       foto_verso_path: modelo.fotoVersoPath,
       observacoes: modelo.observacoes,

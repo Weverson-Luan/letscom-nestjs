@@ -7,6 +7,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { FeatureGateService } from 'src/shared/auth/feature-gate.service';
 import { AuthUser } from 'src/shared/decorators/current-user.decorator';
 import { StorageService } from 'src/shared/storage/storage.service';
+import { converterTextoVazioEmNulo } from 'src/shared/utils/converter-texto-vazio-em-nulo';
 import { SpreadsheetService } from 'src/shared/utils/spreadsheet.service';
 
 // repositories
@@ -63,7 +64,7 @@ export class ListarItensRemessaService {
     const { colunas, itens } = montarItensRemessa(
       linhas,
       remessa.fotos as FotoItemRemessa[],
-      remessa.modeloTecnico?.campoChave ?? '',
+      converterTextoVazioEmNulo(remessa.modeloTecnico?.campoChave) ?? '',
     );
 
     return {
